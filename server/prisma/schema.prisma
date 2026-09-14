@@ -1,0 +1,124 @@
+// Data model — see docs/Architecture.md §4.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  GITHUB
+  GOOGLE
+}
+
+enum ConnectionStatus {
+  OK
+  REAUTH
+}
+
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique
+  /// Null for OIDC-only accounts.
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  role            Role      @default(USER)
+  bannedAt        DateTime?
+  /// Bumped by logout-everywhere and ban; checked against the JWT `tv` claim.
+  tokenVersion    Int       @default(0)
+  createdAt       DateTime  @default(now())
+
+  emailTokens        EmailToken[]
+  authIdentities     AuthIdentity[]
+  serviceConnections ServiceConnection[]
+  dashboards         Dashboard[]
+}
+
+/// Email confirmation token. Stores SHA-256 of a random 32-byte token, never the raw value. 24 h, single use.
+model EmailToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Login only. Never grants widget scopes.
+model AuthIdentity {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @db.Uuid
+  provider       AuthProvider
+  providerUserId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+/// Widget credentials only. Tokens are AES-256-GCM encrypted as `iv:tag:ciphertext`.
+model ServiceConnection {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @db.Uuid
+  /// Registry service name, e.g. 'github'.
+  service           String
+  externalAccountId String
+  accessTokenEnc    String?
+  refreshTokenEnc   String?
+  expiresAt         DateTime?
+  scopes            String[]         @default([])
+  status            ConnectionStatus @default(OK)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, service])
+}
+
+model Dashboard {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  name      String
+  position  Int
+  createdAt DateTime @default(now())
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  widgets WidgetInstance[]
+
+  @@index([userId, position])
+}
+
+/// Grid layout (x, y, w, h) lives on the instance so it cannot orphan.
+model WidgetInstance {
+  id          String   @id @default(uuid()) @db.Uuid
+  dashboardId String   @db.Uuid
+  /// Registry keys, e.g. 'github' + 'recent_commits'.
+  service     String
+  widget      String
+  /// Validated against the registry's ParamSpecs on create/update.
+  params      Json     @db.JsonB
+  /// Seconds; minRefreshSec ≤ refreshRate ≤ 86400 (enforced in app).
+  refreshRate Int
+  x           Int
+  y           Int
+  w           Int
+  h           Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([dashboardId])
+}

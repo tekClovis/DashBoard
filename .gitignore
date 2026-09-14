@@ -1,2 +1,9 @@
 .env
+.env.local
 *.pdf
+node_modules/
+dist/
+*.tsbuildinfo
+server/src/generated/
+server/public/
+web/dist/
