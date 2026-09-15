@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
+import { AuthController } from './auth.controller.js';
+import { VerificationService } from './verification.service.js';
 
-// Scaffolded per docs/Architecture.md §2. Implemented in a later build step.
-@Module({})
+@Module({
+  controllers: [AuthController],
+  providers: [VerificationService],
+})
 export class AuthModule {}

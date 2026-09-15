@@ -1,6 +1,7 @@
 import { Controller, Get, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import type { AboutResponse } from '@dashboard/shared';
+import { clientAddress } from '../core/http/client-address.js';
 import { WidgetRegistryService } from './widget-registry.service.js';
 
 /** GET /about.json — public, not under /api. See docs/Architecture.md §3. */
@@ -12,7 +13,7 @@ export class AboutController {
   get(@Req() req: Request): AboutResponse {
     return {
       client: {
-        host: clientHost(req),
+        host: clientAddress(req),
       },
       server: {
         current_time: Math.floor(Date.now() / 1000),
@@ -27,10 +28,4 @@ export class AboutController {
       },
     };
   }
-}
-
-/** req.socket.remoteAddress, with the ::ffff: IPv4-mapped prefix stripped. No trust proxy. */
-function clientHost(req: Request): string {
-  const address = req.socket.remoteAddress ?? '';
-  return address.startsWith('::ffff:') ? address.slice('::ffff:'.length) : address;
 }
