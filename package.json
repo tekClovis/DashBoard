@@ -15,6 +15,7 @@
     "build": "npm run build -w shared && npm run build -w web && npm run build -w server",
     "dev:deps": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis mailpit",
     "dev": "npm run build -w shared && npm run start:dev -w server",
+    "dev:web": "npm run dev -w web",
     "lint": "npm run lint -w server",
     "test": "npm test -w server",
     "test:e2e": "npm run test:e2e -w server"

@@ -96,7 +96,7 @@ export class AuthController {
   private async enforceRateLimit(key: string, limit: number, windowSec: number): Promise<void> {
     const allowed = await this.checkRateLimit(key, limit, windowSec);
     if (!allowed) {
-      throw new HttpException('Too Many Requests', HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException({ error: 'RATE_LIMITED' }, HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 

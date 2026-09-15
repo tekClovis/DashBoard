@@ -27,3 +27,37 @@ export interface AboutService {
 export interface CatalogResponse {
   services: (ServiceSpec & { connected: boolean })[];
 }
+
+/** 8-72 chars, at least one digit and one non-alphanumeric symbol — docs/auth/specs.md §Flows. */
+export const PASSWORD_PATTERN = /^(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
+
+/** POST /api/auth/register */
+export interface RegisterRequest {
+  email: string;
+  password: string;
+}
+
+/** POST /api/auth/resend */
+export interface ResendRequest {
+  email: string;
+}
+
+/** POST /api/auth/login */
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+/** Shared success shape for register/confirm/resend/login — see docs/Architecture.md §8. */
+export interface OkResponse {
+  ok: true;
+}
+
+/** GET /api/auth/me */
+export interface MeResponse {
+  id: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  emailVerifiedAt: string | null;
+  identities: { provider: 'GITHUB' | 'GOOGLE' }[];
+}
