@@ -26,6 +26,17 @@ describe('JwtService', () => {
 
     expect(payload).toMatchObject({ sub: 'u1', role: 'USER', tv: 0 });
     expect(typeof payload!.exp).toBe('number');
+    expect(typeof payload!.jti).toBe('string');
+    expect(payload!.jti.length).toBeGreaterThan(0);
+  });
+
+  it('assigns a distinct jti to each signed token', () => {
+    const service = makeService();
+
+    const a = service.verify(service.sign({ sub: 'u1', role: 'USER', tv: 0 }));
+    const b = service.verify(service.sign({ sub: 'u1', role: 'USER', tv: 0 }));
+
+    expect(a!.jti).not.toBe(b!.jti);
   });
 
   it('rejects a token signed with a different secret', () => {

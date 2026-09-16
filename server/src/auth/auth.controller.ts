@@ -21,6 +21,7 @@ import * as bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import type { Redis } from 'ioredis';
 import { clientAddress } from '../core/http/client-address.js';
+import { readCookie } from '../core/http/cookies.js';
 import { MailService } from '../core/mail/mail.service.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import { REDIS } from '../core/redis/redis.provider.js';
@@ -31,6 +32,7 @@ import { ResendDto } from './dto/resend.dto.js';
 import { JwtGuard } from './jwt.guard.js';
 import { JwtService } from './jwt.service.js';
 import { SESSION_COOKIE, SESSION_TTL_SEC } from './session.constants.js';
+import { TokenRevocationService } from './token-revocation.service.js';
 import type { RequestUser } from './types.js';
 import { VerificationService } from './verification.service.js';
 
@@ -45,6 +47,7 @@ export class AuthController {
     private readonly mail: MailService,
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
+    private readonly revocation: TokenRevocationService,
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
@@ -143,7 +146,12 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   @UseGuards(JwtGuard)
-  logout(@Res({ passthrough: true }) res: Response): { ok: true } {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<{ ok: true }> {
+    const token = readCookie(req.headers.cookie, SESSION_COOKIE);
+    const payload = token ? this.jwt.verify(token) : null;
+    if (payload) {
+      await this.revocation.revoke(payload.jti, payload.exp);
+    }
     this.clearSessionCookie(res);
     return { ok: true };
   }

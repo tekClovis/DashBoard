@@ -4,11 +4,13 @@ import { readCookie } from '../core/http/cookies.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import { JwtService } from './jwt.service.js';
 import { SESSION_COOKIE } from './session.constants.js';
+import { TokenRevocationService } from './token-revocation.service.js';
 import './types.js';
 
 /**
- * Verifies the session cookie's signature, then rejects a banned user or a
- * token superseded by logout-all (`tv !== user.tokenVersion`) — see
+ * Verifies the session cookie's signature, then rejects a banned user, a
+ * token superseded by logout-all (`tv !== user.tokenVersion`), or a token
+ * individually revoked by plain logout (`jti` in the revoked set) — see
  * docs/Architecture.md §5.1.
  */
 @Injectable()
@@ -16,6 +18,7 @@ export class JwtGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly revocation: TokenRevocationService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -25,6 +28,10 @@ export class JwtGuard implements CanActivate {
 
     const payload = this.jwt.verify(token);
     if (!payload) throw new UnauthorizedException();
+
+    if (await this.revocation.isRevoked(payload.jti)) {
+      throw new UnauthorizedException();
+    }
 
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || user.bannedAt || user.tokenVersion !== payload.tv) {

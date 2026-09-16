@@ -89,11 +89,19 @@ describe('Auth session (e2e)', () => {
   it('5. logout clears the cookie; the old cookie value then 401s on /me', async () => {
     const { email, password } = await createUser();
     const agent = request.agent(app.getHttpServer());
-    await agent.post('/api/auth/login').send({ email, password }).expect(200);
+    const loginRes = await agent.post('/api/auth/login').send({ email, password }).expect(200);
     await agent.get('/api/auth/me').expect(200);
 
+    const setCookie = loginRes.headers['set-cookie'];
+    const rawCookie = Array.isArray(setCookie) ? setCookie[0] : setCookie;
+    const oldToken = rawCookie.split(';')[0]; // e.g. "session=<jwt>"
+
     await agent.post('/api/auth/logout').expect(200);
-    await agent.get('/api/auth/me').expect(401);
+
+    // The agent's own cookie jar auto-replaces the cookie on logout, so replay
+    // the captured raw old token explicitly — this is what actually proves
+    // the old JWT was invalidated server-side, not just cleared client-side.
+    await request(app.getHttpServer()).get('/api/auth/me').set('Cookie', oldToken).expect(401);
   });
 
   it('6. logout-all invalidates a still-unexpired session issued to a second login', async () => {

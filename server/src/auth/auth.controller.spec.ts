@@ -12,6 +12,7 @@ function makeDeps() {
   const mail = { sendConfirmationEmail: vi.fn().mockResolvedValue(undefined) };
   const config = { getOrThrow: vi.fn().mockReturnValue('http://localhost:8080') };
   const jwt = { sign: vi.fn().mockReturnValue('signed-jwt'), verify: vi.fn() };
+  const revocation = { revoke: vi.fn().mockResolvedValue(undefined), isRevoked: vi.fn().mockResolvedValue(false) };
   const store = new Map<string, number>();
   const redis = {
     incr: vi.fn(async (key: string) => {
@@ -28,14 +29,15 @@ function makeDeps() {
     mail as never,
     config as never,
     jwt as never,
+    revocation as never,
     redis as never,
   );
 
-  return { controller, prisma, verification, mail, config, jwt, redis };
+  return { controller, prisma, verification, mail, config, jwt, revocation, redis };
 }
 
 function makeReq(): Request {
-  return { socket: { remoteAddress: '127.0.0.1' } } as unknown as Request;
+  return { socket: { remoteAddress: '127.0.0.1' }, headers: {} } as unknown as Request;
 }
 
 function makeRes(): Response {
@@ -299,14 +301,25 @@ describe('AuthController', () => {
   });
 
   describe('logout', () => {
-    it('clears the session cookie', () => {
+    it('clears the session cookie', async () => {
       const { controller } = makeDeps();
       const res = makeRes();
 
-      const result = controller.logout(res);
+      const result = await controller.logout(makeReq(), res);
 
       expect(result).toEqual({ ok: true });
       expect(vi.mocked(res.clearCookie)).toHaveBeenCalledWith('session', expect.objectContaining({ path: '/' }));
+    });
+
+    it('revokes the token jti so the old cookie cannot be reused', async () => {
+      const { controller, jwt, revocation } = makeDeps();
+      const req = { ...makeReq(), headers: { cookie: 'session=old-token' } } as never;
+      const res = makeRes();
+      jwt.verify.mockReturnValue({ sub: 'u1', role: 'USER', tv: 0, jti: 'jti-1', exp: 9999999999 });
+
+      await controller.logout(req, res);
+
+      expect(revocation.revoke).toHaveBeenCalledWith('jti-1', 9999999999);
     });
   });
 

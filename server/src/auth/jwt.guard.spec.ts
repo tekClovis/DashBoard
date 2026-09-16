@@ -9,11 +9,12 @@ function makeContext(req: Partial<Request>): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-function makeGuard(userRow: unknown, verifyResult: unknown) {
+function makeGuard(userRow: unknown, verifyResult: unknown, isRevoked = false) {
   const jwt = { verify: vi.fn().mockReturnValue(verifyResult) };
   const prisma = { user: { findUnique: vi.fn().mockResolvedValue(userRow) } };
-  const guard = new JwtGuard(jwt as never, prisma as never);
-  return { guard, jwt, prisma };
+  const revocation = { isRevoked: vi.fn().mockResolvedValue(isRevoked), revoke: vi.fn() };
+  const guard = new JwtGuard(jwt as never, prisma as never, revocation as never);
+  return { guard, jwt, prisma, revocation };
 }
 
 describe('JwtGuard', () => {
@@ -52,6 +53,17 @@ describe('JwtGuard', () => {
     const { guard } = makeGuard(
       { id: 'u1', email: 'a@b.com', role: 'USER', tokenVersion: 1, bannedAt: null, emailVerifiedAt: new Date() },
       { sub: 'u1', role: 'USER', tv: 0, exp: 9999999999 },
+    );
+    const req = { headers: { cookie: 'session=valid' } } as Request;
+
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('rejects a token revoked by logout (jti in the revoked set)', async () => {
+    const { guard } = makeGuard(
+      { id: 'u1', email: 'a@b.com', role: 'USER', tokenVersion: 0, bannedAt: null, emailVerifiedAt: new Date() },
+      { sub: 'u1', role: 'USER', tv: 0, jti: 'jti-1', exp: 9999999999 },
+      true,
     );
     const req = { headers: { cookie: 'session=valid' } } as Request;
 
