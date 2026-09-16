@@ -28,12 +28,19 @@ export class AdminSeedService implements OnApplicationBootstrap {
     if (existingAdmin) return;
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    const existingByEmail = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existingByEmail) {
+      this.logger.warn(
+        `ADMIN_EMAIL ${normalizedEmail} matches an existing user; refusing to overwrite it. Skipping admin boot-seed.`,
+      );
+      return;
+    }
+
     const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
 
-    await this.prisma.user.upsert({
-      where: { email: normalizedEmail },
-      update: { role: Role.ADMIN, passwordHash, emailVerifiedAt: new Date() },
-      create: {
+    await this.prisma.user.create({
+      data: {
         email: normalizedEmail,
         passwordHash,
         role: Role.ADMIN,

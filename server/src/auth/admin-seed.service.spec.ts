@@ -5,7 +5,8 @@ function makeService(env: Record<string, string | undefined>) {
   const prisma = {
     user: {
       findFirst: vi.fn().mockResolvedValue(null),
-      upsert: vi.fn().mockResolvedValue({}),
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({}),
     },
   };
   const config = { get: vi.fn((key: string) => env[key]) };
@@ -20,7 +21,7 @@ describe('AdminSeedService', () => {
     await service.onApplicationBootstrap();
 
     expect(prisma.user.findFirst).not.toHaveBeenCalled();
-    expect(prisma.user.upsert).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
   it('does nothing when an admin already exists', async () => {
@@ -29,7 +30,17 @@ describe('AdminSeedService', () => {
 
     await service.onApplicationBootstrap();
 
-    expect(prisma.user.upsert).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('does not overwrite an existing user that happens to match ADMIN_EMAIL', async () => {
+    const { service, prisma } = makeService({ ADMIN_EMAIL: 'admin@b.com', ADMIN_PASSWORD: 'x' });
+    prisma.user.findUnique.mockResolvedValue({ id: 'some-existing-user', role: 'USER' });
+
+    await service.onApplicationBootstrap();
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'admin@b.com' } });
+    expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
   it('creates a pre-confirmed admin when none exists', async () => {
@@ -38,16 +49,14 @@ describe('AdminSeedService', () => {
     await service.onApplicationBootstrap();
 
     expect(prisma.user.findFirst).toHaveBeenCalledWith({ where: { role: 'ADMIN' } });
-    expect(prisma.user.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { email: 'admin@b.com' },
-        create: expect.objectContaining({
-          email: 'admin@b.com',
-          role: 'ADMIN',
-          emailVerifiedAt: expect.any(Date),
-          passwordHash: expect.any(String),
-        }),
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'admin@b.com' } });
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        email: 'admin@b.com',
+        role: 'ADMIN',
+        emailVerifiedAt: expect.any(Date),
+        passwordHash: expect.any(String),
       }),
-    );
+    });
   });
 });
