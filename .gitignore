@@ -7,3 +7,7 @@ dist/
 server/src/generated/
 server/public/
 web/dist/
+.claude
+.playwright*
+features/
+mocks/
