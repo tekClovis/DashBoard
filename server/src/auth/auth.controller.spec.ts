@@ -5,7 +5,7 @@ import { AuthController } from './auth.controller.js';
 
 function makeDeps() {
   const prisma = {
-    user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+    user: { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), create: vi.fn(), update: vi.fn() },
     authIdentity: { findMany: vi.fn().mockResolvedValue([]) },
   };
   const verification = { issueToken: vi.fn().mockResolvedValue('raw-token'), confirm: vi.fn() };
@@ -281,6 +281,7 @@ describe('AuthController', () => {
     it('returns the current user plus linked identities', async () => {
       const { controller, prisma } = makeDeps();
       prisma.authIdentity.findMany.mockResolvedValue([{ provider: 'GITHUB' }]);
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ passwordHash: 'hash' });
       const verifiedAt = new Date();
 
       const result = await controller.me({
@@ -295,6 +296,7 @@ describe('AuthController', () => {
         email: 'a@b.com',
         role: 'USER',
         emailVerifiedAt: verifiedAt.toISOString(),
+        hasPassword: true,
         identities: [{ provider: 'GITHUB' }],
       });
     });

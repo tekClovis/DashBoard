@@ -25,6 +25,10 @@ export async function setup(): Promise<void> {
   process.env['REDIS_URL'] = `redis://${redis.getHost()}:${redis.getMappedPort(6379)}`;
   process.env['JWT_SECRET'] = randomBytes(32).toString('hex');
   process.env['TOKEN_ENC_KEY'] = randomBytes(32).toString('base64');
+  process.env['GITHUB_CLIENT_ID'] = 'test-github-client-id';
+  process.env['GITHUB_CLIENT_SECRET'] = 'test-github-client-secret';
+  process.env['GOOGLE_CLIENT_ID'] = 'test-google-client-id';
+  process.env['GOOGLE_CLIENT_SECRET'] = 'test-google-client-secret';
 
   const schemaPath = fileURLToPath(new URL('../prisma/schema.prisma', import.meta.url));
   // npm workspaces hoist bins to the repo root's node_modules/.bin.

@@ -31,7 +31,8 @@ import { RegisterDto } from './dto/register.dto.js';
 import { ResendDto } from './dto/resend.dto.js';
 import { JwtGuard } from './jwt.guard.js';
 import { JwtService } from './jwt.service.js';
-import { SESSION_COOKIE, SESSION_TTL_SEC } from './session.constants.js';
+import { clearSessionCookie, setSessionCookie } from './session-cookie.js';
+import { SESSION_COOKIE } from './session.constants.js';
 import { TokenRevocationService } from './token-revocation.service.js';
 import type { RequestUser } from './types.js';
 import { VerificationService } from './verification.service.js';
@@ -121,7 +122,7 @@ export class AuthController {
     }
 
     const token = this.jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion });
-    this.setSessionCookie(res, token);
+    setSessionCookie(res, this.config.getOrThrow<string>('APP_URL'), token);
 
     return { ok: true };
   }
@@ -129,16 +130,17 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtGuard)
   async me(@CurrentUser() user: RequestUser): Promise<MeResponse> {
-    const identities = await this.prisma.authIdentity.findMany({
-      where: { userId: user.id },
-      select: { provider: true },
-    });
+    const [identities, fullUser] = await Promise.all([
+      this.prisma.authIdentity.findMany({ where: { userId: user.id }, select: { provider: true } }),
+      this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { passwordHash: true } }),
+    ]);
 
     return {
       id: user.id,
       email: user.email,
       role: user.role,
       emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+      hasPassword: fullUser.passwordHash !== null,
       identities,
     };
   }
@@ -152,7 +154,7 @@ export class AuthController {
     if (payload) {
       await this.revocation.revoke(payload.jti, payload.exp);
     }
-    this.clearSessionCookie(res);
+    clearSessionCookie(res, this.config.getOrThrow<string>('APP_URL'));
     return { ok: true };
   }
 
@@ -167,27 +169,8 @@ export class AuthController {
       where: { id: user.id },
       data: { tokenVersion: { increment: 1 } },
     });
-    this.clearSessionCookie(res);
+    clearSessionCookie(res, this.config.getOrThrow<string>('APP_URL'));
     return { ok: true };
-  }
-
-  private setSessionCookie(res: Response, token: string): void {
-    res.cookie(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      secure: this.config.getOrThrow<string>('APP_URL').startsWith('https'),
-      maxAge: SESSION_TTL_SEC * 1000,
-    });
-  }
-
-  private clearSessionCookie(res: Response): void {
-    res.clearCookie(SESSION_COOKIE, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      secure: this.config.getOrThrow<string>('APP_URL').startsWith('https'),
-    });
   }
 
   private async issueAndSend(userId: string, email: string): Promise<void> {

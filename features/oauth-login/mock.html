@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>oauth-login mock</title>
+<style>
+  :root { --background:#fff; --foreground:#1f1f1f; --card:#fff; --muted:#f4f4f5; --muted-foreground:#71717a;
+    --border:#e4e4e7; --destructive:#b91c1c; --radius:10px; --secondary:#f4f4f5; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; background:var(--background); color:var(--foreground); }
+  main { max-width:440px; margin:50px auto; padding:0 20px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:20px; }
+  h1,h2 { font-size:17px; margin:0 0 14px; }
+  .btn { display:flex; align-items:center; justify-content:center; gap:8px; height:38px; width:100%;
+    border-radius:8px; font-size:14px; font-weight:500; border:1px solid var(--border); background:#fff; cursor:pointer; margin-bottom:10px; }
+  .btn:hover { background:var(--muted); }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+  .row:last-child { border-bottom:none; }
+  .badge { font-size:12px; padding:2px 8px; border-radius:999px; background:var(--secondary); }
+  .link-btn { font-size:12px; border:1px solid var(--border); background:#fff; border-radius:6px; padding:4px 8px; cursor:pointer; }
+  .link-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .error { background:#fef2f2; border:1px solid #fecaca; color:var(--destructive); font-size:13px; border-radius:8px; padding:10px 12px; margin-bottom:14px; display:none; }
+  .error.show { display:block; }
+  .toast { background:var(--muted); border-radius:8px; padding:10px 12px; font-size:13px; margin-top:12px; display:none; }
+  .toast.show { display:block; }
+  select { width:100%; height:34px; margin-bottom:10px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card" id="login-card">
+    <h1>Log in</h1>
+    <div class="error" id="err-link">You already have an account with this email. Log in with your password, then link GitHub from Profile.</div>
+    <label style="font-size:12px;color:var(--muted-foreground);">Simulate provider response</label>
+    <select id="scenario">
+      <option value="existing-linked">Existing linked identity → instant login</option>
+      <option value="auto-link">New identity, verified email matches confirmed user → auto-link + login</option>
+      <option value="conflict-unverified">New identity, email matches unconfirmed/unverified user → refused</option>
+      <option value="new-user">No match → create new user + login</option>
+    </select>
+    <button class="btn" onclick="oauth('github')">Continue with GitHub</button>
+    <button class="btn" onclick="oauth('google')">Continue with Google</button>
+  </div>
+
+  <div class="card hidden" id="profile-card">
+    <h2>Profile — linked accounts</h2>
+    <div class="row"><span>Password</span><span class="badge" id="pw-badge">set</span></div>
+    <div class="row"><span>GitHub</span><span id="gh-status">not linked</span>
+      <button class="link-btn" id="gh-btn" onclick="toggleLink('github')">Link</button></div>
+    <div class="row"><span>Google</span><span id="gg-status">not linked</span>
+      <button class="link-btn" id="gg-btn" onclick="toggleLink('google')">Link</button></div>
+    <div class="toast" id="unlink-toast">Can't unlink your only remaining login method.</div>
+  </div>
+</main>
+<script>
+  let identities = { password: true, github: false, google: false };
+  function hide(id){document.getElementById(id).classList.add('hidden');}
+  function show(id){document.getElementById(id).classList.remove('hidden');}
+
+  function oauth(provider) {
+    document.getElementById('err-link').classList.remove('show');
+    const scenario = document.getElementById('scenario').value;
+    if (scenario === 'conflict-unverified') {
+      document.getElementById('err-link').classList.add('show');
+      return;
+    }
+    if (scenario === 'existing-linked' || scenario === 'auto-link' || scenario === 'new-user') {
+      identities[provider] = true;
+      hide('login-card');
+      show('profile-card');
+      renderProfile();
+    }
+  }
+
+  function renderProfile() {
+    document.getElementById('gh-status').textContent = identities.github ? 'linked' : 'not linked';
+    document.getElementById('gh-btn').textContent = identities.github ? 'Unlink' : 'Link';
+    document.getElementById('gg-status').textContent = identities.google ? 'linked' : 'not linked';
+    document.getElementById('gg-btn').textContent = identities.google ? 'Unlink' : 'Link';
+  }
+
+  function toggleLink(provider) {
+    const loginMethodCount = (identities.password?1:0)+(identities.github?1:0)+(identities.google?1:0);
+    if (identities[provider] && loginMethodCount <= 1) {
+      document.getElementById('unlink-toast').classList.add('show');
+      return;
+    }
+    document.getElementById('unlink-toast').classList.remove('show');
+    identities[provider] = !identities[provider];
+    renderProfile();
+  }
+</script>
+</body>
+</html>

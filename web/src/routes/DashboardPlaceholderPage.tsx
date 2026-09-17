@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useLogout, useLogoutAll, useMe } from '@/api/auth.js';
 import { ThemeToggle } from '@/components/theme-toggle.js';
 import { Button } from '@/components/ui/button.js';
@@ -38,6 +38,9 @@ export function DashboardPlaceholderPage() {
           </div>
         </>
       )}
+      <Link to="/profile" className="text-primary mt-4 block text-sm underline underline-offset-4">
+        Linked accounts
+      </Link>
     </div>
   );
 }
