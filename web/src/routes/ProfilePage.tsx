@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useMe, useLinkIdentity, useUnlinkIdentity, type OAuthProvider } from '@/api/auth.js';
+import { useSearchParams } from 'react-router';
+import { oauthStartUrl, useMe, useUnlinkIdentity, type OAuthProvider } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
 import { ThemeToggle } from '@/components/theme-toggle.js';
 
@@ -11,9 +12,15 @@ import { ThemeToggle } from '@/components/theme-toggle.js';
  */
 export function ProfilePage() {
   const { data: me } = useMe();
-  const link = useLinkIdentity();
   const unlink = useUnlinkIdentity();
-  const [toast, setToast] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [toast, setToast] = useState<string | null>(
+    // Set by the oauth `link` callback redirect when the completed handshake's provider
+    // identity is already linked to a different user (server/src/auth/oauth).
+    searchParams.get('error') === 'IDENTITY_ALREADY_LINKED'
+      ? 'That provider account is already linked to a different user.'
+      : null,
+  );
 
   if (!me) return null;
 
@@ -21,9 +28,8 @@ export function ProfilePage() {
 
   function handleLink(provider: OAuthProvider) {
     setToast(null);
-    // No real OAuth redirect needed for this feature's UI wiring (spec constraints) — a
-    // completed handshake would hand this endpoint a real providerUserId instead.
-    link.mutate({ provider, body: { providerUserId: `mock-${provider}-${Date.now()}` } });
+    // Real OAuth handshake required to link — no client-supplied providerUserId any more.
+    window.location.href = oauthStartUrl(provider, 'link');
   }
 
   function handleUnlink(provider: OAuthProvider) {

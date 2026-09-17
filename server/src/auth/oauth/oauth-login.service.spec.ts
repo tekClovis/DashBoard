@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { OAuthLinkRefusedError, OAuthLoginService } from './oauth-login.service.js';
+import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService } from './oauth-login.service.js';
 import type { NormalizedOAuthProfile } from './normalized-profile.js';
 
 function makePrisma() {
@@ -92,5 +92,38 @@ describe('OAuthLoginService', () => {
 
     expect(result).toEqual({ id: 'new-user', email: 'new@x.com' });
     expect(prisma.$transaction).toHaveBeenCalled();
+  });
+
+  describe('linkIdentity', () => {
+    it('creates the identity for the authenticated user when unclaimed', async () => {
+      const prisma = makePrisma();
+      prisma.authIdentity.findUnique.mockResolvedValue(null);
+      const service = new OAuthLoginService(prisma as never);
+
+      await service.linkIdentity('u1', profile());
+
+      expect(prisma.authIdentity.create).toHaveBeenCalledWith({
+        data: { userId: 'u1', provider: 'GITHUB', providerUserId: 'gh-1' },
+      });
+    });
+
+    it('is idempotent when already linked to the same user', async () => {
+      const prisma = makePrisma();
+      prisma.authIdentity.findUnique.mockResolvedValue({ id: 'id1', userId: 'u1' });
+      const service = new OAuthLoginService(prisma as never);
+
+      await service.linkIdentity('u1', profile());
+
+      expect(prisma.authIdentity.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects when the provider identity is already linked to a different user', async () => {
+      const prisma = makePrisma();
+      prisma.authIdentity.findUnique.mockResolvedValue({ id: 'id1', userId: 'someone-else' });
+      const service = new OAuthLoginService(prisma as never);
+
+      await expect(service.linkIdentity('u1', profile())).rejects.toBeInstanceOf(OAuthIdentityConflictError);
+      expect(prisma.authIdentity.create).not.toHaveBeenCalled();
+    });
   });
 });

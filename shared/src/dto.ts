@@ -63,11 +63,3 @@ export interface MeResponse {
   hasPassword: boolean;
   identities: { provider: 'GITHUB' | 'GOOGLE' }[];
 }
-
-/**
- * POST /api/auth/identities/:provider — the caller has already completed the provider's
- * OAuth handshake and hands over the resulting provider account id to link.
- */
-export interface LinkIdentityRequest {
-  providerUserId: string;
-}

@@ -9,17 +9,49 @@
 //     An invalid/expired state throws 401 here, so no provider call and no user/identity
 //     mutation ever happens (checklist item 7).
 //
-// `intent` is read from the start leg's query string but only 'login' is implemented by
-// this feature; the shape supports 'connect' being added later (connections-api) without
-// reworking this guard.
+// `intent` is read from the start leg's query string. `login` and `connect` (the latter
+// reserved, unimplemented — connections-api) carry no extra binding. `link` is this
+// feature's authenticated identity-linking intent: the start leg requires a valid session
+// cookie and binds the state to that user's id, so the callback never has to trust a
+// client-supplied provider id (see identities.controller.ts's removed POST link endpoint).
 
 import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
-import { assertBoundState, OAUTH_STATE_COOKIE, signOAuthState, type OAuthProviderSlug } from './oauth-state.js';
+import { readSessionCookie, verifySessionToken } from '../session-cookie.js';
+import {
+  assertBoundState,
+  OAUTH_STATE_COOKIE,
+  signOAuthState,
+  type OAuthIntent,
+  type OAuthProviderSlug,
+  type OAuthStatePayload,
+} from './oauth-state.js';
 
 const STATE_COOKIE_TTL_MS = 10 * 60 * 1000;
+
+/** Request augmented by the callback leg's `canActivate` with the verified `state` payload. */
+export interface OAuthCallbackRequest extends Request {
+  oauthState?: OAuthStatePayload;
+}
+
+function getIntent(req: Request): OAuthIntent {
+  if (req.query['intent'] === 'connect') return 'connect';
+  if (req.query['intent'] === 'link') return 'link';
+  return 'login';
+}
+
+/** Requires an authenticated session at the `link` intent's start leg; returns its user id. */
+function requireLinkSessionUserId(req: Request, jwtSecret: string): string {
+  const token = readSessionCookie(req.cookies as Record<string, string | undefined> | undefined);
+  if (!token) throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
+  try {
+    return verifySessionToken(token, jwtSecret).sub;
+  } catch {
+    throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
+  }
+}
 
 function buildStartOptions(
   req: Request,
@@ -28,8 +60,11 @@ function buildStartOptions(
   jwtSecret: string,
   appUrl: string,
 ): { state: string } {
-  const intent = req.query['intent'] === 'connect' ? 'connect' : 'login';
-  const state = signOAuthState({ intent, provider }, jwtSecret);
+  const intent = getIntent(req);
+  const state =
+    intent === 'link'
+      ? signOAuthState({ intent, provider, userId: requireLinkSessionUserId(req, jwtSecret) }, jwtSecret)
+      : signOAuthState({ intent, provider }, jwtSecret);
 
   res.cookie(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
@@ -42,11 +77,11 @@ function buildStartOptions(
   return { state };
 }
 
-function assertCallbackState(req: Request, jwtSecret: string): void {
+function assertCallbackState(req: Request, jwtSecret: string): OAuthStatePayload {
   const queryState = req.query['state'] as string | undefined;
   const cookieState = (req.cookies as Record<string, string | undefined> | undefined)?.[OAUTH_STATE_COOKIE];
   try {
-    assertBoundState(queryState, cookieState, jwtSecret);
+    return assertBoundState(queryState, cookieState, jwtSecret);
   } catch {
     throw new UnauthorizedException({ error: 'INVALID_STATE' });
   }
@@ -72,9 +107,12 @@ export class GithubOAuthGuard extends AuthGuard('github') {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<Request>();
+    const req = context.switchToHttp().getRequest<OAuthCallbackRequest>();
+    const jwtSecret = this.config.getOrThrow<string>('JWT_SECRET');
     if (req.query['code']) {
-      assertCallbackState(req, this.config.getOrThrow<string>('JWT_SECRET'));
+      req.oauthState = assertCallbackState(req, jwtSecret);
+    } else if (getIntent(req) === 'link') {
+      requireLinkSessionUserId(req, jwtSecret);
     }
     return super.canActivate(context) as Promise<boolean>;
   }
@@ -100,9 +138,12 @@ export class GoogleOAuthGuard extends AuthGuard('google') {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<Request>();
+    const req = context.switchToHttp().getRequest<OAuthCallbackRequest>();
+    const jwtSecret = this.config.getOrThrow<string>('JWT_SECRET');
     if (req.query['code']) {
-      assertCallbackState(req, this.config.getOrThrow<string>('JWT_SECRET'));
+      req.oauthState = assertCallbackState(req, jwtSecret);
+    } else if (getIntent(req) === 'link') {
+      requireLinkSessionUserId(req, jwtSecret);
     }
     return super.canActivate(context) as Promise<boolean>;
   }

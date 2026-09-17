@@ -1,11 +1,4 @@
-import type {
-  LinkIdentityRequest,
-  LoginRequest,
-  MeResponse,
-  OkResponse,
-  RegisterRequest,
-  ResendRequest,
-} from '@dashboard/shared';
+import type { LoginRequest, MeResponse, OkResponse, RegisterRequest, ResendRequest } from '@dashboard/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client.js';
 
@@ -52,18 +45,14 @@ export function useMe() {
   });
 }
 
-/** Real redirect to GET /api/oauth/{provider}/start?intent=login — see server/src/auth/oauth. */
-export function oauthStartUrl(provider: OAuthProvider): string {
-  return `/api/oauth/${provider}/start?intent=login`;
-}
-
-export function useLinkIdentity() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ provider, body }: { provider: OAuthProvider; body: LinkIdentityRequest }) =>
-      apiFetch<OkResponse>(`/auth/identities/${provider}`, { method: 'POST', body: JSON.stringify(body) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
-  });
+/**
+ * Real redirect to GET /api/oauth/{provider}/start?intent={login|link} — see
+ * server/src/auth/oauth. `link` requires an existing session cookie (checked server-side)
+ * and binds the resulting identity to the current user via a completed OAuth handshake —
+ * there is no client-supplied-id path any more (see identities.controller.ts).
+ */
+export function oauthStartUrl(provider: OAuthProvider, intent: 'login' | 'link' = 'login'): string {
+  return `/api/oauth/${provider}/start?intent=${intent}`;
 }
 
 export function useUnlinkIdentity() {

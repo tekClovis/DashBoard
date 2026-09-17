@@ -3,24 +3,25 @@
 //
 // Deliberately carries only { intent, provider } so a later `connect` intent (connections-api)
 // can reuse this exact shape without reworking the signing/verification logic.
+//
+// `link` is this feature's own intent (authenticated identity-linking, distinct from the
+// still-unimplemented `connect` reserved for connections-api): it additionally binds the
+// state to the currently-logged-in user's id at the start leg, so the callback can attach
+// the verified provider identity to that exact user instead of trusting anything client-supplied.
 
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
-export type OAuthIntent = 'login' | 'connect';
+export type OAuthIntent = 'login' | 'connect' | 'link';
 export type OAuthProviderSlug = 'github' | 'google';
 
-export interface OAuthStatePayload {
-  intent: OAuthIntent;
-  provider: OAuthProviderSlug;
-}
+export type OAuthStatePayload =
+  | { intent: 'login' | 'connect'; provider: OAuthProviderSlug }
+  | { intent: 'link'; provider: OAuthProviderSlug; userId: string };
 
 const TTL_MS = 10 * 60 * 1000;
 export const OAUTH_STATE_COOKIE = 'oauth_state';
 
-interface SignedBody extends OAuthStatePayload {
-  nonce: string;
-  exp: number;
-}
+type SignedBody = OAuthStatePayload & { nonce: string; exp: number };
 
 /** Produces the opaque `state` query-param value: base64url(payload).base64url(hmac). */
 export function signOAuthState(payload: OAuthStatePayload, secret: string): string {
@@ -52,10 +53,17 @@ export function verifyOAuthState(token: string, secret: string): OAuthStatePaylo
   if (typeof body.exp !== 'number' || body.exp < Date.now()) {
     throw new Error('STATE_EXPIRED');
   }
-  if (body.intent !== 'login' && body.intent !== 'connect') {
+  if (body.provider !== 'github' && body.provider !== 'google') {
     throw new Error('INVALID_STATE');
   }
-  if (body.provider !== 'github' && body.provider !== 'google') {
+
+  if (body.intent === 'link') {
+    if (typeof body.userId !== 'string' || body.userId.length === 0) {
+      throw new Error('INVALID_STATE');
+    }
+    return { intent: 'link', provider: body.provider, userId: body.userId };
+  }
+  if (body.intent !== 'login' && body.intent !== 'connect') {
     throw new Error('INVALID_STATE');
   }
 

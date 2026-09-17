@@ -193,21 +193,38 @@ describe('OAuth login (e2e)', () => {
       return `session=${token}`;
     }
 
-    it('links a second provider, then unlinks it while a password remains', async () => {
+    async function startLinkAndGetState(
+      provider: 'github' | 'google',
+      sessionCookie: string,
+    ): Promise<{ cookie: string; state: string }> {
+      const res = await request(app.getHttpServer())
+        .get(`/api/oauth/${provider}/start?intent=link`)
+        .set('Cookie', sessionCookie)
+        .expect(302);
+      const location = new URL(res.headers['location'] as string);
+      return { cookie: extractCookie(res, 'oauth_state'), state: location.searchParams.get('state')! };
+    }
+
+    it('links a second provider via a completed OAuth handshake, then unlinks it while a password remains', async () => {
       const user = await prisma.user.create({
         data: { email: 'linker@example.com', emailVerifiedAt: new Date(), passwordHash: 'hash' },
       });
-      const cookie = sessionCookieFor(user.id);
+      const sessionCookie = sessionCookieFor(user.id);
+      stubStrategyProfile(github, githubProfile('gh-link-1', 'linker-provider@example.com', true));
 
-      await request(app.getHttpServer())
-        .post('/api/auth/identities/github')
+      const { cookie, state } = await startLinkAndGetState('github', sessionCookie);
+      const callbackRes = await request(app.getHttpServer())
+        .get(`/api/oauth/github/callback?code=fake&state=${encodeURIComponent(state)}`)
         .set('Cookie', cookie)
-        .send({ providerUserId: 'gh-link-1' })
-        .expect(201);
+        .expect(302);
 
+      expect(callbackRes.headers['location']).toContain('/profile');
       expect(await prisma.authIdentity.count({ where: { userId: user.id } })).toBe(1);
 
-      await request(app.getHttpServer()).delete('/api/auth/identities/github').set('Cookie', cookie).expect(200);
+      await request(app.getHttpServer())
+        .delete('/api/auth/identities/github')
+        .set('Cookie', sessionCookie)
+        .expect(200);
 
       expect(await prisma.authIdentity.count({ where: { userId: user.id } })).toBe(0);
     });
@@ -224,6 +241,52 @@ describe('OAuth login (e2e)', () => {
 
       expect(res.body).toMatchObject({ error: 'LAST_LOGIN_METHOD' });
       expect(await prisma.authIdentity.count({ where: { userId: user.id } })).toBe(1);
+    });
+
+    it('rejects the old raw-body link endpoint — it no longer exists (account-takeover fix)', async () => {
+      const attacker = await prisma.user.create({
+        data: { email: 'attacker@example.com', emailVerifiedAt: new Date(), passwordHash: 'hash' },
+      });
+      const cookie = sessionCookieFor(attacker.id);
+
+      await request(app.getHttpServer())
+        .post('/api/auth/identities/github')
+        .set('Cookie', cookie)
+        .send({ providerUserId: 'victims-real-github-id' })
+        .expect(404);
+
+      expect(await prisma.authIdentity.count({ where: { userId: attacker.id } })).toBe(0);
+    });
+
+    it('requires an authenticated session to start a link handshake', async () => {
+      await request(app.getHttpServer()).get('/api/oauth/github/start?intent=link').expect(401);
+    });
+
+    it('rejects linking a provider identity already linked to a different user, leaving the original untouched', async () => {
+      const victim = await prisma.user.create({
+        data: { email: 'victim@example.com', emailVerifiedAt: new Date(), passwordHash: 'hash' },
+      });
+      await prisma.authIdentity.create({ data: { userId: victim.id, provider: 'GITHUB', providerUserId: 'gh-taken' } });
+
+      const attacker = await prisma.user.create({
+        data: { email: 'attacker2@example.com', emailVerifiedAt: new Date(), passwordHash: 'hash' },
+      });
+      const attackerCookie = sessionCookieFor(attacker.id);
+      stubStrategyProfile(github, githubProfile('gh-taken', 'attacker-provider@example.com', true));
+
+      const { cookie, state } = await startLinkAndGetState('github', attackerCookie);
+      const res = await request(app.getHttpServer())
+        .get(`/api/oauth/github/callback?code=fake&state=${encodeURIComponent(state)}`)
+        .set('Cookie', cookie)
+        .expect(302);
+
+      expect(res.headers['location']).toContain('/profile');
+      expect(res.headers['location']).toContain('IDENTITY_ALREADY_LINKED');
+      expect(await prisma.authIdentity.count({ where: { userId: attacker.id } })).toBe(0);
+      const stillVictims = await prisma.authIdentity.findUnique({
+        where: { provider_providerUserId: { provider: 'GITHUB', providerUserId: 'gh-taken' } },
+      });
+      expect(stillVictims).toMatchObject({ userId: victim.id });
     });
   });
 });

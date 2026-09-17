@@ -25,6 +25,20 @@ describe('oauth-state', () => {
     expect(() => verifyOAuthState('not-a-real-token', SECRET)).toThrow('INVALID_STATE');
   });
 
+  it('round-trips a signed link-intent state bound to a user id', () => {
+    const token = signOAuthState({ intent: 'link', provider: 'github', userId: 'u1' }, SECRET);
+    expect(verifyOAuthState(token, SECRET)).toEqual({ intent: 'link', provider: 'github', userId: 'u1' });
+  });
+
+  it('rejects a tampered link-intent state (e.g. swapped userId)', () => {
+    const token = signOAuthState({ intent: 'link', provider: 'github', userId: 'u1' }, SECRET);
+    const [, signature] = token.split('.');
+    const forged = Buffer.from(JSON.stringify({ intent: 'link', provider: 'github', userId: 'attacker' })).toString(
+      'base64url',
+    );
+    expect(() => verifyOAuthState(`${forged}.${signature}`, SECRET)).toThrow('INVALID_STATE');
+  });
+
   it('rejects an expired state', () => {
     vi.useFakeTimers();
     const token = signOAuthState({ intent: 'login', provider: 'github' }, SECRET);

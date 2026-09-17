@@ -4,11 +4,11 @@
 
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { issueSessionCookie } from '../session-cookie.js';
 import { OAUTH_STATE_COOKIE } from './oauth-state.js';
-import { GithubOAuthGuard, GoogleOAuthGuard } from './oauth.guard.js';
-import { OAuthLinkRefusedError, OAuthLoginService } from './oauth-login.service.js';
+import { GithubOAuthGuard, GoogleOAuthGuard, type OAuthCallbackRequest } from './oauth.guard.js';
+import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService } from './oauth-login.service.js';
 import type { NormalizedOAuthProfile } from './normalized-profile.js';
 
 @Controller('oauth')
@@ -25,7 +25,7 @@ export class OAuthController {
 
   @Get('github/callback')
   @UseGuards(GithubOAuthGuard)
-  async githubCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async githubCallback(@Req() req: OAuthCallbackRequest, @Res() res: Response): Promise<void> {
     await this.handleCallback(req, res);
   }
 
@@ -35,14 +35,29 @@ export class OAuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleOAuthGuard)
-  async googleCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async googleCallback(@Req() req: OAuthCallbackRequest, @Res() res: Response): Promise<void> {
     await this.handleCallback(req, res);
   }
 
-  private async handleCallback(req: Request, res: Response): Promise<void> {
+  private async handleCallback(req: OAuthCallbackRequest, res: Response): Promise<void> {
     res.clearCookie(OAUTH_STATE_COOKIE, { path: '/api/oauth' });
     const appUrl = this.config.getOrThrow<string>('APP_URL');
     const profile = req.user as NormalizedOAuthProfile;
+    const state = req.oauthState;
+
+    if (state?.intent === 'link') {
+      try {
+        await this.oauthLogin.linkIdentity(state.userId, profile);
+        res.redirect(`${appUrl}/profile`);
+      } catch (err) {
+        if (err instanceof OAuthIdentityConflictError) {
+          res.redirect(`${appUrl}/profile?error=IDENTITY_ALREADY_LINKED`);
+          return;
+        }
+        throw err;
+      }
+      return;
+    }
 
     try {
       const user = await this.oauthLogin.loginOrLink(profile);

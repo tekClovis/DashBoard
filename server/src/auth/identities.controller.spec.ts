@@ -18,52 +18,6 @@ function makeReq(user: Partial<RequestWithUser['user']>): RequestWithUser {
 }
 
 describe('IdentitiesController', () => {
-  describe('link', () => {
-    it('links a new provider identity to the current user', async () => {
-      const prisma = makePrisma();
-      prisma.authIdentity.findUnique.mockResolvedValue(null);
-      const controller = new IdentitiesController(prisma as never);
-
-      const res = await controller.link('github', { providerUserId: 'gh-9' }, makeReq({ id: 'u1' }));
-
-      expect(res).toEqual({ ok: true });
-      expect(prisma.authIdentity.create).toHaveBeenCalledWith({
-        data: { userId: 'u1', provider: 'GITHUB', providerUserId: 'gh-9' },
-      });
-    });
-
-    it('rejects an unknown provider', async () => {
-      const prisma = makePrisma();
-      const controller = new IdentitiesController(prisma as never);
-
-      await expect(
-        controller.link('bitbucket', { providerUserId: 'x' }, makeReq({ id: 'u1' })),
-      ).rejects.toMatchObject({ response: { error: 'UNKNOWN_PROVIDER' } });
-    });
-
-    it('rejects linking an identity already claimed by another user', async () => {
-      const prisma = makePrisma();
-      prisma.authIdentity.findUnique.mockResolvedValue({ id: 'id1', userId: 'other-user' });
-      const controller = new IdentitiesController(prisma as never);
-
-      await expect(
-        controller.link('github', { providerUserId: 'gh-9' }, makeReq({ id: 'u1' })),
-      ).rejects.toMatchObject({ response: { error: 'IDENTITY_ALREADY_LINKED' } });
-      expect(prisma.authIdentity.create).not.toHaveBeenCalled();
-    });
-
-    it('is idempotent when the identity is already linked to the same user', async () => {
-      const prisma = makePrisma();
-      prisma.authIdentity.findUnique.mockResolvedValue({ id: 'id1', userId: 'u1' });
-      const controller = new IdentitiesController(prisma as never);
-
-      const res = await controller.link('github', { providerUserId: 'gh-9' }, makeReq({ id: 'u1' }));
-
-      expect(res).toEqual({ ok: true });
-      expect(prisma.authIdentity.create).not.toHaveBeenCalled();
-    });
-  });
-
   describe('unlink', () => {
     it('unlinks a provider when another login method remains (password)', async () => {
       const prisma = makePrisma();
