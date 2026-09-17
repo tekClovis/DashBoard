@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useMe } from '@/api/auth.js';
 import { ThemeToggle } from '@/components/theme-toggle.js';
 
@@ -15,6 +16,9 @@ export function DashboardPlaceholderPage() {
           Logged in as {data.email} ({data.role})
         </p>
       )}
+      <Link to="/profile" className="text-primary mt-4 block text-sm underline underline-offset-4">
+        Linked accounts
+      </Link>
     </div>
   );
 }

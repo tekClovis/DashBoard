@@ -59,5 +59,15 @@ export interface MeResponse {
   email: string;
   role: 'USER' | 'ADMIN';
   emailVerifiedAt: string | null;
+  /** Whether the user has a local password set (oauth-only users don't). */
+  hasPassword: boolean;
   identities: { provider: 'GITHUB' | 'GOOGLE' }[];
+}
+
+/**
+ * POST /api/auth/identities/:provider — the caller has already completed the provider's
+ * OAuth handshake and hands over the resulting provider account id to link.
+ */
+export interface LinkIdentityRequest {
+  providerUserId: string;
 }
