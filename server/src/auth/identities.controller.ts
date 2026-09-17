@@ -8,11 +8,13 @@
 // providerUserId with no such proof — an account-takeover vector (a client could pre-link a
 // victim's real provider id to their own account) — removed for that reason.
 
-import { BadRequestException, Controller, Delete, NotFoundException, Param, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Delete, NotFoundException, Param, UseGuards } from '@nestjs/common';
 import type { OkResponse } from '@dashboard/shared';
 import { PrismaService } from '../core/prisma/prisma.service.js';
-import { JwtGuard, type RequestWithUser } from './jwt.guard.js';
+import { CurrentUser } from './current-user.decorator.js';
+import { JwtGuard } from './jwt.guard.js';
 import { parseProviderSlug } from './oauth/provider.util.js';
+import type { RequestUser } from './types.js';
 
 @Controller('auth/identities')
 @UseGuards(JwtGuard)
@@ -20,14 +22,17 @@ export class IdentitiesController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Delete(':provider')
-  async unlink(@Param('provider') providerParam: string, @Req() req: RequestWithUser): Promise<OkResponse> {
+  async unlink(@Param('provider') providerParam: string, @CurrentUser() currentUser: RequestUser): Promise<OkResponse> {
     const provider = parseProviderSlug(providerParam);
 
-    const identities = await this.prisma.authIdentity.findMany({ where: { userId: req.user.id } });
+    const [user, identities] = await Promise.all([
+      this.prisma.user.findUniqueOrThrow({ where: { id: currentUser.id } }),
+      this.prisma.authIdentity.findMany({ where: { userId: currentUser.id } }),
+    ]);
     const target = identities.find((identity) => identity.provider === provider);
     if (!target) throw new NotFoundException({ error: 'NOT_LINKED' });
 
-    const loginMethodCount = identities.length + (req.user.passwordHash ? 1 : 0);
+    const loginMethodCount = identities.length + (user.passwordHash ? 1 : 0);
     if (loginMethodCount <= 1) {
       throw new BadRequestException({ error: 'LAST_LOGIN_METHOD' });
     }

@@ -1,63 +1,86 @@
-import type { ExecutionContext } from '@nestjs/common';
-import jwt from 'jsonwebtoken';
+import { ExecutionContext } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
+import type { Request } from 'express';
 import { JwtGuard } from './jwt.guard.js';
 
-const SECRET = 'test-secret';
-
-function makeContext(cookies: Record<string, string | undefined>): ExecutionContext {
-  const req = { cookies };
+function makeContext(req: Partial<Request>): ExecutionContext {
   return {
-    switchToHttp: () => ({ getRequest: () => req, getResponse: () => ({}) }),
+    switchToHttp: () => ({ getRequest: () => req }),
   } as unknown as ExecutionContext;
 }
 
-function makeConfig() {
-  return { getOrThrow: vi.fn().mockReturnValue(SECRET) };
+function makeGuard(userRow: unknown, verifyResult: unknown, isRevoked = false) {
+  const jwt = { verify: vi.fn().mockReturnValue(verifyResult) };
+  const prisma = { user: { findUnique: vi.fn().mockResolvedValue(userRow) } };
+  const revocation = { isRevoked: vi.fn().mockResolvedValue(isRevoked), revoke: vi.fn() };
+  const guard = new JwtGuard(jwt as never, prisma as never, revocation as never);
+  return { guard, jwt, prisma, revocation };
 }
 
 describe('JwtGuard', () => {
-  it('rejects when there is no session cookie', async () => {
-    const prisma = { user: { findUnique: vi.fn() } };
-    const guard = new JwtGuard(makeConfig() as never, prisma as never);
+  it('rejects when there is no cookie', async () => {
+    const { guard } = makeGuard(null, null);
+    const req = { headers: {} } as Request;
 
-    await expect(guard.canActivate(makeContext({}))).rejects.toMatchObject({ status: 401 });
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
   });
 
   it('rejects a garbage cookie', async () => {
-    const prisma = { user: { findUnique: vi.fn() } };
-    const guard = new JwtGuard(makeConfig() as never, prisma as never);
+    const { guard } = makeGuard(null, null);
+    const req = { headers: { cookie: 'session=garbage' } } as Request;
 
-    await expect(guard.canActivate(makeContext({ session: 'garbage' }))).rejects.toMatchObject({ status: 401 });
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
   });
 
-  it('rejects when the user is banned', async () => {
-    const token = jwt.sign({ sub: 'u1', role: 'USER', tv: 0 }, SECRET);
-    const prisma = { user: { findUnique: vi.fn().mockResolvedValue({ id: 'u1', bannedAt: new Date(), tokenVersion: 0 }) } };
-    const guard = new JwtGuard(makeConfig() as never, prisma as never);
+  it('rejects when the user no longer exists', async () => {
+    const { guard } = makeGuard(null, { sub: 'u1', role: 'USER', tv: 0, exp: 9999999999 });
+    const req = { headers: { cookie: 'session=valid' } } as Request;
 
-    await expect(guard.canActivate(makeContext({ session: token }))).rejects.toMatchObject({ status: 401 });
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
   });
 
-  it('rejects when tokenVersion no longer matches (logout-all)', async () => {
-    const token = jwt.sign({ sub: 'u1', role: 'USER', tv: 0 }, SECRET);
-    const prisma = { user: { findUnique: vi.fn().mockResolvedValue({ id: 'u1', bannedAt: null, tokenVersion: 1 }) } };
-    const guard = new JwtGuard(makeConfig() as never, prisma as never);
+  it('rejects a banned user', async () => {
+    const { guard } = makeGuard(
+      { id: 'u1', email: 'a@b.com', role: 'USER', tokenVersion: 0, bannedAt: new Date(), emailVerifiedAt: new Date() },
+      { sub: 'u1', role: 'USER', tv: 0, exp: 9999999999 },
+    );
+    const req = { headers: { cookie: 'session=valid' } } as Request;
 
-    await expect(guard.canActivate(makeContext({ session: token }))).rejects.toMatchObject({ status: 401 });
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
   });
 
-  it('attaches req.user and allows the request through for a valid cookie', async () => {
-    const token = jwt.sign({ sub: 'u1', role: 'USER', tv: 0 }, SECRET);
-    const user = { id: 'u1', bannedAt: null, tokenVersion: 0 };
-    const prisma = { user: { findUnique: vi.fn().mockResolvedValue(user) } };
-    const guard = new JwtGuard(makeConfig() as never, prisma as never);
-    const req = { cookies: { session: token } };
-    const context = {
-      switchToHttp: () => ({ getRequest: () => req, getResponse: () => ({}) }),
-    } as unknown as ExecutionContext;
+  it('rejects a token superseded by logout-all (tokenVersion mismatch)', async () => {
+    const { guard } = makeGuard(
+      { id: 'u1', email: 'a@b.com', role: 'USER', tokenVersion: 1, bannedAt: null, emailVerifiedAt: new Date() },
+      { sub: 'u1', role: 'USER', tv: 0, exp: 9999999999 },
+    );
+    const req = { headers: { cookie: 'session=valid' } } as Request;
 
-    await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect((req as { user?: unknown }).user).toEqual(user);
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('rejects a token revoked by logout (jti in the revoked set)', async () => {
+    const { guard } = makeGuard(
+      { id: 'u1', email: 'a@b.com', role: 'USER', tokenVersion: 0, bannedAt: null, emailVerifiedAt: new Date() },
+      { sub: 'u1', role: 'USER', tv: 0, jti: 'jti-1', exp: 9999999999 },
+      true,
+    );
+    const req = { headers: { cookie: 'session=valid' } } as Request;
+
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('attaches req.user and allows the request through on a valid session', async () => {
+    const emailVerifiedAt = new Date();
+    const { guard } = makeGuard(
+      { id: 'u1', email: 'a@b.com', role: 'USER', tokenVersion: 0, bannedAt: null, emailVerifiedAt },
+      { sub: 'u1', role: 'USER', tv: 0, exp: 9999999999 },
+    );
+    const req = { headers: { cookie: 'session=valid' } } as Request;
+
+    const allowed = await guard.canActivate(makeContext(req));
+
+    expect(allowed).toBe(true);
+    expect(req.user).toEqual({ id: 'u1', email: 'a@b.com', role: 'USER', emailVerifiedAt });
   });
 });

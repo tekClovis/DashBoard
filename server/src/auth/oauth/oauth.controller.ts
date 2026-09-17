@@ -5,7 +5,8 @@
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
-import { issueSessionCookie } from '../session-cookie.js';
+import { JwtService } from '../jwt.service.js';
+import { setSessionCookie } from '../session-cookie.js';
 import { OAUTH_STATE_COOKIE } from './oauth-state.js';
 import { GithubOAuthGuard, GoogleOAuthGuard, type OAuthCallbackRequest } from './oauth.guard.js';
 import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService } from './oauth-login.service.js';
@@ -16,6 +17,7 @@ export class OAuthController {
   constructor(
     private readonly oauthLogin: OAuthLoginService,
     private readonly config: ConfigService,
+    private readonly jwt: JwtService,
   ) {}
 
   /** Guard redirects to GitHub's authorize URL; this handler body never runs on the start leg. */
@@ -42,7 +44,7 @@ export class OAuthController {
   private async handleCallback(req: OAuthCallbackRequest, res: Response): Promise<void> {
     res.clearCookie(OAUTH_STATE_COOKIE, { path: '/api/oauth' });
     const appUrl = this.config.getOrThrow<string>('APP_URL');
-    const profile = req.user as NormalizedOAuthProfile;
+    const profile = req.user as unknown as NormalizedOAuthProfile;
     const state = req.oauthState;
 
     if (state?.intent === 'link') {
@@ -61,11 +63,8 @@ export class OAuthController {
 
     try {
       const user = await this.oauthLogin.loginOrLink(profile);
-      issueSessionCookie(res, appUrl, this.config.getOrThrow<string>('JWT_SECRET'), {
-        id: user.id,
-        role: user.role,
-        tokenVersion: user.tokenVersion,
-      });
+      const token = this.jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion });
+      setSessionCookie(res, appUrl, token);
       res.redirect(`${appUrl}/d/placeholder`);
     } catch (err) {
       if (err instanceof OAuthLinkRefusedError) {

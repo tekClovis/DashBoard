@@ -1,12 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import cookieParser from 'cookie-parser';
-import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { GithubStrategy } from '../src/auth/oauth/github.strategy.js';
 import { GoogleStrategy } from '../src/auth/oauth/google.strategy.js';
+import { JwtService } from '../src/auth/jwt.service.js';
 import { PrismaService } from '../src/core/prisma/prisma.service.js';
 
 interface OAuth2Internal {
@@ -48,16 +47,17 @@ function extractCookie(res: request.Response, name: string): string {
 describe('OAuth login (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let jwtService: JwtService;
   let github: GithubStrategy;
   let google: GoogleStrategy;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleFixture.createNestApplication();
-    app.use(cookieParser());
     app.setGlobalPrefix('api', { exclude: ['about.json'] });
     await app.init();
     prisma = moduleFixture.get(PrismaService);
+    jwtService = moduleFixture.get(JwtService);
     github = moduleFixture.get(GithubStrategy);
     google = moduleFixture.get(GoogleStrategy);
   });
@@ -189,7 +189,7 @@ describe('OAuth login (e2e)', () => {
 
   describe('identities link/unlink (checklist 8-9)', () => {
     function sessionCookieFor(userId: string): string {
-      const token = jwt.sign({ sub: userId, role: 'USER', tv: 0 }, process.env['JWT_SECRET']!);
+      const token = jwtService.sign({ sub: userId, role: 'USER', tv: 0 });
       return `session=${token}`;
     }
 

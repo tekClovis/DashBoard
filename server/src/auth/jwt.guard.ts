@@ -1,38 +1,35 @@
-// Minimal JwtGuard matching the contract documented by `auth-session`
-// (docs/Architecture.md §5.1): verifies the session cookie's signature, loads the user,
-// and rejects (401) if `bannedAt` is set or `tv !== user.tokenVersion`.
-//
-// Built here (rather than depending on `auth-session`'s unmerged branch) so the
-// identities link/unlink endpoints have something to authenticate against. Reconcile
-// with `auth-session`'s own JwtGuard when both PRs merge.
-
-import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
+import { readCookie } from '../core/http/cookies.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
-import { readSessionCookie, verifySessionToken } from './session-cookie.js';
-import type { User } from '../generated/prisma/client.js';
+import { JwtService } from './jwt.service.js';
+import { SESSION_COOKIE } from './session.constants.js';
+import { TokenRevocationService } from './token-revocation.service.js';
+import './types.js';
 
-export interface RequestWithUser extends Request {
-  user: User;
-}
-
+/**
+ * Verifies the session cookie's signature, then rejects a banned user, a
+ * token superseded by logout-all (`tv !== user.tokenVersion`), or a token
+ * individually revoked by plain logout (`jti` in the revoked set) — see
+ * docs/Architecture.md §5.1.
+ */
 @Injectable()
 export class JwtGuard implements CanActivate {
   constructor(
-    @Inject(ConfigService) private readonly config: ConfigService,
+    private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly revocation: TokenRevocationService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
-    const token = readSessionCookie(req.cookies as Record<string, string | undefined> | undefined);
+    const token = readCookie(req.headers.cookie, SESSION_COOKIE);
     if (!token) throw new UnauthorizedException();
 
-    let payload: { sub: string; role: string; tv: number };
-    try {
-      payload = verifySessionToken(token, this.config.getOrThrow<string>('JWT_SECRET'));
-    } catch {
+    const payload = this.jwt.verify(token);
+    if (!payload) throw new UnauthorizedException();
+
+    if (await this.revocation.isRevoked(payload.jti)) {
       throw new UnauthorizedException();
     }
 
@@ -41,7 +38,12 @@ export class JwtGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    (req as RequestWithUser).user = user;
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      emailVerifiedAt: user.emailVerifiedAt,
+    };
     return true;
   }
 }

@@ -19,7 +19,9 @@ import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/com
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
-import { readSessionCookie, verifySessionToken } from '../session-cookie.js';
+import { readCookie } from '../../core/http/cookies.js';
+import { JwtService } from '../jwt.service.js';
+import { SESSION_COOKIE } from '../session.constants.js';
 import {
   assertBoundState,
   OAUTH_STATE_COOKIE,
@@ -43,27 +45,26 @@ function getIntent(req: Request): OAuthIntent {
 }
 
 /** Requires an authenticated session at the `link` intent's start leg; returns its user id. */
-function requireLinkSessionUserId(req: Request, jwtSecret: string): string {
-  const token = readSessionCookie(req.cookies as Record<string, string | undefined> | undefined);
+function requireLinkSessionUserId(req: Request, jwt: JwtService): string {
+  const token = readCookie(req.headers.cookie, SESSION_COOKIE);
   if (!token) throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
-  try {
-    return verifySessionToken(token, jwtSecret).sub;
-  } catch {
-    throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
-  }
+  const payload = jwt.verify(token);
+  if (!payload) throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
+  return payload.sub;
 }
 
 function buildStartOptions(
   req: Request,
   res: Response,
   provider: OAuthProviderSlug,
+  jwt: JwtService,
   jwtSecret: string,
   appUrl: string,
 ): { state: string } {
   const intent = getIntent(req);
   const state =
     intent === 'link'
-      ? signOAuthState({ intent, provider, userId: requireLinkSessionUserId(req, jwtSecret) }, jwtSecret)
+      ? signOAuthState({ intent, provider, userId: requireLinkSessionUserId(req, jwt) }, jwtSecret)
       : signOAuthState({ intent, provider }, jwtSecret);
 
   res.cookie(OAUTH_STATE_COOKIE, state, {
@@ -79,7 +80,7 @@ function buildStartOptions(
 
 function assertCallbackState(req: Request, jwtSecret: string): OAuthStatePayload {
   const queryState = req.query['state'] as string | undefined;
-  const cookieState = (req.cookies as Record<string, string | undefined> | undefined)?.[OAUTH_STATE_COOKIE];
+  const cookieState = readCookie(req.headers.cookie, OAUTH_STATE_COOKIE) ?? undefined;
   try {
     return assertBoundState(queryState, cookieState, jwtSecret);
   } catch {
@@ -89,7 +90,10 @@ function assertCallbackState(req: Request, jwtSecret: string): OAuthStatePayload
 
 @Injectable()
 export class GithubOAuthGuard extends AuthGuard('github') {
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly jwt: JwtService,
+  ) {
     super();
   }
 
@@ -101,6 +105,7 @@ export class GithubOAuthGuard extends AuthGuard('github') {
       req,
       res,
       'github',
+      this.jwt,
       this.config.getOrThrow<string>('JWT_SECRET'),
       this.config.getOrThrow<string>('APP_URL'),
     );
@@ -108,11 +113,10 @@ export class GithubOAuthGuard extends AuthGuard('github') {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<OAuthCallbackRequest>();
-    const jwtSecret = this.config.getOrThrow<string>('JWT_SECRET');
     if (req.query['code']) {
-      req.oauthState = assertCallbackState(req, jwtSecret);
+      req.oauthState = assertCallbackState(req, this.config.getOrThrow<string>('JWT_SECRET'));
     } else if (getIntent(req) === 'link') {
-      requireLinkSessionUserId(req, jwtSecret);
+      requireLinkSessionUserId(req, this.jwt);
     }
     return super.canActivate(context) as Promise<boolean>;
   }
@@ -120,7 +124,10 @@ export class GithubOAuthGuard extends AuthGuard('github') {
 
 @Injectable()
 export class GoogleOAuthGuard extends AuthGuard('google') {
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly jwt: JwtService,
+  ) {
     super();
   }
 
@@ -132,6 +139,7 @@ export class GoogleOAuthGuard extends AuthGuard('google') {
       req,
       res,
       'google',
+      this.jwt,
       this.config.getOrThrow<string>('JWT_SECRET'),
       this.config.getOrThrow<string>('APP_URL'),
     );
@@ -139,11 +147,10 @@ export class GoogleOAuthGuard extends AuthGuard('google') {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<OAuthCallbackRequest>();
-    const jwtSecret = this.config.getOrThrow<string>('JWT_SECRET');
     if (req.query['code']) {
-      req.oauthState = assertCallbackState(req, jwtSecret);
+      req.oauthState = assertCallbackState(req, this.config.getOrThrow<string>('JWT_SECRET'));
     } else if (getIntent(req) === 'link') {
-      requireLinkSessionUserId(req, jwtSecret);
+      requireLinkSessionUserId(req, this.jwt);
     }
     return super.canActivate(context) as Promise<boolean>;
   }

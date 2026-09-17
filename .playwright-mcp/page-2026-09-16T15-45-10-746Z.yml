@@ -1,0 +1,5 @@
+- generic [ref=e20]:
+  - generic [ref=e21]:
+    - heading "Dashboard" [level=1] [ref=e22]
+    - button "Toggle theme" [ref=e23]
+  - paragraph [ref=e24]: Logged in as tester@example.com (USER)
