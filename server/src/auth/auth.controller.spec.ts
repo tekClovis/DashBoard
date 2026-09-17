@@ -13,6 +13,8 @@ function makeDeps() {
   const config = { getOrThrow: vi.fn().mockReturnValue('http://localhost:8080') };
   const jwt = { sign: vi.fn().mockReturnValue('signed-jwt'), verify: vi.fn() };
   const revocation = { revoke: vi.fn().mockResolvedValue(undefined), isRevoked: vi.fn().mockResolvedValue(false) };
+  const dashboards = { createDefault: vi.fn().mockResolvedValue({ id: 'd1', name: 'My Dashboard', position: 0 }) };
+  const moduleRef = { get: vi.fn().mockReturnValue(dashboards) };
   const store = new Map<string, number>();
   const redis = {
     incr: vi.fn(async (key: string) => {
@@ -30,10 +32,11 @@ function makeDeps() {
     config as never,
     jwt as never,
     revocation as never,
+    moduleRef as never,
     redis as never,
   );
 
-  return { controller, prisma, verification, mail, config, jwt, revocation, redis };
+  return { controller, prisma, verification, mail, config, jwt, revocation, dashboards, redis };
 }
 
 function makeReq(): Request {
@@ -47,7 +50,7 @@ function makeRes(): Response {
 describe('AuthController', () => {
   describe('register', () => {
     it('creates a fresh user, issues a token, and sends mail', async () => {
-      const { controller, prisma, verification, mail } = makeDeps();
+      const { controller, prisma, verification, mail, dashboards } = makeDeps();
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({ id: 'u1' });
 
@@ -60,6 +63,7 @@ describe('AuthController', () => {
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: { email: 'user@example.com', passwordHash: expect.any(String) },
       });
+      expect(dashboards.createDefault).toHaveBeenCalledWith('u1');
       expect(verification.issueToken).toHaveBeenCalledWith('u1');
       expect(mail.sendConfirmationEmail).toHaveBeenCalledWith(
         'user@example.com',

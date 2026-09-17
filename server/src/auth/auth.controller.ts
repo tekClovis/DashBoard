@@ -16,6 +16,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ModuleRef } from '@nestjs/core';
 import type { MeResponse } from '@dashboard/shared';
 import * as bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
@@ -25,6 +26,7 @@ import { readCookie } from '../core/http/cookies.js';
 import { MailService } from '../core/mail/mail.service.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import { REDIS } from '../core/redis/redis.provider.js';
+import { DashboardsService } from '../dashboards/dashboards.service.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -49,6 +51,7 @@ export class AuthController {
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
     private readonly revocation: TokenRevocationService,
+    private readonly moduleRef: ModuleRef,
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
@@ -70,7 +73,10 @@ export class AuthController {
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
     const user = await this.prisma.user.create({ data: { email, passwordHash } });
-    await this.issueAndSend(user.id, email);
+    // Resolved via ModuleRef rather than constructor injection — see AuthModule's comment on
+    // why this module can't statically import DashboardsModule.
+    const dashboards = this.moduleRef.get(DashboardsService, { strict: false });
+    await Promise.all([dashboards.createDefault(user.id), this.issueAndSend(user.id, email)]);
 
     return { ok: true };
   }
