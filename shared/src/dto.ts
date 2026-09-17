@@ -25,7 +25,7 @@ export interface AboutService {
 
 /** GET /api/catalog — full ParamSpecs plus the caller's connection status per service. */
 export interface CatalogResponse {
-  services: (ServiceSpec & { connected: boolean })[];
+  services: (ServiceSpec & { connected: boolean; status: ConnectionEntry['status'] })[];
 }
 
 /** 8-72 chars, at least one digit and one non-alphanumeric symbol — docs/auth/specs.md §Flows. */
