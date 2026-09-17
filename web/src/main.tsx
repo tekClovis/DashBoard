@@ -7,6 +7,7 @@ import { ConfirmPage } from '@/routes/ConfirmPage.js';
 import { ConnectionsPage } from '@/routes/ConnectionsPage.js';
 import { DashboardPlaceholderPage } from '@/routes/DashboardPlaceholderPage.js';
 import { LoginPage } from '@/routes/LoginPage.js';
+import { ProfilePage } from '@/routes/ProfilePage.js';
 import { RegisterPage } from '@/routes/RegisterPage.js';
 import { RequireAuth } from '@/routes/RequireAuth.js';
 import './index.css';
@@ -23,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
           <Route element={<RequireAuth />}>
             <Route path="/d/:dashboardId" element={<DashboardPlaceholderPage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

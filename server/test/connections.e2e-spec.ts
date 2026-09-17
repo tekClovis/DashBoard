@@ -10,14 +10,13 @@
 // Everything else (state signing/verification, cookie handling, session
 // auth, Prisma persistence, encryption) runs for real.
 
-import cookieParser from 'cookie-parser';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { JwtService } from '../src/auth/jwt.service.js';
 import { PrismaService } from '../src/core/prisma/prisma.service.js';
-import { SessionService } from '../src/core/session/session.service.js';
 import { TokenCipherService } from '../src/connections/token-cipher.service.js';
 import { GithubConnectStrategy } from '../src/connections/strategies/github-connect.strategy.js';
 import { SteamConnectStrategy } from '../src/connections/strategies/steam-connect.strategy.js';
@@ -25,19 +24,18 @@ import { SteamConnectStrategy } from '../src/connections/strategies/steam-connec
 describe('Connections (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let session: SessionService;
+  let jwtService: JwtService;
   let cipher: TokenCipherService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.use(cookieParser());
     app.setGlobalPrefix('api', { exclude: ['about.json'] });
     await app.init();
 
     prisma = app.get(PrismaService);
-    session = app.get(SessionService);
+    jwtService = app.get(JwtService);
     cipher = app.get(TokenCipherService);
   });
 
@@ -52,12 +50,13 @@ describe('Connections (e2e)', () => {
 
   async function createUserWithCookie(email: string): Promise<{ userId: string; cookie: string }> {
     const user = await prisma.user.create({ data: { email, passwordHash: 'x', emailVerifiedAt: new Date() } });
-    const token = session.sign({ sub: user.id, role: 'USER', tv: 0 });
+    const token = jwtService.sign({ sub: user.id, role: 'USER', tv: 0 });
     return { userId: user.id, cookie: `session=${token}` };
   }
 
-  function extractCookieValue(setCookieHeader: string[] | undefined, name: string): string {
-    const header = (setCookieHeader ?? []).find((c) => c.startsWith(`${name}=`));
+  function extractCookieValue(setCookieHeader: string | string[] | undefined, name: string): string {
+    const raw = (setCookieHeader as unknown as string[] | undefined) ?? [];
+    const header = raw.find((c) => c.startsWith(`${name}=`));
     if (!header) throw new Error(`Cookie ${name} not set`);
     return header.split(';')[0].slice(name.length + 1);
   }

@@ -6,6 +6,7 @@ import { validate } from './core/config/env.validation.js';
 import { CoreModule } from './core/core.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { OAuthModule } from './auth/oauth/oauth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { ConnectionsModule } from './connections/connections.module.js';
@@ -28,6 +29,7 @@ import { TimerModule } from './timer/timer.module.js';
     CoreModule,
     CatalogModule,
     AuthModule,
+    OAuthModule,
     UsersModule,
     AdminModule,
     ConnectionsModule,

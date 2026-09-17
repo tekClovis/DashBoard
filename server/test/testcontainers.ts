@@ -25,10 +25,9 @@ export async function setup(): Promise<void> {
   process.env['REDIS_URL'] = `redis://${redis.getHost()}:${redis.getMappedPort(6379)}`;
   process.env['JWT_SECRET'] = randomBytes(32).toString('hex');
   process.env['TOKEN_ENC_KEY'] = randomBytes(32).toString('base64');
-  // connections-api: OAuth app credentials are never actually used against a
-  // real provider in tests — the outbound HTTP is stubbed at the strategy
-  // boundary — but passport-oauth2 strategies require non-empty values to
-  // construct.
+  // OAuth app credentials are never actually used against a real provider in
+  // tests — the outbound HTTP is stubbed at the strategy boundary — but
+  // passport-oauth2 strategies require non-empty values to construct.
   process.env['GITHUB_CLIENT_ID'] = 'test-github-client-id';
   process.env['GITHUB_CLIENT_SECRET'] = 'test-github-client-secret';
   process.env['GOOGLE_CLIENT_ID'] = 'test-google-client-id';

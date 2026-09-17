@@ -59,6 +59,8 @@ export interface MeResponse {
   email: string;
   role: 'USER' | 'ADMIN';
   emailVerifiedAt: string | null;
+  /** Whether the user has a local password set (oauth-only users don't). */
+  hasPassword: boolean;
   identities: { provider: 'GITHUB' | 'GOOGLE' }[];
 }
 

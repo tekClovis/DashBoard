@@ -2,6 +2,7 @@ import {
   Body,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpException,
@@ -10,17 +11,30 @@ import {
   Post,
   Query,
   Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { MeResponse } from '@dashboard/shared';
 import * as bcrypt from 'bcrypt';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import type { Redis } from 'ioredis';
 import { clientAddress } from '../core/http/client-address.js';
+import { readCookie } from '../core/http/cookies.js';
 import { MailService } from '../core/mail/mail.service.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import { REDIS } from '../core/redis/redis.provider.js';
+import { CurrentUser } from './current-user.decorator.js';
+import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { ResendDto } from './dto/resend.dto.js';
+import { JwtGuard } from './jwt.guard.js';
+import { JwtService } from './jwt.service.js';
+import { clearSessionCookie, setSessionCookie } from './session-cookie.js';
+import { SESSION_COOKIE } from './session.constants.js';
+import { TokenRevocationService } from './token-revocation.service.js';
+import type { RequestUser } from './types.js';
 import { VerificationService } from './verification.service.js';
 
 const BCRYPT_COST = 12;
@@ -33,6 +47,8 @@ export class AuthController {
     private readonly verification: VerificationService,
     private readonly mail: MailService,
     private readonly config: ConfigService,
+    private readonly jwt: JwtService,
+    private readonly revocation: TokenRevocationService,
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
@@ -83,6 +99,77 @@ export class AuthController {
       }
     }
 
+    return { ok: true };
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ ok: true }> {
+    await this.enforceRateLimit(`login:${clientAddress(req)}`, 10, 3600);
+
+    const email = normalizeEmail(dto.email);
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user || !user.passwordHash || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+      throw new UnauthorizedException({ error: 'INVALID_CREDENTIALS' });
+    }
+    if (!user.emailVerifiedAt) {
+      throw new ForbiddenException({ error: 'EMAIL_NOT_CONFIRMED' });
+    }
+
+    const token = this.jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion });
+    setSessionCookie(res, this.config.getOrThrow<string>('APP_URL'), token);
+
+    return { ok: true };
+  }
+
+  @Get('me')
+  @UseGuards(JwtGuard)
+  async me(@CurrentUser() user: RequestUser): Promise<MeResponse> {
+    const [identities, fullUser] = await Promise.all([
+      this.prisma.authIdentity.findMany({ where: { userId: user.id }, select: { provider: true } }),
+      this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { passwordHash: true } }),
+    ]);
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+      hasPassword: fullUser.passwordHash !== null,
+      identities,
+    };
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  @UseGuards(JwtGuard)
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<{ ok: true }> {
+    const token = readCookie(req.headers.cookie, SESSION_COOKIE);
+    const payload = token ? this.jwt.verify(token) : null;
+    if (payload) {
+      await this.revocation.revoke(payload.jti, payload.exp);
+    }
+    clearSessionCookie(res, this.config.getOrThrow<string>('APP_URL'));
+    return { ok: true };
+  }
+
+  @Post('logout-all')
+  @HttpCode(200)
+  @UseGuards(JwtGuard)
+  async logoutAll(
+    @CurrentUser() user: RequestUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ ok: true }> {
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    clearSessionCookie(res, this.config.getOrThrow<string>('APP_URL'));
     return { ok: true };
   }
 

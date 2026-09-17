@@ -1,0 +1,17 @@
+- generic [ref=e3]:
+  - button "Toggle theme" [ref=e5]
+  - generic [ref=e6]:
+    - heading "Log in" [level=1] [ref=e7]
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]: Email
+        - textbox "Email" [ref=e11]: unverified@example.com
+      - generic [ref=e12]:
+        - generic [ref=e13]: Password
+        - textbox "Password" [ref=e14]: CorrectHorse1!
+      - paragraph [ref=e19]: Please confirm your email before logging in.
+      - button "Log in" [ref=e17]
+    - paragraph [ref=e15]:
+      - text: No account?
+      - link "Register" [ref=e16] [cursor=pointer]:
+        - /url: /register
