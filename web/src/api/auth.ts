@@ -42,3 +42,19 @@ export function useMe() {
     staleTime: 60_000,
   });
 }
+
+export function useLogout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<OkResponse>('/auth/logout', { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+  });
+}
+
+export function useLogoutAll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<OkResponse>('/auth/logout-all', { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+  });
+}
