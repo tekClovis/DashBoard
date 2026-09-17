@@ -63,3 +63,15 @@ export interface MeResponse {
   hasPassword: boolean;
   identities: { provider: 'GITHUB' | 'GOOGLE' }[];
 }
+
+/** Client-facing shape of one ServiceConnection — raw tokens never appear here. See docs/Architecture.md §5.2. */
+export interface ConnectionEntry {
+  service: string;
+  connected: boolean;
+  status: 'OK' | 'REAUTH';
+}
+
+/** GET /api/connections */
+export interface ConnectionsResponse {
+  connections: ConnectionEntry[];
+}

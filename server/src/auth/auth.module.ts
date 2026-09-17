@@ -7,13 +7,17 @@ import { JwtService } from './jwt.service.js';
 import { GithubStrategy } from './oauth/github.strategy.js';
 import { GoogleStrategy } from './oauth/google.strategy.js';
 import { OAuthLoginService } from './oauth/oauth-login.service.js';
-import { OAuthController } from './oauth/oauth.controller.js';
-import { GithubOAuthGuard, GoogleOAuthGuard } from './oauth/oauth.guard.js';
 import { TokenRevocationService } from './token-revocation.service.js';
 import { VerificationService } from './verification.service.js';
 
+// The `oauth/` start/callback routes live in OAuthModule, not here — it needs both this
+// module's exports and ConnectionsModule's, and importing ConnectionsModule from here
+// would create AuthModule <-> ConnectionsModule circular imports (ConnectionsController
+// needs JwtGuard). GithubStrategy/GoogleStrategy still live here since they self-register
+// into passport on instantiation and OAuthLoginService is theirs to own; OAuthModule just
+// imports this module to reach them.
 @Module({
-  controllers: [AuthController, OAuthController, IdentitiesController],
+  controllers: [AuthController, IdentitiesController],
   providers: [
     VerificationService,
     JwtService,
@@ -22,10 +26,8 @@ import { VerificationService } from './verification.service.js';
     TokenRevocationService,
     GithubStrategy,
     GoogleStrategy,
-    GithubOAuthGuard,
-    GoogleOAuthGuard,
     OAuthLoginService,
   ],
-  exports: [JwtService, JwtGuard, TokenRevocationService],
+  exports: [JwtService, JwtGuard, TokenRevocationService, OAuthLoginService],
 })
 export class AuthModule {}

@@ -1,13 +1,15 @@
-// OAuth `state` param — see docs/Architecture.md §5.2: "The intent (login|connect) travels
-// in `state`: an HMAC-signed, 10-minute value that is also bound to a short-lived cookie."
+// OAuth `state` param for the `login`/`link` intents — see docs/Architecture.md §5.2: "The
+// intent (login|connect) travels in `state`: an HMAC-signed, 10-minute value that is also
+// bound to a short-lived cookie." `connect`'s own state (with its own CSRF-cookie binding,
+// needed for Steam's OpenID round trip, which can't echo an arbitrary `state` query param)
+// lives in ../../connections/oauth-state.js and is verified separately by oauth.guard.ts —
+// this module's `OAuthIntent` still enumerates `connect` since the *start* leg's `?intent=`
+// query parsing (oauth.guard.ts's `getIntent`) is shared across all three intents.
 //
-// Deliberately carries only { intent, provider } so a later `connect` intent (connections-api)
-// can reuse this exact shape without reworking the signing/verification logic.
-//
-// `link` is this feature's own intent (authenticated identity-linking, distinct from the
-// still-unimplemented `connect` reserved for connections-api): it additionally binds the
-// state to the currently-logged-in user's id at the start leg, so the callback can attach
-// the verified provider identity to that exact user instead of trusting anything client-supplied.
+// `link` is this feature's own intent (authenticated identity-linking): it additionally
+// binds the state to the currently-logged-in user's id at the start leg, so the callback
+// can attach the verified provider identity to that exact user instead of trusting
+// anything client-supplied.
 
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
@@ -15,7 +17,7 @@ export type OAuthIntent = 'login' | 'connect' | 'link';
 export type OAuthProviderSlug = 'github' | 'google';
 
 export type OAuthStatePayload =
-  | { intent: 'login' | 'connect'; provider: OAuthProviderSlug }
+  | { intent: 'login'; provider: OAuthProviderSlug }
   | { intent: 'link'; provider: OAuthProviderSlug; userId: string };
 
 const TTL_MS = 10 * 60 * 1000;
@@ -63,11 +65,11 @@ export function verifyOAuthState(token: string, secret: string): OAuthStatePaylo
     }
     return { intent: 'link', provider: body.provider, userId: body.userId };
   }
-  if (body.intent !== 'login' && body.intent !== 'connect') {
+  if (body.intent !== 'login') {
     throw new Error('INVALID_STATE');
   }
 
-  return { intent: body.intent, provider: body.provider };
+  return { intent: 'login', provider: body.provider };
 }
 
 /**
