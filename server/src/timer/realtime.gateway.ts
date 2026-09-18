@@ -3,13 +3,22 @@
 // Handshake auth mirrors JwtGuard (session cookie, revocation, ban, tokenVersion) but runs
 // as a Socket.IO middleware (`server.use`) rather than a Nest guard, so an unauthenticated
 // or invalid socket is rejected before 'connect' fires at all — the client only ever sees
-// 'connect_error'.
+// 'connect_error'. CORS is deliberately NOT set here — RealtimeGateway's decorator options
+// are fixed before ConfigModule loads APP_URL, so the real origin restriction is applied by
+// SocketIoAdapter (main.ts) once ConfigService is available; see that file's comment.
+//
+// A connection is only checked against revocation/ban/tokenVersion once, at handshake — a
+// long-lived socket won't otherwise notice a logout, logout-all, or ban that happens after
+// it connects. REAUTH_INTERVAL_MS re-runs that same check periodically and disconnects the
+// socket once it no longer passes, bounding how long a since-invalidated session can keep
+// receiving widget updates.
 
 import { Injectable } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
@@ -27,12 +36,15 @@ import { InstanceLookupService } from './instance-lookup.service.js';
 import { TimerService } from './timer.service.js';
 
 const INSTANCE_ROOM_PREFIX = 'instance:';
+const REAUTH_INTERVAL_MS = 60_000;
 
 @Injectable()
-@WebSocketGateway({ cors: { origin: true, credentials: true } })
-export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
+@WebSocketGateway()
+export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server!: Server;
+
+  private readonly reauthTimers = new Map<string, ReturnType<typeof setInterval>>();
 
   constructor(
     private readonly jwt: JwtService,
@@ -70,6 +82,23 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
     const userId = client.data.userId as string | undefined;
     if (!userId) return;
     await client.join(`user:${userId}`);
+
+    this.reauthTimers.set(
+      client.id,
+      setInterval(() => {
+        void this.authenticate(client).then((stillValid) => {
+          if (!stillValid) client.disconnect(true);
+        });
+      }, REAUTH_INTERVAL_MS),
+    );
+  }
+
+  handleDisconnect(client: Socket): void {
+    const timer = this.reauthTimers.get(client.id);
+    if (timer) {
+      clearInterval(timer);
+      this.reauthTimers.delete(client.id);
+    }
   }
 
   @SubscribeMessage('widget:subscribe')

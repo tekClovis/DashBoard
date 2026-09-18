@@ -1,9 +1,10 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { IoAdapter } from '@nestjs/platform-socket.io';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module.js';
 import { WidgetRegistryService } from './catalog/widget-registry.service.js';
 import { registerFakeWidgets } from './timer/fake-widgets.js';
+import { SocketIoAdapter } from './timer/socket-io.adapter.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -13,7 +14,9 @@ async function bootstrap(): Promise<void> {
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
   // RealtimeGateway (docs/Architecture.md §6) needs the Socket.IO adapter, not Nest's ws default.
-  app.useWebSocketAdapter(new IoAdapter(app));
+  // SocketIoAdapter (not the plain IoAdapter) pins the handshake's CORS origin to APP_URL — see
+  // its own comment for why RealtimeGateway's decorator can't do this itself.
+  app.useWebSocketAdapter(new SocketIoAdapter(app, app.get(ConfigService).getOrThrow<string>('APP_URL')));
 
   // No real service module exists yet (server/src/services/* — see
   // features/timer-realtime/spec.md's Constraints), so register fake WidgetDefinitions to
