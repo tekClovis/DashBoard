@@ -58,14 +58,19 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     this.timer.setServer(server);
 
     server.use((socket, next) => {
-      void this.authenticate(socket).then((userId) => {
-        if (!userId) {
-          next(new Error('Unauthorized'));
-          return;
-        }
-        socket.data.userId = userId;
-        next();
-      });
+      // A rejected `authenticate()` (e.g. a transient DB error) must still resolve this
+      // middleware — an unhandled rejection here crashes the whole process (Node terminates
+      // on unhandled rejection by default), not just this one handshake.
+      void this.authenticate(socket)
+        .then((userId) => {
+          if (!userId) {
+            next(new Error('Unauthorized'));
+            return;
+          }
+          socket.data.userId = userId;
+          next();
+        })
+        .catch(() => next(new Error('Unauthorized')));
     });
 
     // The default in-memory adapter emits this once a room's last member leaves, whether
@@ -83,12 +88,26 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     if (!userId) return;
     await client.join(`user:${userId}`);
 
+    // `checking` skips a tick if the previous one hasn't settled yet, so a slow or hung
+    // re-check (e.g. a stalled DB call) can't pile up overlapping calls per socket.
+    let checking = false;
     this.reauthTimers.set(
       client.id,
       setInterval(() => {
-        void this.authenticate(client).then((stillValid) => {
-          if (!stillValid) client.disconnect(true);
-        });
+        if (checking) return;
+        checking = true;
+        this.authenticate(client)
+          .then((stillValid) => {
+            if (!stillValid) client.disconnect(true);
+          })
+          .catch(() => {
+            // A failed re-check (e.g. a transient DB error) is inconclusive, not a reason to
+            // disconnect — and must not become an unhandled rejection, which would crash the
+            // whole process rather than just this one socket's check.
+          })
+          .finally(() => {
+            checking = false;
+          });
       }, REAUTH_INTERVAL_MS),
     );
   }
