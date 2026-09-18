@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import { readCookie } from '../core/http/cookies.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import { JwtService } from './jwt.service.js';
+import { resolveSessionUser } from './session-user.js';
 import { SESSION_COOKIE } from './session.constants.js';
 import { TokenRevocationService } from './token-revocation.service.js';
 import './types.js';
@@ -26,24 +27,10 @@ export class JwtGuard implements CanActivate {
     const token = readCookie(req.headers.cookie, SESSION_COOKIE);
     if (!token) throw new UnauthorizedException();
 
-    const payload = this.jwt.verify(token);
-    if (!payload) throw new UnauthorizedException();
+    const user = await resolveSessionUser(token, this.jwt, this.prisma, this.revocation);
+    if (!user) throw new UnauthorizedException();
 
-    if (await this.revocation.isRevoked(payload.jti)) {
-      throw new UnauthorizedException();
-    }
-
-    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user || user.bannedAt || user.tokenVersion !== payload.tv) {
-      throw new UnauthorizedException();
-    }
-
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      emailVerifiedAt: user.emailVerifiedAt,
-    };
+    req.user = user;
     return true;
   }
 }
