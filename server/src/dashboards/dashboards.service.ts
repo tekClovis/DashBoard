@@ -45,9 +45,10 @@ export class DashboardsService {
     return toDashboardEntry(dashboard);
   }
 
-  /** Auto-created on signup — see AuthController.register. OAuthLoginService creates the
-   *  equivalent row itself (in the same transaction as the User) for OAuth signup — see its
-   *  comment for why it doesn't call this method. */
+  /** Not called by signup: both AuthController.register and OAuthLoginService.loginOrLink
+   *  create the default Dashboard row directly inside their own User-creating transaction
+   *  instead, so the two rows are always atomic. Kept for non-signup callers that need the
+   *  same default-Dashboard shape without that transactional requirement. */
   async createDefault(userId: string): Promise<DashboardEntry> {
     const dashboard = await this.prisma.dashboard.create({
       data: { userId, name: DEFAULT_DASHBOARD_NAME, position: DEFAULT_DASHBOARD_POSITION },

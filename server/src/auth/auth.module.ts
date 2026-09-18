@@ -16,12 +16,13 @@ import { VerificationService } from './verification.service.js';
 // needs JwtGuard). GithubStrategy/GoogleStrategy still live here since they self-register
 // into passport on instantiation and OAuthLoginService is theirs to own; OAuthModule just
 // imports this module to reach them.
-// AuthController.register() creates the signup user's default Dashboard via DashboardsService,
-// resolved through ModuleRef.get(..., { strict: false }) instead of importing DashboardsModule
-// here — DashboardsModule imports CatalogModule, which imports this module, so a static import
-// of DashboardsModule here would close AuthModule -> DashboardsModule -> CatalogModule ->
-// AuthModule into a real circular import (forwardRef only defers Nest's own DI resolution, not
-// the underlying ES module load order, so it doesn't fix this one).
+// AuthController.register() creates the signup user's default Dashboard by writing the
+// `dashboard` row directly inside the same transaction as the `user` row (same pattern as
+// OAuthLoginService.loginOrLink), rather than depending on DashboardsService — DashboardsModule
+// imports CatalogModule, which imports this module, so a static import of DashboardsModule here
+// would close AuthModule -> DashboardsModule -> CatalogModule -> AuthModule into a real circular
+// import (forwardRef only defers Nest's own DI resolution, not the underlying ES module load
+// order, so it doesn't fix this one).
 @Module({
   controllers: [AuthController, IdentitiesController],
   providers: [

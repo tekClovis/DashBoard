@@ -64,9 +64,9 @@ export class OAuthLoginService {
       await tx.authIdentity.create({
         data: { userId: user.id, provider: profile.provider, providerUserId: profile.providerUserId },
       });
-      // Same default Dashboard as local registration (DashboardsService.createDefault), created
-      // here directly (not via DashboardsService) so it's atomic with the User row in this
-      // transaction — see docs/Architecture.md §4 ("The first one is created on signup").
+      // Same default Dashboard as AuthController.register's local registration, created here
+      // directly (not via DashboardsService.createDefault) so it's atomic with the User row in
+      // this transaction — see docs/Architecture.md §4 ("The first one is created on signup").
       await tx.dashboard.create({
         data: { userId: user.id, name: DEFAULT_DASHBOARD_NAME, position: DEFAULT_DASHBOARD_POSITION },
       });
