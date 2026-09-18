@@ -1,0 +1,62 @@
+import type { WidgetDataPayload, WidgetErrorCode, WidgetErrorPayload } from '@dashboard/shared';
+import { SOCKET_EVENTS } from '@dashboard/shared';
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useSocket } from './SocketProvider.js';
+
+export interface WidgetCacheEntry {
+  data: unknown;
+  fetchedAt: string | null;
+  error: { code: WidgetErrorCode; message: string; retryAt?: string } | null;
+}
+
+/**
+ * Subscribes to one widget instance's realtime updates for the lifetime of the calling
+ * component: emits `widget:subscribe` on mount / `widget:unsubscribe` on unmount, and writes
+ * incoming `widget:data`/`widget:error` into the query cache under `['widget', instanceId]` —
+ * per docs/Architecture.md §9 and `timer-realtime`'s gateway (`shared/src/socket.ts`'s event
+ * contract). Returns that cache entry like any other query so a widget view can render from
+ * it directly.
+ */
+export function useWidgetData(instanceId: string) {
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.emit(SOCKET_EVENTS.subscribe, { instanceId });
+
+    function onData(event: WidgetDataPayload) {
+      if (event.instanceId !== instanceId) return;
+      queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], {
+        data: event.data,
+        fetchedAt: event.fetchedAt,
+        error: null,
+      });
+    }
+
+    function onError(event: WidgetErrorPayload) {
+      if (event.instanceId !== instanceId) return;
+      queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], (prev) => ({
+        data: prev?.data ?? null,
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: { code: event.code, message: event.message, retryAt: event.retryAt },
+      }));
+    }
+
+    socket.on(SOCKET_EVENTS.data, onData);
+    socket.on(SOCKET_EVENTS.error, onError);
+
+    return () => {
+      socket.emit(SOCKET_EVENTS.unsubscribe, { instanceId });
+      socket.off(SOCKET_EVENTS.data, onData);
+      socket.off(SOCKET_EVENTS.error, onError);
+    };
+  }, [socket, instanceId, queryClient]);
+
+  return useQuery<WidgetCacheEntry | undefined>({
+    queryKey: ['widget', instanceId],
+    queryFn: skipToken,
+  });
+}

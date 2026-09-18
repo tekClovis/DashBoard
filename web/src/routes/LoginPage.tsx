@@ -23,7 +23,7 @@ export function LoginPage() {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    login.mutate({ email, password }, { onSuccess: () => navigate('/d/placeholder') });
+    login.mutate({ email, password }, { onSuccess: () => navigate('/') });
   }
 
   return (
