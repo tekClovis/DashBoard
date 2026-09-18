@@ -25,6 +25,7 @@ import { readCookie } from '../core/http/cookies.js';
 import { MailService } from '../core/mail/mail.service.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import { REDIS } from '../core/redis/redis.provider.js';
+import { DEFAULT_DASHBOARD_NAME, DEFAULT_DASHBOARD_POSITION } from '../dashboards/dashboards.service.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -69,7 +70,15 @@ export class AuthController {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
-    const user = await this.prisma.user.create({ data: { email, passwordHash } });
+    // Same default Dashboard as OAuth signup, created atomically with the User row here — see
+    // OAuthLoginService.loginOrLink's comment on why DashboardsService.createDefault isn't used.
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({ data: { email, passwordHash } });
+      await tx.dashboard.create({
+        data: { userId: created.id, name: DEFAULT_DASHBOARD_NAME, position: DEFAULT_DASHBOARD_POSITION },
+      });
+      return created;
+    });
     await this.issueAndSend(user.id, email);
 
     return { ok: true };

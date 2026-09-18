@@ -6,6 +6,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service.js';
+import { DEFAULT_DASHBOARD_NAME, DEFAULT_DASHBOARD_POSITION } from '../../dashboards/dashboards.service.js';
 import type { User } from '../../generated/prisma/client.js';
 import type { NormalizedOAuthProfile } from './normalized-profile.js';
 
@@ -62,6 +63,12 @@ export class OAuthLoginService {
       });
       await tx.authIdentity.create({
         data: { userId: user.id, provider: profile.provider, providerUserId: profile.providerUserId },
+      });
+      // Same default Dashboard as AuthController.register's local registration, created here
+      // directly (not via DashboardsService.createDefault) so it's atomic with the User row in
+      // this transaction — see docs/Architecture.md §4 ("The first one is created on signup").
+      await tx.dashboard.create({
+        data: { userId: user.id, name: DEFAULT_DASHBOARD_NAME, position: DEFAULT_DASHBOARD_POSITION },
       });
       return user;
     });

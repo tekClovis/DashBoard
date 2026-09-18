@@ -3,10 +3,20 @@ import type { Request, Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import { AuthController } from './auth.controller.js';
 
+function makePrismaTxProxy() {
+  return {
+    user: { create: vi.fn().mockResolvedValue({ id: 'u1' }) },
+    dashboard: { create: vi.fn() },
+  };
+}
+
 function makeDeps() {
+  const tx = makePrismaTxProxy();
   const prisma = {
     user: { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), create: vi.fn(), update: vi.fn() },
     authIdentity: { findMany: vi.fn().mockResolvedValue([]) },
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(tx)),
+    tx,
   };
   const verification = { issueToken: vi.fn().mockResolvedValue('raw-token'), confirm: vi.fn() };
   const mail = { sendConfirmationEmail: vi.fn().mockResolvedValue(undefined) };
@@ -46,10 +56,9 @@ function makeRes(): Response {
 
 describe('AuthController', () => {
   describe('register', () => {
-    it('creates a fresh user, issues a token, and sends mail', async () => {
+    it('creates a fresh user and its default dashboard atomically, issues a token, and sends mail', async () => {
       const { controller, prisma, verification, mail } = makeDeps();
       prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue({ id: 'u1' });
 
       const res = await controller.register(
         { email: ' User@Example.com ', password: 'abc12345!' },
@@ -57,8 +66,12 @@ describe('AuthController', () => {
       );
 
       expect(res).toEqual({ ok: true });
-      expect(prisma.user.create).toHaveBeenCalledWith({
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(prisma.tx.user.create).toHaveBeenCalledWith({
         data: { email: 'user@example.com', passwordHash: expect.any(String) },
+      });
+      expect(prisma.tx.dashboard.create).toHaveBeenCalledWith({
+        data: { userId: 'u1', name: 'My Dashboard', position: 0 },
       });
       expect(verification.issueToken).toHaveBeenCalledWith('u1');
       expect(mail.sendConfirmationEmail).toHaveBeenCalledWith(
@@ -103,7 +116,6 @@ describe('AuthController', () => {
     it('429s once the per-IP rate limit is exceeded', async () => {
       const { controller, prisma } = makeDeps();
       prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue({ id: 'u1' });
       const req = makeReq();
 
       for (let i = 0; i < 5; i++) {

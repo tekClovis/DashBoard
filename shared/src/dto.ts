@@ -75,3 +75,67 @@ export interface ConnectionEntry {
 export interface ConnectionsResponse {
   connections: ConnectionEntry[];
 }
+
+/** One row of GET /api/dashboards, and the shape returned by dashboard CRUD. */
+export interface DashboardEntry {
+  id: string;
+  name: string;
+  position: number;
+}
+
+/** GET /api/dashboards */
+export interface DashboardsResponse {
+  dashboards: DashboardEntry[];
+}
+
+/** POST /api/dashboards */
+export interface CreateDashboardRequest {
+  name: string;
+}
+
+/** PATCH /api/dashboards/{id} */
+export interface UpdateDashboardRequest {
+  name?: string;
+  position?: number;
+}
+
+/** One WidgetInstance, as returned by dashboards-api's widget-instance endpoints. */
+export interface WidgetInstanceEntry {
+  id: string;
+  dashboardId: string;
+  service: string;
+  widget: string;
+  params: Record<string, string | number>;
+  refreshRate: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** POST /api/dashboards/{id}/widgets */
+export interface CreateWidgetInstanceRequest {
+  service: string;
+  widget: string;
+  params: Record<string, unknown>;
+  refreshRate: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** PATCH /api/widgets/{id} */
+export interface UpdateWidgetInstanceRequest {
+  params?: Record<string, unknown>;
+  refreshRate?: number;
+}
+
+/** One entry of PATCH /api/dashboards/{id}/layout's batch body. */
+export interface LayoutUpdateEntry {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}

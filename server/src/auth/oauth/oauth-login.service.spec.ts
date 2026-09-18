@@ -3,10 +3,12 @@ import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService } 
 import type { NormalizedOAuthProfile } from './normalized-profile.js';
 
 function makePrisma() {
+  const tx = makePrismaTxProxy();
   return {
     authIdentity: { findUnique: vi.fn(), create: vi.fn() },
     user: { findUnique: vi.fn(), create: vi.fn() },
-    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(makePrismaTxProxy())),
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(tx)),
+    tx,
   };
 }
 
@@ -14,6 +16,7 @@ function makePrismaTxProxy() {
   return {
     user: { create: vi.fn().mockResolvedValue({ id: 'new-user', email: 'new@x.com' }) },
     authIdentity: { create: vi.fn() },
+    dashboard: { create: vi.fn() },
   };
 }
 
@@ -92,6 +95,9 @@ describe('OAuthLoginService', () => {
 
     expect(result).toEqual({ id: 'new-user', email: 'new@x.com' });
     expect(prisma.$transaction).toHaveBeenCalled();
+    expect(prisma.tx.dashboard.create).toHaveBeenCalledWith({
+      data: { userId: 'new-user', name: 'My Dashboard', position: 0 },
+    });
   });
 
   describe('linkIdentity', () => {
