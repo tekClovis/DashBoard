@@ -103,3 +103,9 @@ transactionally atomic**, unlike the OAuth signup path (`server/src/auth/oauth/o
 which explicitly is — a mid-request failure can leave a `User` with zero dashboards. Recommend
 wrapping `prisma.user.create` + `dashboards.createDefault` in one transaction (mirroring the OAuth
 path) before merging, even though it doesn't fail any of the 10 checklist assertions as written.
+
+## Post-review fix (commit `1dde303`)
+The atomicity gap flagged in item 10 has been fixed: local registration now creates the `User`
+and default `Dashboard` inside one `prisma.$transaction`, mirroring `OAuthLoginService.loginOrLink`.
+Re-ran after the fix: 97/97 unit tests pass, 54/54 e2e tests pass, `tsc --noEmit` clean,
+`oxlint --type-aware` clean (pre-existing unrelated warnings only).
