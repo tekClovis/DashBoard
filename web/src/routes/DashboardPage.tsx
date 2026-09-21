@@ -1,5 +1,5 @@
 import type { WidgetInstanceEntry } from '@dashboard/shared';
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { noCompactor, ResponsiveGridLayout, useContainerWidth, type Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { useParams } from 'react-router';
@@ -39,9 +39,13 @@ export function DashboardPage() {
   const isDesktop = useIsDesktop();
   const { width, containerRef } = useContainerWidth();
 
-  // Bumped on every drag/resize stop: RGL keeps its own dropped position when the normalized
-  // layout prop is unchanged, so remount it to make the render equal the stored layout.
-  const [gridEpoch, setGridEpoch] = useState(0);
+  // RGL keeps its own dropped position when the normalized `layouts` prop is unchanged, and a
+  // remount would resubscribe every widget. So on drag/resize stop we hand it its own dropped
+  // layout for one commit; the next commit's normalized layout then differs and resyncs it.
+  const [dropped, setDropped] = useState<Layout | null>(null);
+  useEffect(() => {
+    if (dropped) setDropped(null);
+  }, [dropped]);
   const [dialog, setDialog] = useState<{
     open: boolean;
     instance?: WidgetInstanceEntry;
@@ -63,13 +67,20 @@ export function DashboardPage() {
   }
 
   /** Drag/resize stop: normalize the whole layout and persist every item whose geometry changed. */
-  function persist(layout: Layout, _old: unknown, dropped: { i: string } | null) {
+  function persist(layout: Layout, _old: unknown, moved: { i: string } | null) {
     const next = normalize(
       layout.map(({ i, x, y, w, h }) => ({ id: i, x, y, w, h })),
-      dropped?.i,
+      moved?.i,
     );
-    setGridEpoch((n) => n + 1);
     const changed = changedEntries(widgets, next);
+    if (
+      changed.length > 0 ||
+      changedEntries(
+        next,
+        layout.map(({ i, x, y, w, h }) => ({ id: i, x, y, w, h })),
+      ).length > 0
+    )
+      setDropped(layout);
     if (changed.length > 0) updateLayout.mutate(changed);
   }
 
@@ -96,18 +107,19 @@ export function DashboardPage() {
       ) : isDesktop ? (
         <div ref={containerRef}>
           <ResponsiveGridLayout
-            key={gridEpoch}
             width={width}
             breakpoints={{ lg: 768 }}
             cols={{ lg: GRID_COLS }}
             layouts={{
-              lg: normalize(widgets).map((w) => ({
-                i: w.id,
-                x: w.x,
-                y: w.y,
-                w: w.w,
-                h: w.h,
-              })),
+              lg:
+                dropped ??
+                normalize(widgets).map((w) => ({
+                  i: w.id,
+                  x: w.x,
+                  y: w.y,
+                  w: w.w,
+                  h: w.h,
+                })),
             }}
             rowHeight={60}
             // normalize() already packs; rendered layout must equal the stored one.
