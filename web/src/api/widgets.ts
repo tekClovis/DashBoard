@@ -53,7 +53,9 @@ export function useUpdateLayout(dashboardId: string) {
   return useMutation({
     mutationFn: (entries: LayoutUpdateEntry[]) =>
       apiFetch<void>(`/dashboards/${dashboardId}/layout`, { method: 'PATCH', body: JSON.stringify(entries) }),
-    onMutate: (entries) => {
+    onMutate: async (entries) => {
+      // Stop in-flight refetches (e.g. from a concurrent delete) landing after, and overwriting, the optimistic write.
+      await queryClient.cancelQueries({ queryKey: key });
       queryClient.setQueryData<WidgetsResponse>(
         key,
         (prev) =>
@@ -62,6 +64,7 @@ export function useUpdateLayout(dashboardId: string) {
           },
       );
     },
-    onError: () => queryClient.invalidateQueries({ queryKey: key }),
+    // Settled, not just error: resync with the server whatever happened (also reverts on failure).
+    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
   });
 }
