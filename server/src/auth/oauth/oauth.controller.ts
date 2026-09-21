@@ -111,6 +111,10 @@ export class OAuthController {
 
     try {
       const user = await this.oauthLogin.loginOrLink(profile);
+      if (user.bannedAt) {
+        res.redirect(`${appUrl}/login?error=ACCOUNT_BANNED`);
+        return;
+      }
       const token = this.jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion });
       setSessionCookie(res, appUrl, token);
       res.redirect(`${appUrl}/d/placeholder`);

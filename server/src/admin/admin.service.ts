@@ -20,6 +20,15 @@ const toEntry = (u: UserRow): AdminUserEntry => ({
 const isNotFound = (err: unknown): boolean =>
   typeof err === 'object' && err !== null && (err as { code?: unknown }).code === 'P2025';
 
+/**
+ * UUIDs are case-insensitive in Postgres and ParseUUIDPipe, but the self-guard and the socket room name
+ * compare strings — canonicalise once (DB ids are lowercase) so every later use sees the same form.
+ */
+export const normalizeId = (id: string): string => id.toLowerCase();
+
+/** Prisma `contains` doesn't escape LIKE wildcards; make search literal. */
+export const escapeLike = (s: string): string => s.replace(/[\\%_]/g, '\\$&');
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -28,7 +37,7 @@ export class AdminService {
   ) {}
 
   async list({ q, page, pageSize }: ListUsersQueryDto): Promise<AdminUsersResponse> {
-    const where: Prisma.UserWhereInput = q ? { email: { contains: q, mode: 'insensitive' } } : {};
+    const where: Prisma.UserWhereInput = q ? { email: { contains: escapeLike(q), mode: 'insensitive' } } : {};
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
         where,
@@ -42,7 +51,8 @@ export class AdminService {
     return { users: rows.map(toEntry), total, page, pageSize };
   }
 
-  async update(actor: RequestUser, id: string, dto: UpdateUserDto): Promise<AdminUserEntry> {
+  async update(actor: RequestUser, rawId: string, dto: UpdateUserDto): Promise<AdminUserEntry> {
+    const id = normalizeId(rawId);
     if (dto.bannedAt === undefined && dto.role === undefined) throw new BadRequestException({ error: 'EMPTY_PATCH' });
     const bans = dto.bannedAt !== undefined && dto.bannedAt !== null;
     // Checked before any read/write so a rejected self-action mutates nothing.
@@ -72,7 +82,8 @@ export class AdminService {
     return toEntry(updated);
   }
 
-  async remove(actor: RequestUser, id: string): Promise<void> {
+  async remove(actor: RequestUser, rawId: string): Promise<void> {
+    const id = normalizeId(rawId);
     if (id === actor.id) throw new ForbiddenException({ error: 'CANNOT_MODIFY_SELF' });
     try {
       await this.prisma.user.delete({ where: { id } });

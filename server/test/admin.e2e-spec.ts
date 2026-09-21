@@ -178,6 +178,32 @@ describe('Admin users (e2e)', () => {
     await http().get('/api/auth/me').set('Cookie', admin.cookie).expect(200);
   });
 
+  it('5b. the self-guard also holds for the uppercase form of the admin’s own id', async () => {
+    const admin = await createUser('ADMIN');
+    const url = `/api/admin/users/${admin.user.id.toUpperCase()}`;
+
+    const ban = await http().patch(url).set('Cookie', admin.cookie).send({ bannedAt: new Date().toISOString() }).expect(403);
+    expect(ban.body).toEqual({ error: 'CANNOT_MODIFY_SELF' });
+    await http().patch(url).set('Cookie', admin.cookie).send({ role: 'USER' }).expect(403);
+    const del = await http().delete(url).set('Cookie', admin.cookie).expect(403);
+    expect(del.body).toEqual({ error: 'CANNOT_MODIFY_SELF' });
+
+    const row = await prisma.user.findUniqueOrThrow({ where: { id: admin.user.id } });
+    expect(row).toMatchObject({ role: 'ADMIN', bannedAt: null, tokenVersion: 0 });
+    await http().get('/api/auth/me').set('Cookie', admin.cookie).expect(200);
+  });
+
+  it('search treats % and _ literally', async () => {
+    const admin = await createUser('ADMIN');
+    await createUser('USER');
+    const odd = await prisma.user.create({ data: { email: 'a_b%c@example.com', passwordHash: 'x' } });
+
+    for (const q of ['%', '_', 'a_b%']) {
+      const res = await http().get('/api/admin/users').query({ q }).set('Cookie', admin.cookie).expect(200);
+      expect(res.body.users.map((u: { id: string }) => u.id)).toEqual([odd.id]);
+    }
+  });
+
   it('PATCH validates input and 404s an unknown user', async () => {
     const admin = await createUser('ADMIN');
     const target = await createUser('USER');
