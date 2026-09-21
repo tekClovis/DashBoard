@@ -2,7 +2,7 @@
 // features/dashboards-api/spec.md and docs/Architecture.md §8.
 
 import { Body, Controller, Delete, Get, Param, ParseArrayPipe, Patch, Post, UseGuards } from '@nestjs/common';
-import type { DashboardEntry, DashboardsResponse, WidgetInstanceEntry } from '@dashboard/shared';
+import type { DashboardEntry, DashboardsResponse, WidgetInstanceEntry, WidgetsResponse } from '@dashboard/shared';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtGuard } from '../auth/jwt.guard.js';
 import type { RequestUser } from '../auth/types.js';
@@ -40,6 +40,11 @@ export class DashboardsController {
   async remove(@Param('id') id: string, @CurrentUser() user: RequestUser): Promise<{ ok: true }> {
     await this.dashboards.remove(user.id, id);
     return { ok: true };
+  }
+
+  @Get(':id/widgets')
+  async listWidgets(@Param('id') dashboardId: string, @CurrentUser() user: RequestUser): Promise<WidgetsResponse> {
+    return { widgets: await this.dashboards.listWidgets(user.id, dashboardId) };
   }
 
   @Post(':id/widgets')
