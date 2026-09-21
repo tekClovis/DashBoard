@@ -1,4 +1,4 @@
-import type { LayoutUpdateEntry, WidgetInstanceEntry } from '@dashboard/shared';
+import type { WidgetInstanceEntry } from '@dashboard/shared';
 import { useState, useSyncExternalStore } from 'react';
 import { noCompactor, ResponsiveGridLayout, useContainerWidth, type Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -7,7 +7,15 @@ import { useDeleteWidget, useUpdateLayout, useWidgets } from '@/api/widgets.js';
 import { AddWidgetDialog } from '@/components/AddWidgetDialog.js';
 import { Button } from '@/components/ui/button.js';
 import { WidgetFrame } from '@/components/WidgetFrame.js';
-import { GRID_COLS, moveEntry, nextSlot, sortStacked, type MoveDirection } from '@/lib/layout.js';
+import {
+  changedEntries,
+  GRID_COLS,
+  moveEntry,
+  normalize,
+  nextSlot,
+  sortStacked,
+  type MoveDirection,
+} from '@/lib/layout.js';
 
 const MD_QUERY = '(min-width: 768px)';
 
@@ -31,7 +39,10 @@ export function DashboardPage() {
   const isDesktop = useIsDesktop();
   const { width, containerRef } = useContainerWidth();
 
-  const [dialog, setDialog] = useState<{ open: boolean; instance?: WidgetInstanceEntry }>({ open: false });
+  const [dialog, setDialog] = useState<{
+    open: boolean;
+    instance?: WidgetInstanceEntry;
+  }>({ open: false });
   const widgets = data?.widgets ?? [];
 
   function renderFrame(w: WidgetInstanceEntry) {
@@ -48,14 +59,13 @@ export function DashboardPage() {
     );
   }
 
-  /** Persist only the items whose geometry actually changed. */
-  function persist(layout: Layout) {
-    const changed: LayoutUpdateEntry[] = layout
-      .map(({ i, x, y, w, h }) => ({ id: i, x, y, w, h }))
-      .filter((e) => {
-        const cur = widgets.find((w) => w.id === e.id);
-        return cur && (cur.x !== e.x || cur.y !== e.y || cur.w !== e.w || cur.h !== e.h);
-      });
+  /** Drag/resize stop: normalize the whole layout and persist every item whose geometry changed. */
+  function persist(layout: Layout, _old: unknown, dropped: { i: string } | null) {
+    const next = normalize(
+      layout.map(({ i, x, y, w, h }) => ({ id: i, x, y, w, h })),
+      dropped?.i,
+    );
+    const changed = changedEntries(widgets, next);
     if (changed.length > 0) updateLayout.mutate(changed);
   }
 
@@ -85,9 +95,17 @@ export function DashboardPage() {
             width={width}
             breakpoints={{ lg: 768 }}
             cols={{ lg: GRID_COLS }}
-            layouts={{ lg: widgets.map((w) => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h })) }}
+            layouts={{
+              lg: normalize(widgets).map((w) => ({
+                i: w.id,
+                x: w.x,
+                y: w.y,
+                w: w.w,
+                h: w.h,
+              })),
+            }}
             rowHeight={60}
-            // Render the stored layout as-is: vertical compaction would hide a keyboard Move down.
+            // normalize() already packs; rendered layout must equal the stored one.
             compactor={noCompactor}
             dragConfig={{ handle: '.widget-drag-handle' }}
             onDragStop={persist}

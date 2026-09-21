@@ -35,12 +35,12 @@ describe('DashboardPage', () => {
   it('runs Move, Delete and Configure from the widget menu', async () => {
     renderPage();
 
-    await openMenuItem('Move down');
+    await openMenuItem('Move right');
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/layout'))).toBe(true));
     expect(calls.find((c) => c.url.endsWith('/layout'))).toMatchObject({
       method: 'PATCH',
       url: '/api/dashboards/dash-1/layout',
-      body: [{ id: 'i1', x: 4, y: 3, w: 4, h: 3 }],
+      body: [{ id: 'i1', x: 5, y: 0, w: 4, h: 3 }],
     });
 
     await openMenuItem('Delete');
