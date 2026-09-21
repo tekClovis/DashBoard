@@ -25,7 +25,7 @@ function useIsDesktop() {
 /** Dashboard grid — docs/Architecture.md §9. Drag/resize on md+, single stacked column below. */
 export function DashboardPage() {
   const { dashboardId = '' } = useParams();
-  const { data } = useWidgets(dashboardId);
+  const { data, isError, refetch } = useWidgets(dashboardId);
   const updateLayout = useUpdateLayout(dashboardId);
   const deleteWidget = useDeleteWidget(dashboardId);
   const isDesktop = useIsDesktop();
@@ -41,8 +41,8 @@ export function DashboardPage() {
         onConfigure={() => setDialog({ open: true, instance: w })}
         onDelete={() => deleteWidget.mutate(w.id)}
         onMove={(dir: MoveDirection) => {
-          const entry = moveEntry(w, dir);
-          if (entry) updateLayout.mutate([entry]);
+          const entries = moveEntry(widgets, w.id, dir);
+          if (entries.length > 0) updateLayout.mutate(entries);
         }}
       />
     );
@@ -66,7 +66,20 @@ export function DashboardPage() {
         <Button onClick={() => setDialog({ open: true })}>Add widget</Button>
       </div>
 
-      {isDesktop ? (
+      {(deleteWidget.isError || updateLayout.isError) && (
+        <p role="alert" className="text-destructive mb-2 text-sm">
+          {deleteWidget.isError ? 'Could not delete the widget.' : 'Could not save the layout.'}
+        </p>
+      )}
+
+      {isError ? (
+        <div role="alert" className="grid justify-items-start gap-2">
+          <p className="text-destructive text-sm">Could not load your widgets.</p>
+          <Button variant="outline" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : isDesktop ? (
         <div ref={containerRef}>
           <ResponsiveGridLayout
             width={width}

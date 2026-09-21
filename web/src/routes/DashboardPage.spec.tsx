@@ -11,6 +11,21 @@ afterEach(() => {
 });
 
 describe('DashboardPage', () => {
+  it('shows an error with a working retry when the widgets fail to load', async () => {
+    const ok = vi.mocked(fetch).getMockImplementation()!;
+    let fail = true;
+    vi.mocked(fetch).mockImplementation((url, init) =>
+      fail && typeof url === 'string' && url.endsWith('/widgets')
+        ? Promise.resolve(new Response('{}', { status: 500 }))
+        : ok(url, init),
+    );
+    renderPage();
+    expect(await screen.findByText('Could not load your widgets.')).toBeTruthy();
+    fail = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('weather.forecast')).toBeTruthy();
+  });
+
   it('renders widgets stacked below md (jsdom has no md match)', async () => {
     renderPage();
     expect(await screen.findByText('weather.forecast')).toBeTruthy();

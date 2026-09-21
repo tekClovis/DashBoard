@@ -1,5 +1,5 @@
 import type { WidgetInstanceEntry, WidgetSpec } from '@dashboard/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useCatalog } from '@/api/catalog.js';
 import { useCreateWidget, useUpdateWidget } from '@/api/widgets.js';
@@ -34,7 +34,7 @@ export function AddWidgetDialog(props: AddWidgetDialogProps) {
 }
 
 function DialogBody({ dashboardId, onOpenChange, slot, instance }: AddWidgetDialogProps) {
-  const { data: catalog } = useCatalog();
+  const { data: catalog, isError: catalogError } = useCatalog();
   const create = useCreateWidget(dashboardId);
   const update = useUpdateWidget(dashboardId);
 
@@ -51,12 +51,14 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance }: AddWidgetDial
       ?.widgets.find((w) => w.name === instance?.widget);
 
   // Prefill params once the spec is known (picked, or resolved from the catalog when reconfiguring).
-  const [seededFor, setSeededFor] = useState<WidgetSpec | undefined>();
-  if (spec && seededFor !== spec) {
-    setSeededFor(spec);
+  // Keyed by name, not object identity, so a catalog refetch doesn't wipe the user's edits.
+  const specKey = spec && `${spec.service}.${spec.name}`;
+  useEffect(() => {
+    if (!spec) return;
     setValues(initialValues(spec.params, instance?.params));
     if (!instance) setRefresh(String(spec.minRefreshSec));
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [specKey]);
 
   const refreshNum = Number(refresh);
   const refreshError =
@@ -115,6 +117,12 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance }: AddWidgetDial
             );
           })}
         </div>
+      )}
+
+      {step > 1 && !spec && (
+        <p role={catalogError ? 'alert' : 'status'} className="text-sm">
+          {catalogError ? 'Could not load the widget catalog.' : 'Loading…'}
+        </p>
       )}
 
       {step === 2 && spec && <ParamForm specs={spec.params} values={values} onChange={setValues} />}

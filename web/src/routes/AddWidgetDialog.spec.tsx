@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { calls, renderPage, setupPage } from './dashboard-test-utils.js';
+import { calls, openMenuItem, renderPage, setupPage } from './dashboard-test-utils.js';
 
 beforeEach(setupPage);
 
@@ -11,6 +11,20 @@ afterEach(() => {
 });
 
 describe('Add widget dialog', () => {
+  it('waits for the catalog when configuring instead of showing a blank step', async () => {
+    const ok = vi.mocked(fetch).getMockImplementation()!;
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    vi.mocked(fetch).mockImplementation((url, init) =>
+      url === '/api/catalog' ? gate.then(() => ok(url, init)) : ok(url, init),
+    );
+    renderPage();
+    await openMenuItem('Configure');
+    expect(await screen.findByText('Loading…')).toBeTruthy();
+    release();
+    expect(((await screen.findByLabelText('city')) as HTMLInputElement).value).toBe('Paris');
+  });
+
   it('adds a widget through the 4-step dialog and disables unconnected services', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'Add widget' }));

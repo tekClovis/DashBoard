@@ -3,18 +3,12 @@ import type {
   LayoutUpdateEntry,
   UpdateWidgetInstanceRequest,
   WidgetInstanceEntry,
+  WidgetsResponse,
 } from '@dashboard/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client.js';
 
-interface WidgetsResponse {
-  widgets: WidgetInstanceEntry[];
-}
-
-/**
- * Widget instances of a dashboard. Assumes `GET /api/dashboards/{id}/widgets` → `{ widgets }`
- * (dashboards-api's spec lists create/patch/delete/layout but no instance list yet).
- */
+/** Widget instances of a dashboard — GET /api/dashboards/{id}/widgets. */
 export function useWidgets(dashboardId: string) {
   return useQuery({
     queryKey: ['widgets', dashboardId],
@@ -47,7 +41,8 @@ export function useDeleteWidget(dashboardId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiFetch<void>(`/widgets/${id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['widgets', dashboardId] }),
+    // Resync on failure too, so the grid matches the server; the page shows `isError`.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['widgets', dashboardId] }),
   });
 }
 
