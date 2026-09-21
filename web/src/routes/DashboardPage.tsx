@@ -39,6 +39,9 @@ export function DashboardPage() {
   const isDesktop = useIsDesktop();
   const { width, containerRef } = useContainerWidth();
 
+  // Bumped on every drag/resize stop: RGL keeps its own dropped position when the normalized
+  // layout prop is unchanged, so remount it to make the render equal the stored layout.
+  const [gridEpoch, setGridEpoch] = useState(0);
   const [dialog, setDialog] = useState<{
     open: boolean;
     instance?: WidgetInstanceEntry;
@@ -65,6 +68,7 @@ export function DashboardPage() {
       layout.map(({ i, x, y, w, h }) => ({ id: i, x, y, w, h })),
       dropped?.i,
     );
+    setGridEpoch((n) => n + 1);
     const changed = changedEntries(widgets, next);
     if (changed.length > 0) updateLayout.mutate(changed);
   }
@@ -92,6 +96,7 @@ export function DashboardPage() {
       ) : isDesktop ? (
         <div ref={containerRef}>
           <ResponsiveGridLayout
+            key={gridEpoch}
             width={width}
             breakpoints={{ lg: 768 }}
             cols={{ lg: GRID_COLS }}
