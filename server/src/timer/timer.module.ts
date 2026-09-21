@@ -18,5 +18,6 @@ import { TimerService } from './timer.service.js';
 @Module({
   imports: [AuthModule, CatalogModule],
   providers: [RealtimeGateway, TimerService, FetchService, InstanceLookupService, TokenCipherService],
+  exports: [RealtimeGateway],
 })
 export class TimerModule {}

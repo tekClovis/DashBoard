@@ -64,6 +64,29 @@ export interface MeResponse {
   identities: { provider: 'GITHUB' | 'GOOGLE' }[];
 }
 
+/** One row of GET /api/admin/users — see docs/Architecture.md §5.3. Never carries credentials. */
+export interface AdminUserEntry {
+  id: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  bannedAt: string | null;
+  createdAt: string;
+}
+
+/** GET /api/admin/users */
+export interface AdminUsersResponse {
+  users: AdminUserEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** PATCH /api/admin/users/{id}. `bannedAt: null` unbans; an ISO date bans. */
+export interface AdminUserPatch {
+  bannedAt?: string | null;
+  role?: 'USER' | 'ADMIN';
+}
+
 /** Client-facing shape of one ServiceConnection — raw tokens never appear here. See docs/Architecture.md §5.2. */
 export interface ConnectionEntry {
   service: string;

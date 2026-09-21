@@ -129,6 +129,10 @@ export class AuthController {
     if (!user.emailVerifiedAt) {
       throw new ForbiddenException({ error: 'EMAIL_NOT_CONFIRMED' });
     }
+    // After the password check so a ban isn't disclosed to someone without the credentials.
+    if (user.bannedAt) {
+      throw new ForbiddenException({ error: 'ACCOUNT_BANNED' });
+    }
 
     const token = this.jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion });
     setSessionCookie(res, this.config.getOrThrow<string>('APP_URL'), token);
