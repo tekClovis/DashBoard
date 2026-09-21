@@ -1,6 +1,6 @@
 import type { LayoutUpdateEntry, WidgetInstanceEntry } from '@dashboard/shared';
 import { useState, useSyncExternalStore } from 'react';
-import { ResponsiveGridLayout, useContainerWidth, type Layout } from 'react-grid-layout';
+import { noCompactor, ResponsiveGridLayout, useContainerWidth, type Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { useParams } from 'react-router';
 import { useDeleteWidget, useUpdateLayout, useWidgets } from '@/api/widgets.js';
@@ -87,6 +87,8 @@ export function DashboardPage() {
             cols={{ lg: GRID_COLS }}
             layouts={{ lg: widgets.map((w) => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h })) }}
             rowHeight={60}
+            // Render the stored layout as-is: vertical compaction would hide a keyboard Move down.
+            compactor={noCompactor}
             dragConfig={{ handle: '.widget-drag-handle' }}
             onDragStop={persist}
             onResizeStop={persist}
