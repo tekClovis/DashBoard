@@ -1,5 +1,4 @@
 import type { ConnectionEntry } from '@dashboard/shared';
-import { Link } from 'react-router';
 import { startConnect, useConnections, useDisconnect } from '@/api/connections.js';
 import { Button } from '@/components/ui/button.js';
 
@@ -16,14 +15,9 @@ export function ConnectionsPage() {
   const disconnect = useDisconnect();
 
   return (
-    <div className="bg-background min-h-svh p-6">
+    <div className="p-6">
       <div className="mx-auto max-w-[520px]">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Services</h1>
-          <Link to="/d/placeholder" className="text-muted-foreground text-sm underline underline-offset-4">
-            Back to dashboard
-          </Link>
-        </div>
+        <h1 className="mb-4 text-lg font-semibold">Services</h1>
 
         <div className="bg-card overflow-hidden rounded-lg border">
           {isPending && <p className="text-muted-foreground p-4 text-sm">Loading…</p>}
