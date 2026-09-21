@@ -41,8 +41,9 @@ function installServer() {
     const method = init?.method ?? 'GET';
     if (method === 'GET') {
       const q = new URL(path, 'http://x').searchParams.get('q') ?? '';
+      const page = Number(new URL(path, 'http://x').searchParams.get('page') ?? 1);
       const matched = users.filter((u) => u.email.includes(q));
-      return { users: matched, total: matched.length, page: 1, pageSize: 20 };
+      return { users: matched.slice((page - 1) * 20, page * 20), total: matched.length, page, pageSize: 20 };
     }
     const id = path.split('/').pop()!;
     if (method === 'PATCH') {
@@ -130,6 +131,26 @@ describe('AdminPage', () => {
     vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
     fireEvent.click(within(rowOf('alice@example.com')).getByRole('button', { name: 'Delete' }));
     await waitFor(() => expect(screen.queryByText('alice@example.com')).toBeNull());
+  });
+
+  it('steps back a page when deleting the last row of the last page', async () => {
+    mockMe('ADMIN');
+    users = [
+      user(ME_ID, 'admin@example.com', { role: 'ADMIN' }),
+      ...Array.from({ length: 20 }, (_, i) => user(`u${i}`, `user${String(i).padStart(2, '0')}@example.com`)),
+    ];
+    renderPage();
+    await screen.findByText('Page 1 of 2');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByText('Page 2 of 2');
+    await screen.findByText('user19@example.com'); // page 2 loaded (placeholder still shows page 1 until then)
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(within(rowOf('user19@example.com')).getByRole('button', { name: 'Delete' }));
+
+    await screen.findByText('Page 1 of 1');
+    expect(screen.queryByText('No users found.')).toBeNull();
+    expect(screen.getByText('admin@example.com')).toBeTruthy();
   });
 
   it('shows an error and refetches when a mutation fails', async () => {

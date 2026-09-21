@@ -1,5 +1,5 @@
 import type { AdminUserEntry } from '@dashboard/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ADMIN_PAGE_SIZE, useAdminUsers, useDeleteAdminUser, useUpdateAdminUser } from '@/api/admin.js';
 import { useMe } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
@@ -42,6 +42,10 @@ function UserTable({ selfId }: { selfId: string }) {
   const rows = users.data?.users ?? [];
   const total = users.data?.total ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  // Deleting the last row of the last page leaves `page` past the end — step back instead of showing an empty table.
+  useEffect(() => {
+    if (users.isSuccess && !users.isPlaceholderData && page > lastPage) setPage(lastPage);
+  }, [users.isSuccess, users.isPlaceholderData, page, lastPage]);
   const busyId = update.isPending ? update.variables?.id : remove.isPending ? remove.variables : undefined;
 
   const callbacks = { onMutate: () => setError(null), onError: (e: unknown) => setError(describeError(e)) };
