@@ -257,6 +257,25 @@ describe('AuthController', () => {
       ).rejects.toMatchObject({ status: 403, response: { error: 'EMAIL_NOT_CONFIRMED' } });
     });
 
+    it('returns 403 ACCOUNT_BANNED for correct credentials on a banned user, and sets no cookie', async () => {
+      const { controller, prisma } = makeDeps();
+      const passwordHash = await bcrypt.hash('correct-horse', 4);
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        role: 'USER',
+        tokenVersion: 0,
+        passwordHash,
+        emailVerifiedAt: new Date(),
+        bannedAt: new Date(),
+      });
+      const res = makeRes();
+
+      await expect(
+        controller.login({ email: 'a@b.com', password: 'correct-horse' }, makeReq(), res),
+      ).rejects.toMatchObject({ status: 403, response: { error: 'ACCOUNT_BANNED' } });
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+
     it('rejects an OIDC-only user (null passwordHash) with the generic 401', async () => {
       const { controller, prisma } = makeDeps();
       prisma.user.findUnique.mockResolvedValue({
