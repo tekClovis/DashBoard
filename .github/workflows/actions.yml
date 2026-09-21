@@ -10,7 +10,26 @@ env:
 
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: build
+        run: npm run build
+      - name: lint
+        run: npm run lint
+      - name: unit tests
+        run: npm test
+      - name: e2e tests
+        run: npm run test:e2e
+
   push_to_mirror:
+    needs: test
     if: ${{ github.repository != 'EpitechPGE3-2026/G-WEB-500-LIL-5-1-dashboard-22'  && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
