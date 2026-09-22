@@ -12,6 +12,7 @@ import { AdminModule } from './admin/admin.module.js';
 import { ConnectionsModule } from './connections/connections.module.js';
 import { DashboardsModule } from './dashboards/dashboards.module.js';
 import { TimerModule } from './timer/timer.module.js';
+import { GithubModule } from './services/github/github.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { TimerModule } from './timer/timer.module.js';
     ConnectionsModule,
     DashboardsModule,
     TimerModule,
+    GithubModule,
   ],
 })
 export class AppModule {}

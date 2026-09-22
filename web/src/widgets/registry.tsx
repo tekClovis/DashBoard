@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { PullRequestsView, RecentCommitsView, SecurityAlertsView } from './github.js';
 
 export interface WidgetViewProps {
   data: unknown;
@@ -10,7 +11,11 @@ function JsonView({ data }: WidgetViewProps) {
 }
 
 /** Real views register here as `views['github.recent_commits'] = RecentCommitsView`. */
-export const views: Record<string, ComponentType<WidgetViewProps>> = {};
+export const views: Record<string, ComponentType<WidgetViewProps>> = {
+  'github.recent_commits': RecentCommitsView,
+  'github.pull_requests': PullRequestsView,
+  'github.security_alerts': SecurityAlertsView,
+};
 
 export function getView(service: string, widget: string): ComponentType<WidgetViewProps> {
   return views[`${service}.${widget}`] ?? JsonView;
