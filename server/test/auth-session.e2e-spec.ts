@@ -161,6 +161,15 @@ describe('Admin boot-seed (e2e)', () => {
     config.set('ADMIN_EMAIL', adminEmail);
     config.set('ADMIN_PASSWORD', adminPassword);
 
+    // AdminSeedService seeds at most once — it no-ops if any ADMIN-role row already
+    // exists. All e2e files share one Postgres container with no per-file namespacing
+    // (see vitest.config.e2e.ts), and admin.e2e-spec.ts creates its own ADMIN-role rows
+    // directly; depending on file execution order (which isn't guaranteed stable across
+    // environments — this passed locally but failed in CI), those rows can already be
+    // there by the time this describe runs and block the seed this test is checking for.
+    // Clear them first so this test's precondition doesn't depend on run order.
+    await moduleFixture.get(PrismaService).user.deleteMany({ where: { role: 'ADMIN' } });
+
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api', { exclude: ['about.json'] });
     await app.init(); // runs OnApplicationBootstrap, including AdminSeedService
