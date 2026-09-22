@@ -139,38 +139,6 @@ describe('Dashboards (e2e)', () => {
     });
   });
 
-  describe('2b. GET /api/dashboards/{id}/widgets', () => {
-    it("lists the owner's instances, 404s for another user's dashboard, and returns [] when empty", async () => {
-      const { userId: ownerId, cookie: ownerCookie } = await createUserWithCookie('list-owner@example.com');
-      const { cookie: attackerCookie } = await createUserWithCookie('list-attacker@example.com');
-      const dashboardId = await createDashboard(ownerId);
-      const emptyId = await createDashboard(ownerId, 'Empty', 1);
-
-      const empty = await request(app.getHttpServer())
-        .get(`/api/dashboards/${emptyId}/widgets`)
-        .set('Cookie', ownerCookie)
-        .expect(200);
-      expect(empty.body).toEqual({ widgets: [] });
-
-      const created = await request(app.getHttpServer())
-        .post(`/api/dashboards/${dashboardId}/widgets`)
-        .set('Cookie', ownerCookie)
-        .send(validInstanceBody)
-        .expect(201);
-
-      const own = await request(app.getHttpServer())
-        .get(`/api/dashboards/${dashboardId}/widgets`)
-        .set('Cookie', ownerCookie)
-        .expect(200);
-      expect(own.body.widgets).toEqual([created.body]);
-
-      await request(app.getHttpServer())
-        .get(`/api/dashboards/${dashboardId}/widgets`)
-        .set('Cookie', attackerCookie)
-        .expect(404);
-    });
-  });
-
   describe('3. POST /api/dashboards/{id}/widgets — valid create', () => {
     it('creates a WidgetInstance and returns it with an id', async () => {
       const { userId, cookie } = await createUserWithCookie('widget3@example.com');

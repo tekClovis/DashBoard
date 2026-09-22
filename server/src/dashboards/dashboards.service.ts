@@ -69,15 +69,6 @@ export class DashboardsService {
     if (count === 0) throw new NotFoundException();
   }
 
-  async listWidgets(userId: string, dashboardId: string): Promise<WidgetInstanceEntry[]> {
-    const dashboard = await this.prisma.dashboard.findFirst({
-      where: { id: dashboardId, userId },
-      include: { widgets: true },
-    });
-    if (!dashboard) throw new NotFoundException();
-    return dashboard.widgets.map(toWidgetInstanceEntry);
-  }
-
   async addWidgetInstance(
     userId: string,
     dashboardId: string,

@@ -136,11 +136,6 @@ export interface WidgetInstanceEntry {
   h: number;
 }
 
-/** GET /api/dashboards/{id}/widgets */
-export interface WidgetsResponse {
-  widgets: WidgetInstanceEntry[];
-}
-
 /** POST /api/dashboards/{id}/widgets */
 export interface CreateWidgetInstanceRequest {
   service: string;
