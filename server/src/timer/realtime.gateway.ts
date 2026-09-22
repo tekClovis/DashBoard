@@ -112,6 +112,11 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     );
   }
 
+  /** Immediately drops every live socket of `userId` (ban / role change / delete) — no waiting for the reauth tick. */
+  disconnectUser(userId: string): void {
+    this.server?.in(`user:${userId}`).disconnectSockets(true);
+  }
+
   handleDisconnect(client: Socket): void {
     const timer = this.reauthTimers.get(client.id);
     if (timer) {

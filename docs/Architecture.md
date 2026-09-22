@@ -312,6 +312,7 @@ All routes are under `/api` and require the JWT cookie unless marked public. Bod
 | GET | `/catalog` | Services + widgets + full `ParamSpec`s + the user's connection status per service |
 | GET / DELETE | `/connections`, `/connections/{service}` | List / disconnect |
 | GET / POST / PATCH / DELETE | `/dashboards`, `/dashboards/{id}` | Dashboard CRUD (name, position) |
+| GET | `/dashboards/{id}/widgets` | List the dashboard's instances `{ widgets: [...] }` |
 | POST | `/dashboards/{id}/widgets` | Add instance `{ service, widget, params, refreshRate, x, y, w, h }` |
 | PATCH | `/dashboards/{id}/layout` | Bulk `[{ id, x, y, w, h }]` after a drag or resize |
 | PATCH / DELETE | `/widgets/{id}` | Reconfigure (`params`, `refreshRate`) / delete |

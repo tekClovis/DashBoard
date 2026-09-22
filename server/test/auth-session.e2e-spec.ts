@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
@@ -15,6 +16,19 @@ describe('Auth session (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
+
+    // ConfigService.get() prefers the env-file-derived config it validated at
+    // ConfigModule.forRoot() time over live process.env, so if the repo's .env
+    // sets ADMIN_EMAIL/ADMIN_PASSWORD (even to ''), a plain `process.env[...] =`
+    // here would never reach AdminSeedService and it would seed against whatever
+    // ADMIN_EMAIL/PASSWORD are in that file. Explicitly clearing them through
+    // ConfigService.set() writes into its internalConfig, which get() checks
+    // first — this describe's app.init() must not seed a real admin row, or it
+    // would block the "Admin boot-seed" describe below from seeding its own
+    // (AdminSeedService only ever seeds once).
+    const config = moduleFixture.get(ConfigService);
+    config.set('ADMIN_EMAIL', '');
+    config.set('ADMIN_PASSWORD', '');
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api', { exclude: ['about.json'] });
@@ -135,12 +149,26 @@ describe('Admin boot-seed (e2e)', () => {
   const adminPassword = 'admin-boot-seed-1!';
 
   beforeAll(async () => {
-    process.env['ADMIN_EMAIL'] = adminEmail;
-    process.env['ADMIN_PASSWORD'] = adminPassword;
-
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
+
+    // See the ADMIN_EMAIL/PASSWORD comment in the describe above: ConfigService.get()
+    // won't see plain process.env writes here if the repo's .env already defines these
+    // keys, so set them through ConfigService directly before app.init() runs
+    // AdminSeedService's OnApplicationBootstrap hook.
+    const config = moduleFixture.get(ConfigService);
+    config.set('ADMIN_EMAIL', adminEmail);
+    config.set('ADMIN_PASSWORD', adminPassword);
+
+    // AdminSeedService seeds at most once — it no-ops if any ADMIN-role row already
+    // exists. All e2e files share one Postgres container with no per-file namespacing
+    // (see vitest.config.e2e.ts), and admin.e2e-spec.ts creates its own ADMIN-role rows
+    // directly; depending on file execution order (which isn't guaranteed stable across
+    // environments — this passed locally but failed in CI), those rows can already be
+    // there by the time this describe runs and block the seed this test is checking for.
+    // Clear them first so this test's precondition doesn't depend on run order.
+    await moduleFixture.get(PrismaService).user.deleteMany({ where: { role: 'ADMIN' } });
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api', { exclude: ['about.json'] });
@@ -149,14 +177,15 @@ describe('Admin boot-seed (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
-    delete process.env['ADMIN_EMAIL'];
-    delete process.env['ADMIN_PASSWORD'];
   });
 
   it('8. seeds a confirmed ADMIN user that can log in immediately', async () => {
     const agent = request.agent(app.getHttpServer());
 
-    const res = await agent.post('/api/auth/login').send({ email: adminEmail, password: adminPassword }).expect(200);
+    const res = await agent
+      .post('/api/auth/login')
+      .send({ email: adminEmail, password: adminPassword })
+      .expect(200);
     expect(res.body).toEqual({ ok: true });
 
     const me = await agent.get('/api/auth/me').expect(200);
