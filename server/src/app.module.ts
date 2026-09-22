@@ -12,6 +12,7 @@ import { AdminModule } from './admin/admin.module.js';
 import { ConnectionsModule } from './connections/connections.module.js';
 import { DashboardsModule } from './dashboards/dashboards.module.js';
 import { TimerModule } from './timer/timer.module.js';
+import { WeatherModule } from './services/weather/weather.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { TimerModule } from './timer/timer.module.js';
     ConnectionsModule,
     DashboardsModule,
     TimerModule,
+    WeatherModule,
   ],
 })
 export class AppModule {}

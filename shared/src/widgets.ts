@@ -1,9 +1,32 @@
 // Per-widget data shapes — see docs/Architecture.md §3.
 //
-// Each `services/<name>` module augments this interface with its own widget
-// keys ('service.widget' → data shape) via `declare module`, so a view and
-// its server fetch() cannot drift apart. Empty until the first service is
-// implemented.
+// Maps 'service.widget' → data shape, so a view and its server fetch() cannot
+// drift apart. Shapes the web client renders live here; test-only fixtures
+// augment it via `declare module`.
 
-// oxlint-disable-next-line no-empty-object-type
-export interface WidgetDataMap {}
+export interface WidgetDataMap {
+  'weather.current_weather': CurrentWeatherData;
+  'weather.forecast': ForecastData;
+}
+
+// weather — server/src/services/weather/
+export interface CurrentWeatherData {
+  /** Resolved place name, e.g. "Paris, France". */
+  location: string;
+  temperature: number;
+  unit: '°C' | '°F';
+  condition: string;
+}
+
+export interface ForecastDay {
+  /** ISO date (YYYY-MM-DD), local to the location. Temperatures are °C. */
+  date: string;
+  min: number;
+  max: number;
+  condition: string;
+}
+
+export interface ForecastData {
+  location: string;
+  days: ForecastDay[];
+}

@@ -21,14 +21,36 @@ describe('AboutController (e2e)', () => {
     await app.close();
   });
 
-  it('serves the subject-required shape from an empty registry', async () => {
+  it('serves the subject-required shape, with only name/description/params[].{name,type} per widget', async () => {
     const res = await request(app.getHttpServer()).get('/about.json').expect(200);
 
     expect(res.body).toEqual({
       client: { host: expect.any(String) },
       server: {
         current_time: expect.any(Number),
-        services: [],
+        services: [
+          {
+            name: 'weather',
+            widgets: [
+              {
+                name: 'current_weather',
+                description: expect.any(String),
+                params: [
+                  { name: 'city', type: 'string' },
+                  { name: 'units', type: 'string' },
+                ],
+              },
+              {
+                name: 'forecast',
+                description: expect.any(String),
+                params: [
+                  { name: 'city', type: 'string' },
+                  { name: 'days', type: 'integer' },
+                ],
+              },
+            ],
+          },
+        ],
       },
     });
     expect(Number.isInteger(res.body.server.current_time)).toBe(true);

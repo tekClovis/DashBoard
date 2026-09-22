@@ -1,8 +1,8 @@
 // e2e for features/dashboards-api/spec.md's verification checklist.
 //
 // Follows the catalog.e2e-spec.ts / connections.e2e-spec.ts conventions: real Postgres via
-// testcontainers, real HTTP through supertest. A test WidgetDefinition is registered directly
-// against the WidgetRegistryService, since no real widgets are in scope for this feature.
+// testcontainers, real HTTP through supertest. Instances use the real weather.current_weather
+// definition registered by WeatherModule.
 
 import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
@@ -12,26 +12,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { JwtService } from '../src/auth/jwt.service.js';
 import { PrismaService } from '../src/core/prisma/prisma.service.js';
-import { WidgetRegistryService } from '../src/catalog/widget-registry.service.js';
-import type { WidgetDefinition } from '../src/catalog/widget-definition.js';
 
 describe('Dashboards (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let jwtService: JwtService;
-
-  const testWidget: WidgetDefinition = {
-    service: 'weather',
-    name: 'current_weather',
-    description: 'Current weather for a city.',
-    params: [
-      { name: 'city', type: 'string', required: true, label: 'City' },
-      { name: 'units', type: 'string', enum: ['metric', 'imperial'], default: 'metric', label: 'Units' },
-    ],
-    minRefreshSec: 300,
-    auth: 'none',
-    fetch: async () => ({}) as never,
-  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -42,10 +27,6 @@ describe('Dashboards (e2e)', () => {
 
     prisma = app.get(PrismaService);
     jwtService = app.get(JwtService);
-
-    const registry = app.get(WidgetRegistryService);
-    registry.registerService({ name: 'weather', connection: 'none' });
-    registry.register(testWidget);
   });
 
   afterAll(async () => {
