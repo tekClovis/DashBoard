@@ -82,29 +82,27 @@ describe('Catalog (e2e)', () => {
 
       const res = await request(app.getHttpServer()).get('/api/catalog').set('Cookie', cookie).expect(200);
 
-      expect(res.body).toEqual({
-        services: [
-          {
-            name: 'github',
-            connection: 'oauth',
-            connected: true,
-            status: 'OK',
-            widgets: [
-              {
-                service: 'github',
-                name: 'recent_commits',
-                description: 'Recent commits for a repo.',
-                minRefreshSec: 60,
-                params: [
-                  { name: 'repo', type: 'string', required: true, pattern: '^[\\w.-]+/[\\w.-]+$', label: 'Repository' },
-                  { name: 'count', type: 'integer', min: 1, max: 20, default: 5, label: 'Count' },
-                  { name: 'sort', type: 'string', enum: ['recent', 'oldest'], default: 'recent', label: 'Sort' },
-                ],
-              },
-            ],
-          },
-        ],
-      });
+      expect(res.body.services).toContainEqual(
+        {
+          name: 'github',
+          connection: 'oauth',
+          connected: true,
+          status: 'OK',
+          widgets: [
+            {
+              service: 'github',
+              name: 'recent_commits',
+              description: 'Recent commits for a repo.',
+              minRefreshSec: 60,
+              params: [
+                { name: 'repo', type: 'string', required: true, pattern: '^[\\w.-]+/[\\w.-]+$', label: 'Repository' },
+                { name: 'count', type: 'integer', min: 1, max: 20, default: 5, label: 'Count' },
+                { name: 'sort', type: 'string', enum: ['recent', 'oldest'], default: 'recent', label: 'Sort' },
+              ],
+            },
+          ],
+        },
+      );
     });
 
     it('returns connected:false for a service the current user has not connected', async () => {

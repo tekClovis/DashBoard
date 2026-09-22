@@ -21,14 +21,14 @@ describe('AboutController (e2e)', () => {
     await app.close();
   });
 
-  it('serves the subject-required shape from an empty registry', async () => {
+  it('serves the subject-required shape', async () => {
     const res = await request(app.getHttpServer()).get('/about.json').expect(200);
 
     expect(res.body).toEqual({
       client: { host: expect.any(String) },
       server: {
         current_time: expect.any(Number),
-        services: [],
+        services: expect.any(Array),
       },
     });
     expect(Number.isInteger(res.body.server.current_time)).toBe(true);

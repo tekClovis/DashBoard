@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>steam-widgets mock</title>
+<style>
+  :root { --background:#fff; --foreground:#1f1f1f; --muted:#f4f4f5; --muted-foreground:#71717a; --border:#e4e4e7; --radius:10px; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; background:var(--background); color:var(--foreground); }
+  main { max-width:640px; margin:50px auto; padding:0 20px; display:grid; gap:16px; }
+  .card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .card-head { padding:10px 16px; background:var(--muted); font-weight:600; font-size:14px; }
+  .row { padding:10px 16px; border-top:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; }
+  .hrs { color:var(--muted-foreground); font-size:12px; }
+  .reconnect { color:#92400e; font-size:13px; padding:16px; background:#fffbeb; }
+  .error { color:#b91c1c; font-size:13px; padding:16px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="card-head">recently_played &middot; last 2 weeks</div>
+    <div class="row"><span>Half-Life 2</span><span class="hrs">3.2 hrs</span></div>
+    <div class="row"><span>Portal 2</span><span class="hrs">1.5 hrs</span></div>
+    <div class="row"><span>Stardew Valley</span><span class="hrs">6.8 hrs</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head">game_news &middot; app_id 620 (Portal 2)</div>
+    <div class="row"><span>Community update: new Workshop maps</span><span class="hrs">2d ago</span></div>
+    <div class="row"><span>Patch notes 1.12</span><span class="hrs">9d ago</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head">recently_played &middot; not connected</div>
+    <div class="reconnect">Connect Steam to load this widget.</div>
+  </div>
+  <div class="card">
+    <div class="card-head">game_news &middot; app_id 999999999</div>
+    <div class="error">INVALID_PARAMS: unknown app_id</div>
+  </div>
+</main>
+</body>
+</html>

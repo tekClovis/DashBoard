@@ -43,6 +43,7 @@ export class FetchService {
     const ctx: FetchContext = {
       userId,
       accessToken: connection.accessTokenEnc ? this.cipher.decrypt(connection.accessTokenEnc) : undefined,
+      externalAccountId: connection.externalAccountId,
     };
     return this.dedupedFetch(key, def, params, ctx);
   }
