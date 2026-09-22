@@ -11,22 +11,28 @@ const TIMEOUT_MS = 10_000;
 export const REPO_PATTERN = '^[A-Za-z0-9-]+/(?!\\.\\.?$)[A-Za-z0-9._-]+$';
 const REPO_RE = new RegExp(REPO_PATTERN);
 
-/** `/repos/{owner}/{name}` for a validated `repo` param; INVALID_PARAMS otherwise. */
-export function repoPath(repo: Params[string] | undefined): string {
+/** The `repo` param as `owner/name`; INVALID_PARAMS otherwise. REPO_RE's charset needs no URL encoding. */
+export function parseRepo(repo: Params[string] | undefined): string {
   const value = String(repo ?? '');
   if (!REPO_RE.test(value)) {
     throw new FetchError('INVALID_PARAMS', `'${value}' is not an owner/name repository.`);
   }
-  const [owner, name] = value.split('/');
-  return `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+  return value;
 }
 
-export async function githubGet<T>(path: string, accessToken: string | undefined): Promise<T> {
+/** GET `/repos/{repo}{path}?{query}`. */
+export async function githubGet<T>(
+  repo: string,
+  path: string,
+  query: Record<string, string | number>,
+  accessToken: string | undefined,
+): Promise<T> {
   if (!accessToken) throw new FetchError('REAUTH_REQUIRED', 'No GitHub token for this connection.');
 
+  const search = new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)]));
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await fetch(`${API_URL}/repos/${repo}${path}?${search}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/vnd.github+json',
@@ -39,6 +45,8 @@ export async function githubGet<T>(path: string, accessToken: string | undefined
   }
 
   if (res.ok) return (await res.json()) as T;
+  // Release the unread body so undici can return the socket to its keep-alive pool.
+  await res.body?.cancel();
   throw toFetchError(res);
 }
 

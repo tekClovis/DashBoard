@@ -1,9 +1,9 @@
 // GitHub widget definitions — see docs/Architecture.md §3's widget catalog and
 // features/github-widgets/spec.md. Data shapes live in shared/src/widgets.ts.
 
-import type { GithubSecurityAlert, ParamSpec } from '@dashboard/shared';
+import type { GithubPullRequest, GithubSecurityAlert, ParamSpec, WidgetDataMap } from '@dashboard/shared';
 import type { WidgetDefinition } from '../../catalog/widget-definition.js';
-import { githubGet, REPO_PATTERN, repoPath } from './github-api.js';
+import { githubGet, parseRepo, REPO_PATTERN } from './github-api.js';
 
 const PAGE_SIZE = 20;
 
@@ -18,7 +18,7 @@ interface RawCommit {
 interface RawPull {
   number: number;
   title: string;
-  state: 'open' | 'closed';
+  state: GithubPullRequest['state'];
   html_url: string;
   user: { login: string } | null;
 }
@@ -38,9 +38,10 @@ const recentCommits: WidgetDefinition<'github.recent_commits'> = {
   minRefreshSec: 60,
   auth: 'connection',
   fetch: async (params, ctx) => {
-    const raw = await githubGet<RawCommit[]>(`${repoPath(params['repo'])}/commits?per_page=${Number(params['number'])}`, ctx.accessToken);
+    const repo = parseRepo(params['repo']);
+    const raw = await githubGet<RawCommit[]>(repo, '/commits', { per_page: params['number'] }, ctx.accessToken);
     return {
-      repo: String(params['repo']),
+      repo,
       commits: raw.map((c) => ({
         sha: c.sha,
         message: c.commit.message.split('\n', 1)[0],
@@ -60,11 +61,11 @@ const pullRequests: WidgetDefinition<'github.pull_requests'> = {
   minRefreshSec: 60,
   auth: 'connection',
   fetch: async (params, ctx) => {
-    const state = String(params['state']) as 'open' | 'closed' | 'all';
-    const query = new URLSearchParams({ state, per_page: String(PAGE_SIZE) });
-    const raw = await githubGet<RawPull[]>(`${repoPath(params['repo'])}/pulls?${query}`, ctx.accessToken);
+    const repo = parseRepo(params['repo']);
+    const state = String(params['state']) as WidgetDataMap['github.pull_requests']['state'];
+    const raw = await githubGet<RawPull[]>(repo, '/pulls', { state, per_page: PAGE_SIZE }, ctx.accessToken);
     return {
-      repo: String(params['repo']),
+      repo,
       state,
       pulls: raw.map((p) => ({
         number: p.number,
@@ -85,9 +86,10 @@ const securityAlerts: WidgetDefinition<'github.security_alerts'> = {
   minRefreshSec: 300,
   auth: 'connection',
   fetch: async (params, ctx) => {
-    const raw = await githubGet<RawAlert[]>(`${repoPath(params['repo'])}/dependabot/alerts?state=open&per_page=${PAGE_SIZE}`, ctx.accessToken);
+    const repo = parseRepo(params['repo']);
+    const raw = await githubGet<RawAlert[]>(repo, '/dependabot/alerts', { state: 'open', per_page: PAGE_SIZE }, ctx.accessToken);
     return {
-      repo: String(params['repo']),
+      repo,
       alerts: raw.map((a) => ({
         number: a.number,
         summary: a.security_advisory.summary,

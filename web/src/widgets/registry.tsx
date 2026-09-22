@@ -10,7 +10,7 @@ function JsonView({ data }: WidgetViewProps) {
   return <pre className="overflow-auto text-xs">{JSON.stringify(data, null, 2)}</pre>;
 }
 
-/** Real views register here as `views['github.recent_commits'] = RecentCommitsView`. */
+/** Real views, keyed by `service.widget`. */
 export const views: Record<string, ComponentType<WidgetViewProps>> = {
   'github.recent_commits': RecentCommitsView,
   'github.pull_requests': PullRequestsView,

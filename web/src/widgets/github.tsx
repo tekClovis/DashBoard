@@ -3,11 +3,12 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils.js';
 import type { WidgetViewProps } from './registry.js';
 
+const RED = 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
 const BADGE_TONES: Record<string, string> = {
   open: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  closed: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-  critical: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-  high: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  closed: RED,
+  critical: RED,
+  high: RED,
   medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
 };
 
