@@ -29,9 +29,13 @@ async function getJson<T>(url: string, query: Record<string, string | number>): 
   return (await res.json()) as T;
 }
 
-/** "Paris" and " paris " share one cache entry. */
+/** "Paris" and " paris " normalize to the same name, so they share one cache entry and upstream query. */
+function normalizeCity(city: string): string {
+  return city.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 export function geoCacheKey(city: string): string {
-  return `geo:${city.trim().replace(/\s+/g, ' ').toLowerCase()}`;
+  return `geo:${normalizeCity(city)}`;
 }
 
 /**
@@ -48,21 +52,21 @@ export class Geocoder {
     const existing = this.inFlight.get(key);
     if (existing) return existing;
 
-    const promise = this.lookup(key, city).finally(() => this.inFlight.delete(key));
+    const promise = this.lookup(key, normalizeCity(city)).finally(() => this.inFlight.delete(key));
     this.inFlight.set(key, promise);
     return promise;
   }
 
-  private async lookup(key: string, city: string): Promise<GeoLocation> {
+  private async lookup(key: string, name: string): Promise<GeoLocation> {
     const cached = await this.redis.get(key);
     if (cached !== null) return JSON.parse(cached) as GeoLocation;
 
     const body = await getJson<{ results?: { name: string; country?: string; latitude: number; longitude: number }[] }>(
       GEOCODING_URL,
-      { name: city.trim(), count: 1, language: 'en', format: 'json' },
+      { name, count: 1, language: 'en', format: 'json' },
     );
     const hit = body.results?.[0];
-    if (!hit) throw new FetchError('INVALID_PARAMS', `Could not resolve city '${city}'.`);
+    if (!hit) throw new FetchError('INVALID_PARAMS', `Could not resolve city '${name}'.`);
 
     const location: GeoLocation = {
       name: hit.country ? `${hit.name}, ${hit.country}` : hit.name,

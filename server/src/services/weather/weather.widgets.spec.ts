@@ -92,6 +92,18 @@ describe('weather widgets', () => {
     expect(calls(fetchMock, 'geocoding')).toHaveLength(1);
   });
 
+  it('geocodes the whitespace-collapsed city name, sharing one lookup across spellings', async () => {
+    const fetchMock = stubOpenMeteo({ current: { temperature_2m: 1, weather_code: 0 } });
+
+    await current.fetch({ city: 'New   York', units: 'metric' }, { userId: 'a' });
+    await current.fetch({ city: 'new\tyork', units: 'metric' }, { userId: 'b' });
+
+    const geoCalls = calls(fetchMock, 'geocoding');
+    expect(geoCalls).toHaveLength(1);
+    expect(geoCalls[0].searchParams.get('name')).toBe('new york');
+    expect(redis.set).toHaveBeenCalledWith('geo:new york', expect.any(String), 'EX', 86400);
+  });
+
   it('dedupes concurrent geocoding lookups for the same city', async () => {
     const fetchMock = stubOpenMeteo({ current: { temperature_2m: 1, weather_code: 0 } });
 
