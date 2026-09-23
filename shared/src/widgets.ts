@@ -8,6 +8,8 @@ export interface WidgetDataMap {
   'github.recent_commits': { repo: string; commits: GithubCommit[] };
   'github.pull_requests': { repo: string; state: 'open' | 'closed' | 'all'; pulls: GithubPullRequest[] };
   'github.security_alerts': { repo: string; alerts: GithubSecurityAlert[] };
+  'weather.current_weather': CurrentWeatherData;
+  'weather.forecast': ForecastData;
 }
 
 // --- github (server/src/services/github) ---
@@ -35,4 +37,25 @@ export interface GithubSecurityAlert {
   severity: 'low' | 'medium' | 'high' | 'critical';
   package: string;
   url: string;
+
+// weather — server/src/services/weather/
+export interface CurrentWeatherData {
+  /** Resolved place name, e.g. "Paris, France". */
+  location: string;
+  temperature: number;
+  unit: '°C' | '°F';
+  condition: string;
+}
+
+export interface ForecastDay {
+  /** ISO date (YYYY-MM-DD), local to the location. Temperatures are °C. */
+  date: string;
+  min: number;
+  max: number;
+  condition: string;
+}
+
+export interface ForecastData {
+  location: string;
+  days: ForecastDay[];
 }

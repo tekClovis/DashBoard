@@ -13,6 +13,7 @@ import { ConnectionsModule } from './connections/connections.module.js';
 import { DashboardsModule } from './dashboards/dashboards.module.js';
 import { TimerModule } from './timer/timer.module.js';
 import { GithubModule } from './services/github/github.module.js';
+import { WeatherModule } from './services/weather/weather.module.js';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { GithubModule } from './services/github/github.module.js';
     DashboardsModule,
     TimerModule,
     GithubModule,
+    WeatherModule,
   ],
 })
 export class AppModule {}

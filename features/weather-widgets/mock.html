@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>weather-widgets mock</title>
+<style>
+  :root { --background:#fff; --foreground:#1f1f1f; --card:#fff; --muted:#f4f4f5; --muted-foreground:#71717a;
+    --border:#e4e4e7; --radius:10px; --accent:#eff6ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; background:var(--background); color:var(--foreground); }
+  main { max-width:640px; margin:50px auto; padding:0 20px; display:grid; gap:16px; }
+  .card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .card-head { padding:10px 16px; background:var(--muted); font-weight:600; font-size:14px; display:flex; justify-content:space-between; }
+  .card-body { padding:16px; }
+  .temp { font-size:32px; font-weight:700; }
+  .cond { color:var(--muted-foreground); font-size:13px; margin-top:2px; }
+  .days { display:flex; gap:10px; margin-top:12px; }
+  .day { flex:1; text-align:center; background:var(--accent); border-radius:8px; padding:8px 4px; font-size:12px; }
+  .day .d { font-weight:600; margin-bottom:4px; }
+  .error { color:#b91c1c; font-size:13px; padding:16px; }
+  .skeleton { height:60px; background:var(--muted); border-radius:8px; margin:16px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="card-head">current_weather &middot; Paris &middot; metric<span>refresh 300s</span></div>
+    <div class="card-body">
+      <div class="temp">18°C</div>
+      <div class="cond">Partly cloudy</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">forecast &middot; Paris &middot; 5 days<span>refresh 900s</span></div>
+    <div class="card-body">
+      <div class="days" id="days"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">current_weather &middot; loading</div>
+    <div class="skeleton"></div>
+  </div>
+  <div class="card">
+    <div class="card-head">current_weather &middot; zzzznotacity</div>
+    <div class="error">INVALID_PARAMS: could not resolve city</div>
+  </div>
+</main>
+<script>
+  const days = [
+    { d: 'Mon', t: '17°' }, { d: 'Tue', t: '19°' }, { d: 'Wed', t: '15°' },
+    { d: 'Thu', t: '16°' }, { d: 'Fri', t: '20°' },
+  ];
+  document.getElementById('days').innerHTML =
+    days.map(x => `<div class="day"><div class="d">${x.d}</div>${x.t}</div>`).join('');
+</script>
+</body>
+</html>

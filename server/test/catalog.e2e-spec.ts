@@ -97,6 +97,16 @@ describe('Catalog (e2e)', () => {
       });
     });
 
+    it('returns weather as connected:true with no ServiceConnection row (connection: none)', async () => {
+      const { cookie } = await createUserWithCookie('cat3@example.com');
+
+      const res = await request(app.getHttpServer()).get('/api/catalog').set('Cookie', cookie).expect(200);
+
+      expect(res.body.services).toContainEqual(
+        expect.objectContaining({ name: 'weather', connection: 'none', connected: true, status: 'OK' }),
+      );
+    });
+
     it('returns connected:false for a service the current user has not connected', async () => {
       const { cookie } = await createUserWithCookie('cat2@example.com');
 
