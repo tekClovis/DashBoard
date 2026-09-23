@@ -2,14 +2,20 @@
 // (`access_type=offline`, "refreshed on expiry or 401") and features/youtube-widgets/spec.md.
 //
 // The refreshed token is stored through connections-api's TokenCipherService (AES-256-GCM), the
-// same path the connect callback uses. A failed refresh throws REAUTH_REQUIRED, which the Timer
-// turns into ServiceConnection.status = REAUTH.
+// same path the connect callback uses. A failed refresh marks the row REAUTH and throws
+// REAUTH_REQUIRED.
+//
+// The user can disconnect or reconnect while the token exchange is in flight, so either outcome is
+// written only if the row still holds the refresh token that was exchanged (compare-and-set on
+// refreshTokenEnc; its random IV makes a reconnect's ciphertext differ even for the same token).
+// Otherwise the stale grant is dropped: see superseded().
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { googleConnectClient } from '../../connections/strategies/google-connect.strategy.js';
 import { TokenCipherService } from '../../connections/token-cipher.service.js';
 import { PrismaService } from '../../core/prisma/prisma.service.js';
+import type { Prisma, ServiceConnection } from '../../generated/prisma/client.js';
 import { FetchError } from '../../timer/fetch-error.js';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -47,9 +53,7 @@ export class GoogleTokenRefresher {
   }
 
   private async exchange(userId: string): Promise<string> {
-    const connection = await this.prisma.serviceConnection.findUnique({
-      where: { userId_service: { userId, service: 'youtube' } },
-    });
+    const connection = await this.findConnection(userId);
     if (!connection?.refreshTokenEnc) {
       throw new FetchError('REAUTH_REQUIRED', 'No Google refresh token for this connection.');
     }
@@ -73,21 +77,44 @@ export class GoogleTokenRefresher {
       await res.body?.cancel();
       // 400 invalid_grant (revoked/expired refresh token) or 401 invalid_client: only a reconnect fixes it.
       if (res.status === 400 || res.status === 401) {
+        if (!(await this.writeIfCurrent(connection, { status: 'REAUTH' }))) return this.superseded(userId);
         throw new FetchError('REAUTH_REQUIRED', 'Google refused to refresh the access token.');
       }
       throw new FetchError('UPSTREAM_ERROR', `Google token endpoint responded with HTTP ${res.status}.`);
     }
 
     const token = (await res.json()) as TokenResponse;
-    await this.prisma.serviceConnection.update({
-      where: { id: connection.id },
-      data: {
-        accessTokenEnc: this.cipher.encrypt(token.access_token),
-        expiresAt: new Date(Date.now() + token.expires_in * 1000),
-        // Google only sometimes rotates the refresh token; keep the stored one otherwise.
-        ...(token.refresh_token ? { refreshTokenEnc: this.cipher.encrypt(token.refresh_token) } : {}),
-      },
+    const stored = await this.writeIfCurrent(connection, {
+      accessTokenEnc: this.cipher.encrypt(token.access_token),
+      expiresAt: new Date(Date.now() + token.expires_in * 1000),
+      // Google only sometimes rotates the refresh token; keep the stored one otherwise.
+      ...(token.refresh_token ? { refreshTokenEnc: this.cipher.encrypt(token.refresh_token) } : {}),
     });
-    return token.access_token;
+    return stored ? token.access_token : this.superseded(userId);
+  }
+
+  private findConnection(userId: string): Promise<ServiceConnection | null> {
+    return this.prisma.serviceConnection.findUnique({ where: { userId_service: { userId, service: 'youtube' } } });
+  }
+
+  /** Updates the row only if it still holds the refresh token that was exchanged; false if it no longer does. */
+  private async writeIfCurrent(connection: ServiceConnection, data: Prisma.ServiceConnectionUpdateManyMutationInput): Promise<boolean> {
+    const { count } = await this.prisma.serviceConnection.updateMany({
+      where: { id: connection.id, refreshTokenEnc: connection.refreshTokenEnc },
+      data,
+    });
+    return count === 1;
+  }
+
+  /**
+   * The row no longer holds the refresh token just exchanged. Disconnected: NOT_CONNECTED.
+   * Reconnected: that connect stored a fresh access token, so use it.
+   */
+  private async superseded(userId: string): Promise<string> {
+    const current = await this.findConnection(userId);
+    if (!current?.accessTokenEnc) {
+      throw new FetchError('NOT_CONNECTED', 'The youtube connection was removed during a token refresh.');
+    }
+    return this.cipher.decrypt(current.accessTokenEnc);
   }
 }

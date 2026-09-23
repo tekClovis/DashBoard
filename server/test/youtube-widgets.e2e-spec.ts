@@ -17,6 +17,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import type { WidgetDataMap, WidgetDataPayload, WidgetErrorPayload } from '@dashboard/shared';
 import { AppModule } from '../src/app.module.js';
 import { JwtService } from '../src/auth/jwt.service.js';
+import { ConnectionsService } from '../src/connections/connections.service.js';
 import { TokenCipherService } from '../src/connections/token-cipher.service.js';
 import { PrismaService } from '../src/core/prisma/prisma.service.js';
 import { REDIS } from '../src/core/redis/redis.provider.js';
@@ -24,6 +25,7 @@ import { REDIS } from '../src/core/redis/redis.provider.js';
 const EXPIRED = 'expired-access';
 const REFRESHED = 'refreshed-access';
 const GOOD_REFRESH = 'good-refresh';
+const RECONNECTED = 'reconnected-access';
 
 /** Fake YouTube Data API: 401 for the expired token, otherwise data derived from path/query. */
 function fakeYoutube(url: URL, token: string): Response {
@@ -78,13 +80,18 @@ describe('YouTube widgets (e2e)', () => {
   const sockets: ClientSocket[] = [];
   const youtubeCalls: { url: URL; token: string }[] = [];
   let tokenCalls = 0;
+  // Set by holdTokenEndpoint(): the token endpoint waits on the gate, so a test can act mid-refresh.
+  let held: { gate: Promise<void>; onRequest: () => void } | undefined;
 
   beforeAll(async () => {
     const realFetch = globalThis.fetch;
     vi.stubGlobal('fetch', async (input: string | URL | Request, init?: RequestInit) => {
       const url = new URL(input instanceof Request ? input.url : String(input));
       if (url.hostname === 'oauth2.googleapis.com') {
+        if (url.pathname === '/revoke') return new Response(null, { status: 200 });
         tokenCalls += 1;
+        held?.onRequest();
+        await held?.gate;
         return fakeTokenEndpoint(init?.body as URLSearchParams);
       }
       if (url.hostname !== 'www.googleapis.com') return realFetch(input, init);
@@ -120,6 +127,7 @@ describe('YouTube widgets (e2e)', () => {
   beforeEach(async () => {
     youtubeCalls.length = 0;
     tokenCalls = 0;
+    held = undefined;
     await prisma.widgetInstance.deleteMany();
     await prisma.dashboard.deleteMany();
     await prisma.serviceConnection.deleteMany();
@@ -180,6 +188,25 @@ describe('YouTube widgets (e2e)', () => {
     const ack = await new Promise((resolve) => socket.emit('widget:subscribe', { instanceId }, resolve));
     expect(ack).toEqual({ ok: true });
     return result;
+  }
+
+  /** Holds the next token refresh until release(); `requested` resolves once it has reached Google. */
+  function holdTokenEndpoint(): { requested: Promise<void>; release: () => void } {
+    let release!: () => void;
+    let onRequest!: () => void;
+    const requested = new Promise<void>((resolve) => (onRequest = resolve));
+    held = { gate: new Promise((resolve) => (release = resolve)), onRequest };
+    return { requested, release };
+  }
+
+  /** Reconnects youtube the way the OAuth callback does: same row, new tokens, status OK. */
+  function reconnect(userId: string): Promise<void> {
+    return app.get(ConnectionsService).upsertOAuthConnection(userId, 'youtube', {
+      externalAccountId: 'g',
+      accessToken: RECONNECTED,
+      refreshToken: 'reconnected-refresh',
+      scopes: [],
+    });
   }
 
   /** The widget:data body of `event`, failing the test if it was a widget:error instead. */
@@ -280,6 +307,43 @@ describe('YouTube widgets (e2e)', () => {
     expect(tokenCalls).toBe(1);
     const row = await prisma.serviceConnection.findUniqueOrThrow({ where: { id: connectionId } });
     expect(row.status).toBe('REAUTH');
+  });
+
+  it('7b. a disconnect during a refresh yields NOT_CONNECTED without leaking internals, and nothing is re-created', async () => {
+    const { userId, cookie } = await createUser('disconnect@example.com', { access: EXPIRED, refresh: GOOD_REFRESH });
+    const instanceId = await createInstance(userId, 'channel_stats', { channel_id: 'UC_known' });
+    const gate = holdTokenEndpoint();
+
+    const event = firstEvent(cookie, instanceId);
+    await gate.requested;
+    await request(app.getHttpServer()).delete('/api/connections/youtube').set('Cookie', cookie).expect(200);
+    gate.release();
+    const { error } = await event;
+
+    expect(error).toMatchObject({ instanceId, code: 'NOT_CONNECTED' });
+    expect(error!.message).not.toMatch(/prisma|invocation|\.ts/i);
+    expect(await prisma.serviceConnection.count({ where: { userId } })).toBe(0);
+  });
+
+  it.each([
+    ['refused', 'revoked-refresh'],
+    ['granted', GOOD_REFRESH],
+  ])('7c. a reconnect during a refresh whose old grant is %s keeps the new connection and uses its token', async (_, oldRefresh) => {
+    const { userId, cookie, connectionId } = await createUser(`reconnect-${oldRefresh}@example.com`, { access: EXPIRED, refresh: oldRefresh });
+    const instanceId = await createInstance(userId, 'channel_stats', { channel_id: 'UC_known' });
+    const gate = holdTokenEndpoint();
+
+    const event = firstEvent(cookie, instanceId);
+    await gate.requested;
+    await reconnect(userId);
+    gate.release();
+
+    expect(dataOf<'youtube.channel_stats'>(await event).subscribers).toBe(2400000);
+    expect(youtubeCalls.map((c) => c.token)).toEqual([EXPIRED, RECONNECTED]);
+    const row = await prisma.serviceConnection.findUniqueOrThrow({ where: { id: connectionId } });
+    expect(row.status).toBe('OK');
+    expect(cipher.decrypt(row.accessTokenEnc!)).toBe(RECONNECTED);
+    expect(cipher.decrypt(row.refreshTokenEnc!)).toBe('reconnected-refresh');
   });
 
   it('8. an unconnected user gets widget:error NOT_CONNECTED', async () => {

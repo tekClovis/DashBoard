@@ -68,7 +68,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
       return {
         channelId,
         title: snippet.title,
-        subscribers: statistics.hiddenSubscriberCount ? null : Number(statistics.subscriberCount),
+        subscribers: statistics.subscriberCount === undefined ? null : Number(statistics.subscriberCount),
         views: Number(statistics.viewCount),
         videos: Number(statistics.videoCount),
       };

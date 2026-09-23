@@ -85,6 +85,13 @@ describe('youtube widgets fetch()', () => {
     expect(data).toEqual({ channelId: 'UC_x5', title: 'Google for Developers', subscribers: 2400000, views: 180000000, videos: 412 });
   });
 
+  it('channel_stats reports a missing subscriber count as null, not NaN', async () => {
+    const missing = { ...CHANNEL, statistics: { ...CHANNEL.statistics, subscriberCount: undefined } };
+    stubFetch(() => Response.json({ items: [missing] }));
+
+    await expect(widget('channel_stats').fetch({ channel_id: 'UC_x5' }, ctx)).resolves.toMatchObject({ subscribers: null });
+  });
+
   it('channel_stats reports a hidden subscriber count as null', async () => {
     const hidden = { ...CHANNEL, statistics: { ...CHANNEL.statistics, subscriberCount: undefined, hiddenSubscriberCount: true } };
     stubFetch(() => Response.json({ items: [hidden] }));
