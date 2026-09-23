@@ -1,21 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Redis } from 'ioredis';
 import type { FetchContext, Params, WidgetDefinition } from '../catalog/widget-definition.js';
 import type { PrismaService } from '../core/prisma/prisma.service.js';
 import type { TokenCipherService } from '../connections/token-cipher.service.js';
 import { FetchService } from './fetch.service.js';
-import { makeWidgetDefinition as makeDef } from './test-helpers.js';
-
-function makeFakeRedis(): Redis {
-  const store = new Map<string, string>();
-  return {
-    get: vi.fn(async (key: string) => store.get(key) ?? null),
-    set: vi.fn(async (key: string, value: string) => {
-      store.set(key, value);
-      return 'OK';
-    }),
-  } as unknown as Redis;
-}
+import { makeFakeRedis, makeWidgetDefinition as makeDef } from './test-helpers.js';
 
 function makePrisma(
   connection: { id: string; accessTokenEnc: string | null; externalAccountId?: string } | null = null,

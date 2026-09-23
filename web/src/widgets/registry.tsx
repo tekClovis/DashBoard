@@ -1,5 +1,7 @@
 import type { ComponentType } from 'react';
 import { GameNewsView, RecentlyPlayedView } from './steam.js';
+import { PullRequestsView, RecentCommitsView, SecurityAlertsView } from './github.js';
+import { CurrentWeatherView, ForecastView } from './weather.js';
 
 export interface WidgetViewProps {
   data: unknown;
@@ -11,9 +13,16 @@ function JsonView({ data }: WidgetViewProps) {
 }
 
 /** Real views register here as `views['github.recent_commits'] = RecentCommitsView`. */
+
+/** Real views, keyed by `service.widget`. */
 export const views: Record<string, ComponentType<WidgetViewProps>> = {
   'steam.recently_played': RecentlyPlayedView,
   'steam.game_news': GameNewsView,
+  'github.recent_commits': RecentCommitsView,
+  'github.pull_requests': PullRequestsView,
+  'github.security_alerts': SecurityAlertsView,
+  'weather.current_weather': CurrentWeatherView,
+  'weather.forecast': ForecastView,
 };
 
 export function getView(service: string, widget: string): ComponentType<WidgetViewProps> {

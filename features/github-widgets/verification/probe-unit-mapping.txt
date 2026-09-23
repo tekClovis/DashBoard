@@ -1,0 +1,61 @@
+repo "octocat/hello-world" true
+repo "octocat/.github" true
+repo "a/b/c" false
+repo "noslash" false
+repo "owner/.." false
+repo "owner/." false
+repo "../x" false
+repo "owner/%2e%2e" false
+repo " owner/x" false
+repo "owner/x " false
+repo "owner/x\n" false
+repo "owner /x" false
+repo "owner/x?y" false
+repo "owner/x#y" false
+repo "o_o/x" false
+repo "owner/..." true
+repo "owner/" false
+repo "/x" false
+repo "owner/x/" false
+repo "owner/x%2Fy" false
+repo "ow.ner/x" false
+repo "owner\\x" false
+number 0 {"ok":false,"error":{"param":"number","message":"'number' must be >= 1"}}
+number 1 {"ok":true,"params":{"repo":"a/b","number":1}}
+number 20 {"ok":true,"params":{"repo":"a/b","number":20}}
+number 21 {"ok":false,"error":{"param":"number","message":"'number' must be <= 20"}}
+number 5.5 {"ok":false,"error":{"param":"number","message":"'number' must be an integer"}}
+number "7" {"ok":true,"params":{"repo":"a/b","number":7}}
+number "abc" {"ok":false,"error":{"param":"number","message":"'number' must be an integer"}}
+number -1 {"ok":false,"error":{"param":"number","message":"'number' must be >= 1"}}
+number undefined {"ok":false,"error":{"param":"number","message":"'number' is required"}}
+number "" {"ok":false,"error":{"param":"number","message":"'number' is required"}}
+state "open" {"ok":true,"params":{"repo":"a/b","state":"open"}}
+state "closed" {"ok":true,"params":{"repo":"a/b","state":"closed"}}
+state "all" {"ok":true,"params":{"repo":"a/b","state":"all"}}
+state "merged" {"ok":false,"error":{"param":"state","message":"'state' must be one of: open, closed, all"}}
+state "OPEN" {"ok":false,"error":{"param":"state","message":"'state' must be one of: open, closed, all"}}
+state undefined {"ok":false,"error":{"param":"state","message":"'state' is required"}}
+state "" {"ok":false,"error":{"param":"state","message":"'state' is required"}}
+key widget:github.recent_commits:c6bef1db00f8e535ceba349d6b76f79ef4d303a1c8a423e2e861369de73a1b66:conn:conn1
+http 401 {} REAUTH_REQUIRED GitHub rejected the access token. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 403 {"x-ratelimit-remaining":"0","x-ratelimit-limit":"5000"} RATE_LIMITED GitHub rate limit exceeded. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 403 {"x-ratelimit-remaining":"4999","x-ratelimit-limit":"5000"} UPSTREAM_ERROR GitHub responded with HTTP 403. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 403 {"retry-after":"60"} RATE_LIMITED GitHub rate limit exceeded. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 429 {} RATE_LIMITED GitHub rate limit exceeded. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 404 {} INVALID_PARAMS Repository not found or not accessible. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 422 {} UPSTREAM_ERROR GitHub responded with HTTP 422. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 409 {} UPSTREAM_ERROR GitHub responded with HTTP 409. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 500 {} UPSTREAM_ERROR GitHub responded with HTTP 500. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 502 {} UPSTREAM_ERROR GitHub responded with HTTP 502. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+http 301 {"location":"https://api.github.com/x"} UPSTREAM_ERROR GitHub responded with HTTP 301. false https://api.github.com/repos/o/r/dependabot/alerts?state=open&per_page=20 {"Authorization":"Bearer SECRET_TOKEN","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+net UPSTREAM_ERROR GitHub request failed: fetch failed
+badjson SyntaxError undefined Unexpected token 'o', "not json" is not valid JSON
+fetch-repo "a/b/c" INVALID_PARAMS 0
+fetch-repo "noslash" INVALID_PARAMS 0
+fetch-repo "o/.." INVALID_PARAMS 0
+fetch-repo " o/r" INVALID_PARAMS 0
+pulls url https://api.github.com/repos/o/r/pulls?state=closed&per_page=20
+{"repo":"o/r","state":"closed","pulls":[]}
+pulls url https://api.github.com/repos/o/r/pulls?state=undefined&per_page=20
+{"repo":"o/r","state":"undefined","pulls":[]}

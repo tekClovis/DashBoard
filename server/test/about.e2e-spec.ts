@@ -34,6 +34,33 @@ describe('AboutController (e2e)', () => {
     expect(Number.isInteger(res.body.server.current_time)).toBe(true);
   });
 
+  it('lists the github service with its three widgets, params trimmed to name/type', async () => {
+    const res = await request(app.getHttpServer()).get('/about.json').expect(200);
+
+    expect(res.body.server.services).toContainEqual({
+      name: 'github',
+      widgets: [
+        {
+          name: 'recent_commits',
+          description: expect.any(String),
+          params: [
+            { name: 'repo', type: 'string' },
+            { name: 'number', type: 'integer' },
+          ],
+        },
+        {
+          name: 'pull_requests',
+          description: expect.any(String),
+          params: [
+            { name: 'repo', type: 'string' },
+            { name: 'state', type: 'string' },
+          ],
+        },
+        { name: 'security_alerts', description: expect.any(String), params: [{ name: 'repo', type: 'string' }] },
+      ],
+    });
+  });
+
   it('does not let the SPA fallback swallow /about.json or /api/*', async () => {
     await request(app.getHttpServer())
       .get('/about.json')
