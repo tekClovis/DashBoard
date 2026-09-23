@@ -117,6 +117,24 @@ describe('GoogleTokenRefresher', () => {
     await expect(refresher.refresh('u1')).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
   });
 
+  it.each([
+    ['no expires_in', () => Response.json({ access_token: 'T1' })],
+    ['no access_token', () => Response.json({ expires_in: 3600 })],
+    ['an empty access_token', () => Response.json({ access_token: '', expires_in: 3600 })],
+    ['a non-positive expires_in', () => Response.json({ access_token: 'T1', expires_in: 0 })],
+    ['a string expires_in', () => Response.json({ access_token: 'T1', expires_in: '3600' })],
+    ['a non-string refresh_token', () => Response.json({ access_token: 'T1', expires_in: 3600, refresh_token: 42 })],
+    ['a non-JSON body', () => new Response('<html>proxy</html>', { status: 200 })],
+  ])('a 200 with %s is UPSTREAM_ERROR with a fixed message, and nothing is written', async (_, tokenResponse) => {
+    const { refresher, serviceConnection } = setup();
+    stubTokenEndpoint(tokenResponse());
+
+    const err = await refresher.refresh('u1').catch((e: unknown) => e);
+
+    expect(err).toMatchObject({ name: 'FetchError', code: 'UPSTREAM_ERROR', message: 'Google token endpoint returned an invalid response.' });
+    expect(serviceConnection.updateMany).not.toHaveBeenCalled();
+  });
+
   it('shares one in-flight refresh between concurrent callers for the same user', async () => {
     const { refresher, serviceConnection } = setup();
     const fetchMock = stubTokenEndpoint(Response.json({ access_token: 'shared', expires_in: 60 }));

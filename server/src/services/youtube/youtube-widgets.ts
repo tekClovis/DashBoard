@@ -15,7 +15,7 @@ const numberParam: ParamSpec = { name: 'number', type: 'integer', required: true
 interface RawChannel {
   snippet: { title: string };
   statistics: { subscriberCount?: string; hiddenSubscriberCount: boolean; viewCount: string; videoCount: string };
-  contentDetails: { relatedPlaylists: { uploads: string } };
+  contentDetails?: { relatedPlaylists?: { uploads?: string } };
 }
 
 interface RawVideoSnippet {
@@ -86,9 +86,11 @@ export function youtubeWidgets(refresh: TokenRefresher): [
       const get = youtubeClient(ctx, refresh);
       const channelId = String(params['channel_id']);
       const { contentDetails } = await getChannel(get, channelId, 'contentDetails');
+      const uploads = contentDetails?.relatedPlaylists?.uploads;
+      if (!uploads) throw new FetchError('UPSTREAM_ERROR', 'YouTube returned a channel without an uploads playlist.');
       const { items = [] } = await get<{ items?: RawPlaylistItem[] }>('/playlistItems', {
         part: 'snippet',
-        playlistId: contentDetails.relatedPlaylists.uploads,
+        playlistId: uploads,
         maxResults: params['number'],
       });
       const videos = items

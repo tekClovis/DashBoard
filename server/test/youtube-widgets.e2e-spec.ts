@@ -26,6 +26,7 @@ const EXPIRED = 'expired-access';
 const REFRESHED = 'refreshed-access';
 const GOOD_REFRESH = 'good-refresh';
 const RECONNECTED = 'reconnected-access';
+const MALFORMED_REFRESH = 'malformed-refresh';
 
 /** Fake YouTube Data API: 401 for the expired token, otherwise data derived from path/query. */
 function fakeYoutube(url: URL, token: string): Response {
@@ -62,10 +63,12 @@ function fakeYoutube(url: URL, token: string): Response {
   return Response.json({ error: { code: 404 } }, { status: 404 });
 }
 
-/** Fake Google token endpoint: only GOOD_REFRESH is accepted. */
+/** Fake Google token endpoint: only GOOD_REFRESH is accepted; MALFORMED_REFRESH gets a 200 without expires_in. */
 function fakeTokenEndpoint(body: URLSearchParams): Response {
-  if (body.get('grant_type') === 'refresh_token' && body.get('refresh_token') === GOOD_REFRESH) {
-    return Response.json({ access_token: REFRESHED, expires_in: 3600, token_type: 'Bearer' });
+  if (body.get('grant_type') === 'refresh_token') {
+    const refreshToken = body.get('refresh_token');
+    if (refreshToken === GOOD_REFRESH) return Response.json({ access_token: REFRESHED, expires_in: 3600, token_type: 'Bearer' });
+    if (refreshToken === MALFORMED_REFRESH) return Response.json({ access_token: 'T1' });
   }
   return Response.json({ error: 'invalid_grant' }, { status: 400 });
 }
@@ -323,6 +326,17 @@ describe('YouTube widgets (e2e)', () => {
     expect(error).toMatchObject({ instanceId, code: 'NOT_CONNECTED' });
     expect(error!.message).not.toMatch(/prisma|invocation|\.ts/i);
     expect(await prisma.serviceConnection.count({ where: { userId } })).toBe(0);
+  });
+
+  it('7d. a malformed token response yields UPSTREAM_ERROR with a fixed message and leaves the row untouched', async () => {
+    const { userId, cookie, connectionId } = await createUser('malformed@example.com', { access: EXPIRED, refresh: MALFORMED_REFRESH });
+    const instanceId = await createInstance(userId, 'channel_stats', { channel_id: 'UC_known' });
+    const before = await prisma.serviceConnection.findUniqueOrThrow({ where: { id: connectionId } });
+
+    const { error } = await firstEvent(cookie, instanceId);
+
+    expect(error).toMatchObject({ instanceId, code: 'UPSTREAM_ERROR', message: 'Google token endpoint returned an invalid response.' });
+    expect(await prisma.serviceConnection.findUniqueOrThrow({ where: { id: connectionId } })).toEqual(before);
   });
 
   it.each([

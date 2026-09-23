@@ -37,7 +37,13 @@ export function youtubeClient(ctx: FetchContext, refresh: TokenRefresher): Youtu
       token = await refreshOnce();
       res = await send(path, query, token);
     }
-    if (res.ok) return (await res.json()) as T;
+    if (res.ok) {
+      try {
+        return (await res.json()) as T;
+      } catch {
+        throw new FetchError('UPSTREAM_ERROR', 'YouTube returned an invalid response.');
+      }
+    }
     throw await toFetchError(res);
   };
 }

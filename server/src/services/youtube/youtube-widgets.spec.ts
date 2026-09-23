@@ -237,6 +237,27 @@ describe('youtube widgets fetch()', () => {
     await expect(widget('trending_videos').fetch({ region: 'FR', number: 5 }, ctx)).rejects.toMatchObject({ name: 'FetchError', code });
   });
 
+  it('maps a non-JSON 200 to UPSTREAM_ERROR with a fixed message', async () => {
+    stubFetch(() => new Response('<html>proxy</html>', { status: 200 }));
+
+    await expect(widget('trending_videos').fetch({ region: 'FR', number: 5 }, ctx)).rejects.toMatchObject({
+      name: 'FetchError',
+      code: 'UPSTREAM_ERROR',
+      message: 'YouTube returned an invalid response.',
+    });
+  });
+
+  it('latest_videos maps a channel without contentDetails to UPSTREAM_ERROR, without requesting a playlist', async () => {
+    const fetchMock = stubFetch(() => Response.json({ items: [{ ...CHANNEL, contentDetails: undefined }] }));
+
+    await expect(widget('latest_videos').fetch({ channel_id: 'UC_x5', number: 1 }, ctx)).rejects.toMatchObject({
+      name: 'FetchError',
+      code: 'UPSTREAM_ERROR',
+      message: 'YouTube returned a channel without an uploads playlist.',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('maps a network failure to UPSTREAM_ERROR', async () => {
     vi.stubGlobal(
       'fetch',

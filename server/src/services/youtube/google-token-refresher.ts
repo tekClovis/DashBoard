@@ -27,6 +27,15 @@ interface TokenResponse {
   refresh_token?: string;
 }
 
+/** The token response if it has the fields we persist, else null (nothing must reach the DB or the client). */
+function parseTokenResponse(body: unknown): TokenResponse | null {
+  const { access_token, expires_in, refresh_token } = (body ?? {}) as Record<string, unknown>;
+  if (typeof access_token !== 'string' || !access_token) return null;
+  if (typeof expires_in !== 'number' || !Number.isFinite(expires_in) || expires_in <= 0) return null;
+  if (refresh_token !== undefined && typeof refresh_token !== 'string') return null;
+  return { access_token, expires_in, refresh_token };
+}
+
 @Injectable()
 export class GoogleTokenRefresher {
   private readonly client: { clientID: string; clientSecret: string };
@@ -83,7 +92,8 @@ export class GoogleTokenRefresher {
       throw new FetchError('UPSTREAM_ERROR', `Google token endpoint responded with HTTP ${res.status}.`);
     }
 
-    const token = (await res.json()) as TokenResponse;
+    const token = parseTokenResponse(await res.json().catch(() => null));
+    if (!token) throw new FetchError('UPSTREAM_ERROR', 'Google token endpoint returned an invalid response.');
     const stored = await this.writeIfCurrent(connection, {
       accessTokenEnc: this.cipher.encrypt(token.access_token),
       expiresAt: new Date(Date.now() + token.expires_in * 1000),
