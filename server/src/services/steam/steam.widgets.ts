@@ -79,7 +79,8 @@ export function createSteamWidgets(
         if (!Array.isArray(items)) throw malformed();
         return {
           appId,
-          items: items.slice(0, count).map(
+          // Drop items whose link isn't http(s): the url reaches an <a href> in the web view.
+          items: items.filter((item) => isHttpUrl(item.url)).slice(0, count).map(
             (item): SteamNewsItem => ({
               id: item.gid,
               title: item.title,
@@ -97,6 +98,15 @@ export function createSteamWidgets(
 function steamId(ctx: FetchContext): string {
   if (!ctx.externalAccountId) throw new FetchError('NOT_CONNECTED', 'No steam connection for this user.');
   return ctx.externalAccountId;
+}
+
+function isHttpUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 function malformed(): FetchError {

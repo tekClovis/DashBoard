@@ -26,9 +26,13 @@ export function GameNewsView({ data }: WidgetViewProps) {
     <ul>
       {items.map((item) => (
         <li key={item.id} className={ROW}>
-          <a href={item.url} target="_blank" rel="noreferrer" className="hover:underline">
-            {item.title}
-          </a>
+          {/^https?:\/\//i.test(item.url) ? (
+            <a href={item.url} target="_blank" rel="noreferrer" className="hover:underline">
+              {item.title}
+            </a>
+          ) : (
+            <span>{item.title}</span>
+          )}
           <time dateTime={item.date} className={META}>
             {timeAgo(item.date)}
           </time>

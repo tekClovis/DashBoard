@@ -123,6 +123,24 @@ describe('steam widgets', () => {
       });
     });
 
+    it('drops items whose url is not http(s)', async () => {
+      stubSteam(200, {
+        appnews: {
+          newsitems: [
+            { gid: '1', title: 'js', url: 'javascript:alert(document.domain)', feedlabel: 'x', date: 1_700_000_000 },
+            { gid: '2', title: 'data', url: 'data:text/html,<script>alert(1)</script>', feedlabel: 'x', date: 1_700_000_000 },
+            { gid: '3', title: 'malformed', url: 'not a url', feedlabel: 'x', date: 1_700_000_000 },
+            { gid: '4', title: 'http', url: 'http://x/4', feedlabel: 'x', date: 1_700_000_000 },
+            { gid: '5', title: 'https', url: 'https://x/5', feedlabel: 'x', date: 1_700_000_000 },
+          ],
+        },
+      });
+
+      const data = await gameNews.fetch({ app_id: 620, number: 2 }, ctx);
+
+      expect(data.items.map((item) => item.url)).toEqual(['http://x/4', 'https://x/5']);
+    });
+
     it('maps Steam\'s 403 for an unknown app_id to INVALID_PARAMS', async () => {
       stubSteam(403, {});
       await expect(gameNews.fetch({ app_id: 999_999_999, number: 5 }, ctx)).rejects.toMatchObject({

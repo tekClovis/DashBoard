@@ -39,6 +39,21 @@ describe('steam views', () => {
     vi.useRealTimers();
   });
 
+  it('renders a non-http(s) news url as plain text, not a link', () => {
+    const data: WidgetDataMap['steam.game_news'] = {
+      appId: 620,
+      items: [
+        { id: 'n1', title: 'Evil', url: 'javascript:alert(1)', feedLabel: 'Community', date: '2026-09-01T12:00:00Z' },
+      ],
+    };
+    const View = getView('steam', 'game_news');
+    const { container } = render(<View data={data} />);
+
+    expect(screen.getByText('Evil')).toBeTruthy();
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(container.querySelector('[href]')).toBeNull();
+  });
+
   it('shows an empty state instead of an empty list', () => {
     const View = getView('steam', 'recently_played');
     render(<View data={{ games: [] }} />);
