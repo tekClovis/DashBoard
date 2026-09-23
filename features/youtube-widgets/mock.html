@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>youtube-widgets mock</title>
+<style>
+  :root { --background:#fff; --foreground:#1f1f1f; --muted:#f4f4f5; --muted-foreground:#71717a; --border:#e4e4e7; --radius:10px; --accent:#fef2f2; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; background:var(--background); color:var(--foreground); }
+  main { max-width:640px; margin:50px auto; padding:0 20px; display:grid; gap:16px; }
+  .card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .card-head { padding:10px 16px; background:var(--muted); font-weight:600; font-size:14px; }
+  .stats { display:flex; gap:16px; padding:16px; }
+  .stat { flex:1; text-align:center; background:var(--accent); border-radius:8px; padding:10px 4px; }
+  .stat .n { font-weight:700; font-size:16px; }
+  .stat .l { font-size:11px; color:var(--muted-foreground); }
+  .row { padding:10px 16px; border-top:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; }
+  .reconnect { color:#92400e; font-size:13px; padding:16px; background:#fffbeb; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="card-head">channel_stats &middot; UC_x5XG1OV2P6uZZ5FSM9Ttw</div>
+    <div class="stats">
+      <div class="stat"><div class="n">2.4M</div><div class="l">subscribers</div></div>
+      <div class="stat"><div class="n">180M</div><div class="l">views</div></div>
+      <div class="stat"><div class="n">412</div><div class="l">videos</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">latest_videos &middot; 3 shown</div>
+    <div class="row"><span>Building a Timer with Socket.IO</span><span>2d ago</span></div>
+    <div class="row"><span>Prisma migrations deep dive</span><span>6d ago</span></div>
+    <div class="row"><span>NestJS guards explained</span><span>11d ago</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head">trending_videos &middot; region FR</div>
+    <div class="row"><span>Top tech news this week</span><span>#1</span></div>
+    <div class="row"><span>Concert highlights</span><span>#2</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head">channel_stats &middot; token expired</div>
+    <div class="reconnect">Reconnect YouTube — your session expired.</div>
+  </div>
+</main>
+</body>
+</html>

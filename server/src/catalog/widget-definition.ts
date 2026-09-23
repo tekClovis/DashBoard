@@ -9,6 +9,8 @@ export interface FetchContext {
   userId: string;
   /** Decrypted access token, present only when the widget's service required a connection. */
   accessToken?: string;
+  /** When accessToken expires, if the provider said so. */
+  expiresAt?: Date;
 }
 
 export interface WidgetDefinition<K extends keyof WidgetDataMap = keyof WidgetDataMap> {

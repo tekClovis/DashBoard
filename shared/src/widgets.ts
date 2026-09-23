@@ -10,6 +10,9 @@ export interface WidgetDataMap {
   'github.security_alerts': { repo: string; alerts: GithubSecurityAlert[] };
   'weather.current_weather': CurrentWeatherData;
   'weather.forecast': ForecastData;
+  'youtube.channel_stats': YoutubeChannelStats;
+  'youtube.latest_videos': { channelId: string; videos: YoutubeVideo[] };
+  'youtube.trending_videos': { region: string; videos: YoutubeVideo[] };
 }
 
 // --- github (server/src/services/github) ---
@@ -59,4 +62,24 @@ export interface ForecastDay {
 export interface ForecastData {
   location: string;
   days: ForecastDay[];
+}
+
+// youtube — server/src/services/youtube/
+export interface YoutubeChannelStats {
+  channelId: string;
+  title: string;
+  /** null when the channel hides its subscriber count. */
+  subscribers: number | null;
+  views: number;
+  videos: number;
+}
+
+export interface YoutubeVideo {
+  id: string;
+  title: string;
+  channel: string;
+  /** ISO 8601 timestamp. */
+  publishedAt: string;
+  /** Built server-side as https://www.youtube.com/watch?v={id}. */
+  url: string;
 }
