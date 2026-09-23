@@ -56,7 +56,7 @@ export interface GithubSecurityAlert {
   severity: 'low' | 'medium' | 'high' | 'critical';
   package: string;
   url: string;
-
+}
 // weather — server/src/services/weather/
 export interface CurrentWeatherData {
   /** Resolved place name, e.g. "Paris, France". */
