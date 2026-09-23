@@ -5,7 +5,9 @@ import type { TokenCipherService } from '../connections/token-cipher.service.js'
 import { FetchService } from './fetch.service.js';
 import { makeFakeRedis, makeWidgetDefinition as makeDef } from './test-helpers.js';
 
-function makePrisma(connection: { id: string; accessTokenEnc: string | null } | null = null): PrismaService {
+function makePrisma(
+  connection: { id: string; accessTokenEnc: string | null; externalAccountId?: string } | null = null,
+): PrismaService {
   return {
     serviceConnection: { findUnique: vi.fn(async () => connection) },
   } as unknown as PrismaService;
@@ -79,11 +81,11 @@ describe('FetchService', () => {
         return { ok: true } as never;
       }),
     });
-    const service = new FetchService(redis, makePrisma({ id: 'conn-1', accessTokenEnc: 'enc' }), makeCipher('plain-token'));
+    const service = new FetchService(redis, makePrisma({ id: 'conn-1', accessTokenEnc: 'enc', externalAccountId: 'ext-1' }), makeCipher('plain-token'));
 
     await service.get(def, { label: 'x' }, 'user-1');
 
-    expect(receivedCtx).toEqual({ userId: 'user-1', accessToken: 'plain-token' });
+    expect(receivedCtx).toEqual({ userId: 'user-1', accessToken: 'plain-token', externalAccountId: 'ext-1' });
     expect(redis.set).toHaveBeenCalledWith(expect.stringContaining(':conn:conn-1'), expect.any(String), 'EX', 60);
   });
 
