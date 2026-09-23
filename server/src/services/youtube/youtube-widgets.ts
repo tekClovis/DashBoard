@@ -4,7 +4,7 @@
 import type { ParamSpec, YoutubeVideo } from '@dashboard/shared';
 import type { WidgetDefinition } from '../../catalog/widget-definition.js';
 import { FetchError } from '../../timer/fetch-error.js';
-import { youtubeClient, type TokenRefresher, type YoutubeGet } from './youtube-api.js';
+import { fixedMessage, youtubeClient, type TokenRefresher, type YoutubeGet } from './youtube-api.js';
 
 /** ISO 3166-1 alpha-2 country code, as YouTube's `regionCode` expects. */
 const REGION_PATTERN = '^[A-Z]{2}$';
@@ -40,6 +40,11 @@ async function getChannel(get: YoutubeGet, channelId: string, part: string): Pro
   return channel;
 }
 
+/** YouTube's 200 bodies are trusted in shape: a malformed one fails with a fixed message, not raw TypeError text. */
+function guarded<A extends unknown[], R>(fetch: (...args: A) => Promise<R>): (...args: A) => Promise<R> {
+  return (...args) => fetch(...args).catch(fixedMessage('YouTube returned an invalid response.'));
+}
+
 function toVideo(id: string, snippet: RawVideoSnippet): YoutubeVideo {
   return {
     id,
@@ -62,7 +67,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     params: [channelParam],
     minRefreshSec: 600,
     auth: 'connection',
-    fetch: async (params, ctx) => {
+    fetch: guarded(async (params, ctx) => {
       const channelId = String(params['channel_id']);
       const { snippet, statistics } = await getChannel(youtubeClient(ctx, refresh), channelId, 'snippet,statistics');
       return {
@@ -72,7 +77,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
         views: Number(statistics.viewCount),
         videos: Number(statistics.videoCount),
       };
-    },
+    }),
   };
 
   const latestVideos: WidgetDefinition<'youtube.latest_videos'> = {
@@ -82,7 +87,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     params: [channelParam, numberParam],
     minRefreshSec: 600,
     auth: 'connection',
-    fetch: async (params, ctx) => {
+    fetch: guarded(async (params, ctx) => {
       const get = youtubeClient(ctx, refresh);
       const channelId = String(params['channel_id']);
       const { contentDetails } = await getChannel(get, channelId, 'contentDetails');
@@ -97,7 +102,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
         .map(({ snippet }) => toVideo(snippet.resourceId.videoId, snippet))
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
       return { channelId, videos };
-    },
+    }),
   };
 
   const trendingVideos: WidgetDefinition<'youtube.trending_videos'> = {
@@ -110,7 +115,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     ],
     minRefreshSec: 900,
     auth: 'connection',
-    fetch: async (params, ctx) => {
+    fetch: guarded(async (params, ctx) => {
       const region = String(params['region']);
       const { items = [] } = await youtubeClient(ctx, refresh)<{ items?: RawVideo[] }>('/videos', {
         part: 'snippet',
@@ -119,7 +124,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
         maxResults: params['number'],
       });
       return { region, videos: items.map((v) => toVideo(v.id, v.snippet)) };
-    },
+    }),
   };
 
   return [channelStats, latestVideos, trendingVideos];

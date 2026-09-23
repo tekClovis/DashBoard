@@ -16,6 +16,17 @@ export type TokenRefresher = (userId: string) => Promise<string>;
 export type YoutubeGet = <T>(path: string, query: Record<string, string | number>) => Promise<T>;
 
 /**
+ * A catch handler that rethrows a FetchError as is and turns anything else (a Prisma error, a
+ * TypeError on a malformed body, ...) into UPSTREAM_ERROR with a fixed message: the Timer sends
+ * a thrown error's message to the client, and internal text can carry ids, paths or ciphertexts.
+ */
+export function fixedMessage(message: string): (err: unknown) => never {
+  return (err) => {
+    throw err instanceof FetchError ? err : new FetchError('UPSTREAM_ERROR', message);
+  };
+}
+
+/**
  * A GET client for one fetch() run. The access token is refreshed at most once per run — up
  * front when it is missing or (per the stored expiry) about to expire, otherwise on the first
  * 401, and the request retried; a second 401 is REAUTH_REQUIRED.

@@ -17,13 +17,14 @@ import { TokenCipherService } from '../../connections/token-cipher.service.js';
 import { PrismaService } from '../../core/prisma/prisma.service.js';
 import type { Prisma, ServiceConnection } from '../../generated/prisma/client.js';
 import { FetchError } from '../../timer/fetch-error.js';
+import { fixedMessage } from './youtube-api.js';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const TIMEOUT_MS = 10_000;
 
 interface TokenResponse {
   access_token: string;
-  expires_in: number;
+  expiresAt: Date;
   refresh_token?: string;
 }
 
@@ -31,9 +32,12 @@ interface TokenResponse {
 function parseTokenResponse(body: unknown): TokenResponse | null {
   const { access_token, expires_in, refresh_token } = (body ?? {}) as Record<string, unknown>;
   if (typeof access_token !== 'string' || !access_token) return null;
-  if (typeof expires_in !== 'number' || !Number.isFinite(expires_in) || expires_in <= 0) return null;
+  if (typeof expires_in !== 'number' || !(expires_in > 0)) return null;
+  // A huge expires_in overflows Date (Invalid Date), which the DB write would reject.
+  const expiresAt = new Date(Date.now() + expires_in * 1000);
+  if (Number.isNaN(expiresAt.getTime())) return null;
   if (refresh_token !== undefined && typeof refresh_token !== 'string') return null;
-  return { access_token, expires_in, refresh_token };
+  return { access_token, expiresAt, refresh_token };
 }
 
 @Injectable()
@@ -56,7 +60,9 @@ export class GoogleTokenRefresher {
     const existing = this.inFlight.get(userId);
     if (existing) return existing;
 
-    const promise = this.exchange(userId).finally(() => this.inFlight.delete(userId));
+    const promise = this.exchange(userId)
+      .catch(fixedMessage('Google token refresh failed.'))
+      .finally(() => this.inFlight.delete(userId));
     this.inFlight.set(userId, promise);
     return promise;
   }
@@ -96,7 +102,7 @@ export class GoogleTokenRefresher {
     if (!token) throw new FetchError('UPSTREAM_ERROR', 'Google token endpoint returned an invalid response.');
     const stored = await this.writeIfCurrent(connection, {
       accessTokenEnc: this.cipher.encrypt(token.access_token),
-      expiresAt: new Date(Date.now() + token.expires_in * 1000),
+      expiresAt: token.expiresAt,
       // Google only sometimes rotates the refresh token; keep the stored one otherwise.
       ...(token.refresh_token ? { refreshTokenEnc: this.cipher.encrypt(token.refresh_token) } : {}),
     });

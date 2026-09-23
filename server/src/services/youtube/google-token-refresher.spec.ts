@@ -125,6 +125,11 @@ describe('GoogleTokenRefresher', () => {
     ['a string expires_in', () => Response.json({ access_token: 'T1', expires_in: '3600' })],
     ['a non-string refresh_token', () => Response.json({ access_token: 'T1', expires_in: 3600, refresh_token: 42 })],
     ['a non-JSON body', () => new Response('<html>proxy</html>', { status: 200 })],
+    // Past the Date range (8.64e15 ms): an Invalid Date the DB write would reject with its own text.
+    ['expires_in 9e12', () => Response.json({ access_token: 'T1', expires_in: 9e12 })],
+    ['expires_in 1e13', () => Response.json({ access_token: 'T1', expires_in: 1e13 })],
+    ['expires_in 1e300', () => Response.json({ access_token: 'T1', expires_in: 1e300 })],
+    ['an infinite expires_in', () => new Response('{"access_token":"T1","expires_in":1e400}', { status: 200 })],
   ])('a 200 with %s is UPSTREAM_ERROR with a fixed message, and nothing is written', async (_, tokenResponse) => {
     const { refresher, serviceConnection } = setup();
     stubTokenEndpoint(tokenResponse());
@@ -133,6 +138,17 @@ describe('GoogleTokenRefresher', () => {
 
     expect(err).toMatchObject({ name: 'FetchError', code: 'UPSTREAM_ERROR', message: 'Google token endpoint returned an invalid response.' });
     expect(serviceConnection.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('an unexpected error (e.g. the DB write failing) is UPSTREAM_ERROR with a fixed message, never its own text', async () => {
+    const { refresher, serviceConnection, row } = setup();
+    serviceConnection.updateMany.mockRejectedValue(new Error(`Invalid updateMany() invocation: where: { id: "conn-1", refreshTokenEnc: "${row.refreshTokenEnc}" }`));
+    stubTokenEndpoint(Response.json({ access_token: 'T1', expires_in: 3600 }));
+
+    const err = await refresher.refresh('u1').catch((e: unknown) => e);
+
+    expect(err).toMatchObject({ name: 'FetchError', code: 'UPSTREAM_ERROR', message: 'Google token refresh failed.' });
+    expect(serviceConnection.updateMany).toHaveBeenCalledTimes(1);
   });
 
   it('shares one in-flight refresh between concurrent callers for the same user', async () => {

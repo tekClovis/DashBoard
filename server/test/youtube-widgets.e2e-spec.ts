@@ -26,7 +26,12 @@ const EXPIRED = 'expired-access';
 const REFRESHED = 'refreshed-access';
 const GOOD_REFRESH = 'good-refresh';
 const RECONNECTED = 'reconnected-access';
-const MALFORMED_REFRESH = 'malformed-refresh';
+/** Refresh tokens the fake token endpoint answers with a malformed 200 (7d). */
+const MALFORMED: Record<string, object> = {
+  'no-expiry-refresh': { access_token: 'T1' },
+  // Past the Date range: an Invalid Date that the DB write used to reject with its own text.
+  'huge-expiry-refresh': { access_token: 'T1', expires_in: 1e13 },
+};
 
 /** Fake YouTube Data API: 401 for the expired token, otherwise data derived from path/query. */
 function fakeYoutube(url: URL, token: string): Response {
@@ -63,12 +68,12 @@ function fakeYoutube(url: URL, token: string): Response {
   return Response.json({ error: { code: 404 } }, { status: 404 });
 }
 
-/** Fake Google token endpoint: only GOOD_REFRESH is accepted; MALFORMED_REFRESH gets a 200 without expires_in. */
+/** Fake Google token endpoint: only GOOD_REFRESH is accepted; MALFORMED refresh tokens get a malformed 200. */
 function fakeTokenEndpoint(body: URLSearchParams): Response {
   if (body.get('grant_type') === 'refresh_token') {
     const refreshToken = body.get('refresh_token');
     if (refreshToken === GOOD_REFRESH) return Response.json({ access_token: REFRESHED, expires_in: 3600, token_type: 'Bearer' });
-    if (refreshToken === MALFORMED_REFRESH) return Response.json({ access_token: 'T1' });
+    if (refreshToken && refreshToken in MALFORMED) return Response.json(MALFORMED[refreshToken]);
   }
   return Response.json({ error: 'invalid_grant' }, { status: 400 });
 }
@@ -328,8 +333,8 @@ describe('YouTube widgets (e2e)', () => {
     expect(await prisma.serviceConnection.count({ where: { userId } })).toBe(0);
   });
 
-  it('7d. a malformed token response yields UPSTREAM_ERROR with a fixed message and leaves the row untouched', async () => {
-    const { userId, cookie, connectionId } = await createUser('malformed@example.com', { access: EXPIRED, refresh: MALFORMED_REFRESH });
+  it.each(Object.keys(MALFORMED))('7d. a malformed token response (%s) yields UPSTREAM_ERROR with a fixed message and leaves the row untouched', async (refresh) => {
+    const { userId, cookie, connectionId } = await createUser(`${refresh}@example.com`, { access: EXPIRED, refresh });
     const instanceId = await createInstance(userId, 'channel_stats', { channel_id: 'UC_known' });
     const before = await prisma.serviceConnection.findUniqueOrThrow({ where: { id: connectionId } });
 

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FetchContext, WidgetDefinition } from '../../catalog/widget-definition.js';
 import { WidgetRegistryService } from '../../catalog/widget-registry.service.js';
 import { validateParams } from '../../catalog/param-validator.js';
+import { FetchError } from '../../timer/fetch-error.js';
 import { YoutubeModule } from './youtube.module.js';
 import type { GoogleTokenRefresher } from './google-token-refresher.js';
 import { youtubeWidgets } from './youtube-widgets.js';
@@ -182,13 +183,14 @@ describe('youtube widgets fetch()', () => {
     await expect(widget('channel_stats').fetch({ channel_id: 'UC_x5' }, ctx)).rejects.toMatchObject({ code: 'REAUTH_REQUIRED' });
   });
 
-  it('propagates a failed refresh without retrying the request', async () => {
+  it('propagates a failed refresh unchanged, without retrying the request', async () => {
+    const refused = new FetchError('REAUTH_REQUIRED', 'Google refused to refresh the access token.');
     const refresh = vi.fn(async () => {
-      throw new Error('refresh failed');
+      throw refused;
     });
     const fetchMock = stubFetch(() => Response.json({}, { status: 401 }));
 
-    await expect(widget('channel_stats', refresh).fetch({ channel_id: 'UC_x5' }, ctx)).rejects.toThrow('refresh failed');
+    await expect(widget('channel_stats', refresh).fetch({ channel_id: 'UC_x5' }, ctx)).rejects.toBe(refused);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -237,10 +239,23 @@ describe('youtube widgets fetch()', () => {
     await expect(widget('trending_videos').fetch({ region: 'FR', number: 5 }, ctx)).rejects.toMatchObject({ name: 'FetchError', code });
   });
 
-  it('maps a non-JSON 200 to UPSTREAM_ERROR with a fixed message', async () => {
-    stubFetch(() => new Response('<html>proxy</html>', { status: 200 }));
+  const channelParams = { channel_id: 'UC_x5', number: 5 };
+  const regionParams = { region: 'FR', number: 5 };
+  it.each([
+    ['trending_videos', regionParams, 'a non-JSON body', [() => new Response('<html>proxy</html>', { status: 200 })]],
+    ['channel_stats', channelParams, 'a null body', [() => Response.json(null)]],
+    ['channel_stats', channelParams, 'a channel without statistics', [() => Response.json({ items: [{ ...CHANNEL, statistics: undefined }] })]],
+    ['trending_videos', regionParams, 'items that are not an array', [() => Response.json({ items: 'nope' })]],
+    [
+      'latest_videos',
+      channelParams,
+      'a playlist item without resourceId',
+      [() => Response.json({ items: [CHANNEL] }), () => Response.json({ items: [{ snippet: snippet('a', '2026-01-01T00:00:00Z') }] })],
+    ],
+  ])('%s maps a 200 with %s to UPSTREAM_ERROR with a fixed message', async (name, params, _, responses) => {
+    stubFetch(...responses);
 
-    await expect(widget('trending_videos').fetch({ region: 'FR', number: 5 }, ctx)).rejects.toMatchObject({
+    await expect(widget(name).fetch(params, ctx)).rejects.toMatchObject({
       name: 'FetchError',
       code: 'UPSTREAM_ERROR',
       message: 'YouTube returned an invalid response.',
