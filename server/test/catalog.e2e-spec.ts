@@ -3,8 +3,9 @@
 // unchanged shape by about.e2e-spec.ts).
 //
 // Follows the connections.e2e-spec.ts conventions: real Postgres via testcontainers, real
-// HTTP through supertest. A test WidgetDefinition is registered directly against the
-// WidgetRegistryService, since no real widgets are in scope for this feature.
+// HTTP through supertest. A fixture WidgetDefinition is registered directly against the
+// WidgetRegistryService, on the real (already registered) github service, so every
+// ParamSpec field is exercised independently of the real github widgets' params.
 
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -26,7 +27,7 @@ describe('Catalog (e2e)', () => {
   // Exercises every ParamSpec field the checklist requires beyond /about.json's name/type.
   const testWidget: WidgetDefinition = {
     service: 'github',
-    name: 'recent_commits',
+    name: 'catalog_fixture',
     description: 'Recent commits for a repo.',
     params: [
       { name: 'repo', type: 'string', required: true, pattern: '^[\\w.-]+/[\\w.-]+$', label: 'Repository' },
@@ -50,7 +51,6 @@ describe('Catalog (e2e)', () => {
     cipher = app.get(TokenCipherService);
 
     const registry = app.get(WidgetRegistryService);
-    registry.registerService({ name: 'github', connection: 'oauth' });
     registry.register(testWidget);
   });
 
@@ -82,23 +82,17 @@ describe('Catalog (e2e)', () => {
 
       const res = await request(app.getHttpServer()).get('/api/catalog').set('Cookie', cookie).expect(200);
 
-      expect(res.body.services).toContainEqual({
-        name: 'github',
-        connection: 'oauth',
-        connected: true,
-        status: 'OK',
-        widgets: [
-          {
-            service: 'github',
-            name: 'recent_commits',
-            description: 'Recent commits for a repo.',
-            minRefreshSec: 60,
-            params: [
-              { name: 'repo', type: 'string', required: true, pattern: '^[\\w.-]+/[\\w.-]+$', label: 'Repository' },
-              { name: 'count', type: 'integer', min: 1, max: 20, default: 5, label: 'Count' },
-              { name: 'sort', type: 'string', enum: ['recent', 'oldest'], default: 'recent', label: 'Sort' },
-            ],
-          },
+      const github = res.body.services.find((s: { name: string }) => s.name === 'github');
+      expect(github).toMatchObject({ name: 'github', connection: 'oauth', connected: true, status: 'OK' });
+      expect(github.widgets).toContainEqual({
+        service: 'github',
+        name: 'catalog_fixture',
+        description: 'Recent commits for a repo.',
+        minRefreshSec: 60,
+        params: [
+          { name: 'repo', type: 'string', required: true, pattern: '^[\\w.-]+/[\\w.-]+$', label: 'Repository' },
+          { name: 'count', type: 'integer', min: 1, max: 20, default: 5, label: 'Count' },
+          { name: 'sort', type: 'string', enum: ['recent', 'oldest'], default: 'recent', label: 'Sort' },
         ],
       });
     });

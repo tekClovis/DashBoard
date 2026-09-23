@@ -12,6 +12,7 @@ import { AdminModule } from './admin/admin.module.js';
 import { ConnectionsModule } from './connections/connections.module.js';
 import { DashboardsModule } from './dashboards/dashboards.module.js';
 import { TimerModule } from './timer/timer.module.js';
+import { GithubModule } from './services/github/github.module.js';
 import { WeatherModule } from './services/weather/weather.module.js';
 
 @Module({
@@ -36,6 +37,7 @@ import { WeatherModule } from './services/weather/weather.module.js';
     ConnectionsModule,
     DashboardsModule,
     TimerModule,
+    GithubModule,
     WeatherModule,
   ],
 })
