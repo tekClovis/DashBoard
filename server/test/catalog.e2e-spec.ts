@@ -82,29 +82,35 @@ describe('Catalog (e2e)', () => {
 
       const res = await request(app.getHttpServer()).get('/api/catalog').set('Cookie', cookie).expect(200);
 
-      expect(res.body).toEqual({
-        services: [
+      expect(res.body.services).toContainEqual({
+        name: 'github',
+        connection: 'oauth',
+        connected: true,
+        status: 'OK',
+        widgets: [
           {
-            name: 'github',
-            connection: 'oauth',
-            connected: true,
-            status: 'OK',
-            widgets: [
-              {
-                service: 'github',
-                name: 'recent_commits',
-                description: 'Recent commits for a repo.',
-                minRefreshSec: 60,
-                params: [
-                  { name: 'repo', type: 'string', required: true, pattern: '^[\\w.-]+/[\\w.-]+$', label: 'Repository' },
-                  { name: 'count', type: 'integer', min: 1, max: 20, default: 5, label: 'Count' },
-                  { name: 'sort', type: 'string', enum: ['recent', 'oldest'], default: 'recent', label: 'Sort' },
-                ],
-              },
+            service: 'github',
+            name: 'recent_commits',
+            description: 'Recent commits for a repo.',
+            minRefreshSec: 60,
+            params: [
+              { name: 'repo', type: 'string', required: true, pattern: '^[\\w.-]+/[\\w.-]+$', label: 'Repository' },
+              { name: 'count', type: 'integer', min: 1, max: 20, default: 5, label: 'Count' },
+              { name: 'sort', type: 'string', enum: ['recent', 'oldest'], default: 'recent', label: 'Sort' },
             ],
           },
         ],
       });
+    });
+
+    it('returns weather as connected:true with no ServiceConnection row (connection: none)', async () => {
+      const { cookie } = await createUserWithCookie('cat3@example.com');
+
+      const res = await request(app.getHttpServer()).get('/api/catalog').set('Cookie', cookie).expect(200);
+
+      expect(res.body.services).toContainEqual(
+        expect.objectContaining({ name: 'weather', connection: 'none', connected: true, status: 'OK' }),
+      );
     });
 
     it('returns connected:false for a service the current user has not connected', async () => {

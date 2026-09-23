@@ -8,8 +8,8 @@ import { WidgetFrame } from './WidgetFrame.js';
 const instance: WidgetInstanceEntry = {
   id: 'i1',
   dashboardId: 'd',
-  service: 'weather',
-  widget: 'forecast',
+  service: 'fake',
+  widget: 'echo',
   params: {},
   refreshRate: 60,
   x: 0,

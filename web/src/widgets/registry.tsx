@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { CurrentWeatherView, ForecastView } from './weather.js';
 
 export interface WidgetViewProps {
   data: unknown;
@@ -10,7 +11,10 @@ function JsonView({ data }: WidgetViewProps) {
 }
 
 /** Real views register here as `views['github.recent_commits'] = RecentCommitsView`. */
-export const views: Record<string, ComponentType<WidgetViewProps>> = {};
+export const views: Record<string, ComponentType<WidgetViewProps>> = {
+  'weather.current_weather': CurrentWeatherView,
+  'weather.forecast': ForecastView,
+};
 
 export function getView(service: string, widget: string): ComponentType<WidgetViewProps> {
   return views[`${service}.${widget}`] ?? JsonView;
