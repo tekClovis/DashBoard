@@ -31,6 +31,8 @@ const MALFORMED: Record<string, object> = {
   'no-expiry-refresh': { access_token: 'T1' },
   // Past the Date range: an Invalid Date that the DB write used to reject with its own text.
   'huge-expiry-refresh': { access_token: 'T1', expires_in: 1e13 },
+  // Not a valid header value: it used to be stored, then quoted back by fetch's header error.
+  'newline-token-refresh': { access_token: 'tok-SECRET\nX-Injected: 1', expires_in: 3600 },
 };
 
 /** Fake YouTube Data API: 401 for the expired token, otherwise data derived from path/query. */

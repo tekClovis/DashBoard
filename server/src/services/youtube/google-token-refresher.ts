@@ -21,6 +21,8 @@ import { fixedMessage } from './youtube-api.js';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const TIMEOUT_MS = 10_000;
+/** Visible ASCII only: a token is sent in an HTTP header, where a space, CR/LF or NUL is invalid. */
+const HEADER_SAFE = /^[\x21-\x7E]+$/;
 
 interface TokenResponse {
   access_token: string;
@@ -31,12 +33,12 @@ interface TokenResponse {
 /** The token response if it has the fields we persist, else null (nothing must reach the DB or the client). */
 function parseTokenResponse(body: unknown): TokenResponse | null {
   const { access_token, expires_in, refresh_token } = (body ?? {}) as Record<string, unknown>;
-  if (typeof access_token !== 'string' || !access_token) return null;
+  if (typeof access_token !== 'string' || !HEADER_SAFE.test(access_token)) return null;
   if (typeof expires_in !== 'number' || !(expires_in > 0)) return null;
   // A huge expires_in overflows Date (Invalid Date), which the DB write would reject.
   const expiresAt = new Date(Date.now() + expires_in * 1000);
   if (Number.isNaN(expiresAt.getTime())) return null;
-  if (refresh_token !== undefined && typeof refresh_token !== 'string') return null;
+  if (refresh_token !== undefined && (typeof refresh_token !== 'string' || !HEADER_SAFE.test(refresh_token))) return null;
   return { access_token, expiresAt, refresh_token };
 }
 
@@ -85,8 +87,8 @@ export class GoogleTokenRefresher {
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
-    } catch (err) {
-      throw new FetchError('UPSTREAM_ERROR', `Google token refresh failed: ${err instanceof Error ? err.message : String(err)}`);
+    } catch {
+      throw new FetchError('UPSTREAM_ERROR', 'Google token refresh failed.');
     }
     if (!res.ok) {
       await res.body?.cancel();

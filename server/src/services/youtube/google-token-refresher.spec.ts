@@ -124,6 +124,11 @@ describe('GoogleTokenRefresher', () => {
     ['a non-positive expires_in', () => Response.json({ access_token: 'T1', expires_in: 0 })],
     ['a string expires_in', () => Response.json({ access_token: 'T1', expires_in: '3600' })],
     ['a non-string refresh_token', () => Response.json({ access_token: 'T1', expires_in: 3600, refresh_token: 42 })],
+    // Not a valid header value: fetch would reject the Authorization header and quote the token.
+    ['a newline in access_token', () => Response.json({ access_token: 'tok-SECRET\nX-Injected: 1', expires_in: 3600 })],
+    ['a NUL in access_token', () => Response.json({ access_token: 'tok-SECRET\0', expires_in: 3600 })],
+    ['a space in access_token', () => Response.json({ access_token: 'tok SECRET', expires_in: 3600 })],
+    ['a newline in refresh_token', () => Response.json({ access_token: 'T1', expires_in: 3600, refresh_token: 'rt-SECRET\n' })],
     ['a non-JSON body', () => new Response('<html>proxy</html>', { status: 200 })],
     // Past the Date range (8.64e15 ms): an Invalid Date the DB write would reject with its own text.
     ['expires_in 9e12', () => Response.json({ access_token: 'T1', expires_in: 9e12 })],
@@ -149,6 +154,17 @@ describe('GoogleTokenRefresher', () => {
 
     expect(err).toMatchObject({ name: 'FetchError', code: 'UPSTREAM_ERROR', message: 'Google token refresh failed.' });
     expect(serviceConnection.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failing token request or refresh-token decrypt is UPSTREAM_ERROR with a fixed message, never its own text', async () => {
+    const { refresher, serviceConnection } = setup('iv:tag:corrupt');
+    const fetchMock = stubTokenEndpoint(Response.json({ access_token: 'T1', expires_in: 3600 }));
+
+    const err = await refresher.refresh('u1').catch((e: unknown) => e);
+
+    expect(err).toMatchObject({ name: 'FetchError', code: 'UPSTREAM_ERROR', message: 'Google token refresh failed.' });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(serviceConnection.updateMany).not.toHaveBeenCalled();
   });
 
   it('shares one in-flight refresh between concurrent callers for the same user', async () => {

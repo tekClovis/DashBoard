@@ -283,4 +283,15 @@ describe('youtube widgets fetch()', () => {
 
     await expect(widget('channel_stats').fetch({ channel_id: 'UC_x5' }, ctx)).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
   });
+
+  it('never puts a fetch error\'s text (which can quote the Authorization header) in the client message', async () => {
+    const token = 'tok-SECRET\nX-Injected: 1';
+    // Real fetch, not a stub: Node rejects the header before any network I/O and quotes it in the error.
+    const err = await widget('channel_stats')
+      .fetch({ channel_id: 'UC_x5' }, { ...ctx, accessToken: token })
+      .catch((e: unknown) => e);
+
+    expect(err).toMatchObject({ name: 'FetchError', code: 'UPSTREAM_ERROR', message: 'YouTube request failed.' });
+    expect((err as Error).message).not.toContain('SECRET');
+  });
 });

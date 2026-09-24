@@ -66,8 +66,9 @@ async function send(path: string, query: Record<string, string | number>, token:
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-  } catch (err) {
-    throw new FetchError('UPSTREAM_ERROR', `YouTube request failed: ${err instanceof Error ? err.message : String(err)}`);
+  } catch {
+    // Fixed text: a fetch error can quote the request, e.g. an invalid Authorization header with the token.
+    throw new FetchError('UPSTREAM_ERROR', 'YouTube request failed.');
   }
 }
 
