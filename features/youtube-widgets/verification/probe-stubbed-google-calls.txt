@@ -1,0 +1,26 @@
+# Stubbed Google endpoints for the live stack (node --import preload over server/dist/main.js, NODE_ENV=production). No real Google call and no real token; tokens logged by length only.
+# users: ok (valid token), silent (expired, good refresh), reauth (expired, revoked refresh), noconn, d4 (token endpoint 200 with a newline access_token), d4stored (newline access_token stored via the connection row), d3 (expires_in 1e13)
+GET /youtube/v3/channels?part=snippet%2Cstatistics&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=6
+GET /youtube/v3/channels?part=contentDetails&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=6
+GET /youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=FR&maxResults=2 token.len=6
+GET /youtube/v3/playlistItems?part=snippet&playlistId=UU_x&maxResults=3 token.len=6
+GET /youtube/v3/channels?part=snippet%2Cstatistics&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/channels?part=contentDetails&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=FR&maxResults=2 token.len=7
+POST /token refresh_token.len=7
+GET /youtube/v3/channels?part=snippet%2Cstatistics&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=13
+GET /youtube/v3/channels?part=contentDetails&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=13
+GET /youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=FR&maxResults=2 token.len=13
+GET /youtube/v3/playlistItems?part=snippet&playlistId=UU_x&maxResults=3 token.len=13
+GET /youtube/v3/channels?part=snippet%2Cstatistics&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/channels?part=contentDetails&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=FR&maxResults=2 token.len=7
+POST /token refresh_token.len=10
+GET /youtube/v3/channels?part=snippet%2Cstatistics&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/channels?part=contentDetails&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=FR&maxResults=2 token.len=7
+POST /token refresh_token.len=5
+GET /youtube/v3/channels?part=snippet%2Cstatistics&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/channels?part=contentDetails&id=UC_x5XG1OV2P6uZZ5FSM9Ttw token.len=7
+GET /youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=FR&maxResults=2 token.len=7
+POST /token refresh_token.len=5

@@ -1,0 +1,164 @@
+# Round-5 reviewer probe output (ef35474). Temporary probe spec on the e2e Testcontainers harness (real Timer -> FetchService -> fetch() -> Socket.IO).
+# Google stubbed: global fetch rewritten to a local node:http stub, called through the REAL fetch so undici's header validation runs as in production. No real Google call, no real token; all tokens are fake (marker SECRET).
+# leak=true would mean the widget:error/data frame contained: SECRET marker, a stored ciphertext (or any iv/tag/ct part), user id, connection id, prisma/invocation/path/.ts:/stack text, Headers.append or ByteString text.
+# Format: case | widget | code "message" (or DATA) | leak | tokenCalls ytCalls | row state
+D4a refreshed access_token newline | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token newline | latest_videos | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token newline | trending_videos | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token CR | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token NUL | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token NUL | latest_videos | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token NUL | trending_videos | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token space | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token latin1 é | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token non-latin1 € | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token tab | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4a refreshed access_token long 20k | channel_stats | UPSTREAM_ERROR "YouTube responded with HTTP 431." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=false
+D4a refreshed access_token long 1M | channel_stats | UPSTREAM_ERROR "YouTube responded with HTTP 431." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=false
+D4b refreshed refresh_token newline | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4b refreshed refresh_token CR | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4b refreshed refresh_token NUL | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4b refreshed refresh_token space | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4b refreshed refresh_token latin1 é | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4b refreshed refresh_token non-latin1 € | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4b refreshed refresh_token tab | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D4b refreshed refresh_token long 20k | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4b refreshed refresh_token long 1M | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4c stored access_token newline | channel_stats | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4c stored access_token newline | latest_videos | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4c stored access_token newline | trending_videos | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4c stored access_token CR | channel_stats | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4c stored access_token NUL | channel_stats | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4c stored access_token space | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+D4c stored access_token latin1 é | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+D4c stored access_token non-latin1 € | channel_stats | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4c stored access_token tab | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+D4c stored access_token long 20k | channel_stats | UPSTREAM_ERROR "YouTube responded with HTTP 431." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4c stored access_token long 1M | channel_stats | UPSTREAM_ERROR "YouTube responded with HTTP 431." | leak=false | tokenCalls=0 ytCalls=0 | row.status=OK rowUnchanged=true
+D4d stored refresh_token newline | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token CR | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token NUL | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token space | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token latin1 é | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token non-latin1 € | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token tab | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token long 20k | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4d stored refresh_token long 1M | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D4e reconnect mid-refresh with newline access token | channel_stats | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=false
+FE REAUTH (token endpoint 400 invalid_grant) | channel_stats | REAUTH_REQUIRED "Google refused to refresh the access token." | leak=false | tokenCalls=1 ytCalls=1 | row.status=REAUTH rowUnchanged=false
+FE REAUTH (token endpoint 401) | channel_stats | REAUTH_REQUIRED "Google refused to refresh the access token." | leak=false | tokenCalls=1 ytCalls=1 | row.status=REAUTH rowUnchanged=false
+FE REAUTH (401 again after a successful refresh) | channel_stats | REAUTH_REQUIRED "YouTube rejected the access token." | leak=false | tokenCalls=1 ytCalls=2 | row.status=REAUTH rowUnchanged=false
+FE REAUTH (no refresh token stored) | channel_stats | REAUTH_REQUIRED "No Google refresh token for this connection." | leak=false | tokenCalls=0 ytCalls=1 | row.status=REAUTH rowUnchanged=false
+FE NOT_CONNECTED | channel_stats | NOT_CONNECTED "No youtube connection for this user." | leak=false | tokenCalls=0 ytCalls=0 | row=deleted
+FE INVALID_PARAMS (unknown channel) | channel_stats | INVALID_PARAMS "Unknown YouTube channel 'UC_known'." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 400 | channel_stats | INVALID_PARAMS "YouTube rejected the widget parameters." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 400 | trending_videos | INVALID_PARAMS "YouTube rejected the widget parameters." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 404 | channel_stats | INVALID_PARAMS "YouTube rejected the widget parameters." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 404 | trending_videos | INVALID_PARAMS "YouTube rejected the widget parameters." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 429 | channel_stats | RATE_LIMITED "YouTube quota or rate limit exceeded." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 429 | trending_videos | RATE_LIMITED "YouTube quota or rate limit exceeded." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 403 quotaExceeded | channel_stats | RATE_LIMITED "YouTube quota or rate limit exceeded." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 403 quotaExceeded | trending_videos | RATE_LIMITED "YouTube quota or rate limit exceeded." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 403 rateLimitExceeded | channel_stats | RATE_LIMITED "YouTube quota or rate limit exceeded." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 403 rateLimitExceeded | trending_videos | RATE_LIMITED "YouTube quota or rate limit exceeded." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 403 forbidden | channel_stats | UPSTREAM_ERROR "YouTube responded with HTTP 403." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 403 forbidden | trending_videos | UPSTREAM_ERROR "YouTube responded with HTTP 403." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 500 | channel_stats | UPSTREAM_ERROR "YouTube responded with HTTP 500." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT 500 | trending_videos | UPSTREAM_ERROR "YouTube responded with HTTP 500." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT socket destroyed | channel_stats | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE YT socket destroyed | trending_videos | UPSTREAM_ERROR "YouTube request failed." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+FE token endpoint 503 | channel_stats | UPSTREAM_ERROR "Google token endpoint responded with HTTP 503." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+FE token endpoint socket destroyed | channel_stats | UPSTREAM_ERROR "Google token refresh failed." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body 1e13 | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body 8.64e12 | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body 1e300 | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body MAX_VALUE | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body 1e400 | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body NaN (invalid JSON) | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body -1 | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body 0 | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body "3600" | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body missing | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body html | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body null | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body empty access_token | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+D3 token body refresh_token "" | channel_stats | UPSTREAM_ERROR "Google token endpoint returned an invalid response." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+INT updateMany throws (success write) | channel_stats | UPSTREAM_ERROR "Google token refresh failed." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+INT cipher.encrypt throws | channel_stats | UPSTREAM_ERROR "Google token refresh failed." | leak=false | tokenCalls=1 ytCalls=1 | row.status=OK rowUnchanged=true
+INT refresh-token decrypt throws (key rotated) | channel_stats | UPSTREAM_ERROR "Google token refresh failed." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+INT findUnique throws in refresher | channel_stats | UPSTREAM_ERROR "Google token refresh failed." | leak=false | tokenCalls=0 ytCalls=1 | row.status=OK rowUnchanged=true
+D1 disconnect mid-refresh | channel_stats | NOT_CONNECTED "The youtube connection was removed during a token refresh." | leak=false | tokenCalls=1 ytCalls=1 | row=deleted
+D2a reconnect mid-refresh (old grant refused) | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+D2b reconnect mid-refresh (old grant granted) | channel_stats | DATA {"channelId":"UC_known","title":"Known channel","subscribers | leak=false | tokenCalls=1 ytCalls=2 | row.status=OK rowUnchanged=false
+DEDUPE 3 widgets same user | data=3/3 | tokenCalls=1
+# redis keys=19 youtube keys=19 token-marker hits=0
+# sample youtube keys: widget:youtube.channel_stats:ce734829721ded7cc2f4c508587aa381709cd9c325ed450a72145c6919f9acd1:conn:e9dbe71c-b811-431b-aae7-06ecf717bb1c widget:youtube.channel_stats:ce734829721ded7cc2f4c508587aa381709cd9c325ed450a72145c6919f9acd1:conn:3bd90cb5-bbd8-4f6e-82b5-1a75d38711f7 widget:youtube.channel_stats:ce734829721ded7cc2f4c508587aa381709cd9c325ed450a72145c6919f9acd1:conn:2b4bae84-4ef1-4d11-a5d3-a697b101c453
+# socket frames=91 with SECRET marker=0
+# server stdout lines=0 with SECRET/tok-/rt- marker=0
+# stub call log (lengths only):
+# stub call log: 157 calls, logged by path/length only (omitted here).
+
+# Live production stack (server/dist/main.js, NODE_ENV=production), REST param validation + catalog:
+REST latest_videos number=0 -> 400 "'number' must be >= 1"
+REST latest_videos number=11 -> 400 "'number' must be <= 10"
+REST latest_videos number=2.5 -> 400 "'number' must be an integer"
+REST latest_videos number omitted -> 400 "'number' is required"
+REST latest_videos number=1 -> 201 undefined
+REST latest_videos number=10 -> 201 undefined
+REST channel_stats channel_id empty -> 400 "'channel_id' is required"
+REST channel_stats channel_id missing -> 400 "'channel_id' is required"
+REST channel_stats refreshRate 599 -> 400 "refreshRate must be between 600 and 86400"
+REST trending refreshRate 899 -> 400 "refreshRate must be between 900 and 86400"
+REST trending region fr -> 400 "'region' does not match the required pattern"
+REST trending region FRA -> 400 "'region' does not match the required pattern"
+REST trending region F1 -> 400 "'region' does not match the required pattern"
+REST trending region "US\n" -> 400 "'region' does not match the required pattern"
+REST trending region missing -> 400 "'region' is required"
+REST trending region US -> 201 undefined
+GET /api/catalog as noconn: youtube {"connection":"oauth","connected":false,"status":"OK"}
+GET /api/catalog as ok: youtube {"connection":"oauth","connected":true,"status":"OK"}
+
+# Live production stack, rendered cards (headless /usr/bin/google-chrome via playwright-core) and Socket.IO frames (instanceId/retryAt redacted):
+ok channel_stats: youtube.channel_stats 2.4M subscribers 180M views 412 videos
+ok latest_videos: youtube.latest_videos Building a Timer with Socket.IO 2d ago Prisma migrations deep dive 6d ago NestJS guards explained 11d ago
+ok trending_videos: youtube.trending_videos Top tech news this week #1 Concert highlights #2
+ok socket frames=3 suspicious=0
+silent channel_stats: youtube.channel_stats 2.4M subscribers 180M views 412 videos
+silent latest_videos: youtube.latest_videos Building a Timer with Socket.IO 2d ago Prisma migrations deep dive 6d ago NestJS guards explained 11d ago
+silent trending_videos: youtube.trending_videos Top tech news this week #1 Concert highlights #2
+silent socket frames=3 suspicious=0
+reauth channel_stats: youtube.channel_stats Reconnect required: Google refused to refresh the access token. Reconnect
+reauth latest_videos: youtube.latest_videos Reconnect required: Google refused to refresh the access token. Reconnect
+reauth trending_videos: youtube.trending_videos Reconnect required: Google refused to refresh the access token. Reconnect
+reauth socket frames=3 suspicious=0
+reauth frame: 42["widget:error",{"instanceId":"<id>","code":"REAUTH_REQUIRED","message":"Google refused to refresh the access token."}]
+reauth frame: 42["widget:error",{"instanceId":"<id>","code":"REAUTH_REQUIRED","message":"Google refused to refresh the access token."}]
+reauth frame: 42["widget:error",{"instanceId":"<id>","code":"REAUTH_REQUIRED","message":"Google refused to refresh the access token."}]
+noconn channel_stats: youtube.channel_stats Reconnect required: No youtube connection for this user. Reconnect
+noconn latest_videos: youtube.latest_videos Reconnect required: No youtube connection for this user. Reconnect
+noconn trending_videos: youtube.trending_videos Reconnect required: No youtube connection for this user. Reconnect
+noconn socket frames=3 suspicious=0
+noconn frame: 42["widget:error",{"instanceId":"<id>","code":"NOT_CONNECTED","message":"No youtube connection for this user."}]
+noconn frame: 42["widget:error",{"instanceId":"<id>","code":"NOT_CONNECTED","message":"No youtube connection for this user."}]
+noconn frame: 42["widget:error",{"instanceId":"<id>","code":"NOT_CONNECTED","message":"No youtube connection for this user."}]
+d4 channel_stats: youtube.channel_stats Error: Google token endpoint returned an invalid response.
+d4 latest_videos: youtube.latest_videos Error: Google token endpoint returned an invalid response.
+d4 trending_videos: youtube.trending_videos Error: Google token endpoint returned an invalid response.
+d4 socket frames=3 suspicious=0
+d4 frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"Google token endpoint returned an invalid response.","retryAt":"<t>"}]
+d4 frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"Google token endpoint returned an invalid response.","retryAt":"<t>"}]
+d4 frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"Google token endpoint returned an invalid response.","retryAt":"<t>"}]
+d4stored channel_stats: youtube.channel_stats Error: YouTube request failed.
+d4stored latest_videos: youtube.latest_videos Error: YouTube request failed.
+d4stored trending_videos: youtube.trending_videos Error: YouTube request failed.
+d4stored socket frames=3 suspicious=0
+d4stored frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"YouTube request failed.","retryAt":"<t>"}]
+d4stored frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"YouTube request failed.","retryAt":"<t>"}]
+d4stored frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"YouTube request failed.","retryAt":"<t>"}]
+d3 channel_stats: youtube.channel_stats Error: Google token endpoint returned an invalid response.
+d3 latest_videos: youtube.latest_videos Error: Google token endpoint returned an invalid response.
+d3 trending_videos: youtube.trending_videos Error: Google token endpoint returned an invalid response.
+d3 socket frames=3 suspicious=0
+d3 frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"Google token endpoint returned an invalid response.","retryAt":"<t>"}]
+d3 frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"Google token endpoint returned an invalid response.","retryAt":"<t>"}]
+d3 frame: 42["widget:error",{"instanceId":"<id>","code":"UPSTREAM_ERROR","message":"Google token endpoint returned an invalid response.","retryAt":"<t>"}]
