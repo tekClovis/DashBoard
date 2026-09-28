@@ -11,6 +11,8 @@ export interface FetchContext {
   accessToken?: string;
   /** When accessToken expires, if the provider said so. */
   expiresAt?: Date;
+  /** The connection's provider-side account id (e.g. SteamID64), present only when the widget's service required a connection. */
+  externalAccountId?: string;
 }
 
 export interface WidgetDefinition<K extends keyof WidgetDataMap = keyof WidgetDataMap> {

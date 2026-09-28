@@ -44,6 +44,7 @@ export class FetchService {
       userId,
       accessToken: connection.accessTokenEnc ? this.cipher.decrypt(connection.accessTokenEnc) : undefined,
       expiresAt: connection.expiresAt ?? undefined,
+      externalAccountId: connection.externalAccountId,
     };
     return this.dedupedFetch(key, def, params, ctx);
   }
