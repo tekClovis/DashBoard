@@ -1,0 +1,4 @@
+### After restoring: git status --short
+?? features/tests-dashboards/
+### git diff --stat -- server (must be empty)
+### end

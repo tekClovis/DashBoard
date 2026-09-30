@@ -1,0 +1,21 @@
+### Mutation 1: dashboards.service.ts:174  'owned !== ids.length' -> 'owned === ids.length' (updateLayout)
+diff --git a/server/src/dashboards/dashboards.service.ts b/server/src/dashboards/dashboards.service.ts
+index 0c25113..4b685be 100644
+--- a/server/src/dashboards/dashboards.service.ts
++++ b/server/src/dashboards/dashboards.service.ts
+@@ -174 +174 @@ export class DashboardsService {
+-      if (owned !== ids.length) throw new NotFoundException();
++      if (owned === ids.length) throw new NotFoundException();
+       × moves only the listed instances and leaves everything but x/y/w/h as it was 5ms
+       × returns an empty list for an empty batch on an owned dashboard 1ms
+       × rejects the batch with 404 before moving anything when one id does not exist 5ms
+       × rejects the batch with 404 before moving anything when one id belongs to another of the caller's dashboards 2ms
+       × rejects the batch with 404 before moving anything when one id belongs to another user's dashboard 1ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > moves only the listed instances and leaves everything but x/y/w/h as it was
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > returns an empty list for an empty batch on an owned dashboard
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id does not exist
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id belongs to another of the caller's dashboards
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id belongs to another user's dashboard
+ Test Files  1 failed (1)
+      Tests  5 failed | 41 passed (46)
