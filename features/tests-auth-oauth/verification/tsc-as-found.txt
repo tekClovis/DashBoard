@@ -1,0 +1,94 @@
+src/admin/admin.controller.ts(4,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'AdminUserEntry'.
+src/admin/admin.controller.ts(4,31): error TS2305: Module '"@dashboard/shared"' has no exported member 'AdminUsersResponse'.
+src/admin/admin.service.ts(2,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'AdminUserEntry'.
+src/admin/admin.service.ts(2,31): error TS2305: Module '"@dashboard/shared"' has no exported member 'AdminUsersResponse'.
+src/dashboards/dashboard-events.ts(9,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetInstanceEntry'.
+src/dashboards/dashboards.controller.ts(5,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'DashboardEntry'.
+src/dashboards/dashboards.controller.ts(5,31): error TS2305: Module '"@dashboard/shared"' has no exported member 'DashboardsResponse'.
+src/dashboards/dashboards.controller.ts(5,51): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetInstanceEntry'.
+src/dashboards/dashboards.controller.ts(5,72): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetsResponse'.
+src/dashboards/dashboards.service.ts(9,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'DashboardEntry'.
+src/dashboards/dashboards.service.ts(9,31): error TS2305: Module '"@dashboard/shared"' has no exported member 'LayoutUpdateEntry'.
+src/dashboards/dashboards.service.ts(9,61): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetInstanceEntry'.
+src/dashboards/widgets.controller.ts(4,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetInstanceEntry'.
+src/services/github/github-widgets.spec.ts(13,10): error TS2352: Conversion of type 'WidgetDefinition<"github.recent_commits"> | WidgetDefinition<"github.pull_requests"> | WidgetDefinition<"github.security_alerts">' to type 'WidgetDefinition<keyof WidgetDataMap>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'WidgetDefinition<"github.security_alerts">' is not comparable to type 'WidgetDefinition<keyof WidgetDataMap>'.
+    Type '"github.security_alerts"' is not comparable to type 'keyof WidgetDataMap'.
+src/services/github/github-widgets.ts(4,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'GithubPullRequest'.
+src/services/github/github-widgets.ts(4,34): error TS2305: Module '"@dashboard/shared"' has no exported member 'GithubSecurityAlert'.
+src/services/github/github-widgets.ts(33,39): error TS2344: Type '"github.recent_commits"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/github/github-widgets.ts(56,38): error TS2344: Type '"github.pull_requests"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/github/github-widgets.ts(65,60): error TS2339: Property 'github.pull_requests' does not exist on type 'WidgetDataMap'.
+src/services/github/github-widgets.ts(81,40): error TS2344: Type '"github.security_alerts"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/github/github.module.ts(13,61): error TS2345: Argument of type 'WidgetDefinition<"github.recent_commits"> | WidgetDefinition<"github.pull_requests"> | WidgetDefinition<"github.security_alerts">' is not assignable to parameter of type 'WidgetDefinition<keyof WidgetDataMap>'.
+  Type 'WidgetDefinition<"github.recent_commits">' is not assignable to type 'WidgetDefinition<keyof WidgetDataMap>'.
+    Type '"github.recent_commits"' is not assignable to type 'keyof WidgetDataMap'.
+src/services/steam/steam.module.ts(19,30): error TS2345: Argument of type 'WidgetDefinition<"steam.recently_played"> | WidgetDefinition<"steam.game_news">' is not assignable to parameter of type 'WidgetDefinition<keyof WidgetDataMap>'.
+  Type 'WidgetDefinition<"steam.recently_played">' is not assignable to type 'WidgetDefinition<keyof WidgetDataMap>'.
+    Type '"steam.recently_played"' is not assignable to type 'keyof WidgetDataMap'.
+src/services/steam/steam.widgets.spec.ts(141,14): error TS18046: 'data' is of type 'unknown'.
+src/services/steam/steam.widgets.spec.ts(141,30): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/steam/steam.widgets.ts(8,26): error TS2305: Module '"@dashboard/shared"' has no exported member 'SteamNewsItem'.
+src/services/steam/steam.widgets.ts(8,41): error TS2305: Module '"@dashboard/shared"' has no exported member 'SteamRecentGame'.
+src/services/steam/steam.widgets.ts(30,22): error TS2344: Type '"steam.recently_played"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/steam/steam.widgets.ts(30,65): error TS2344: Type '"steam.game_news"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/weather/weather.module.ts(21,88): error TS2345: Argument of type 'WidgetDefinition<"weather.current_weather"> | WidgetDefinition<"weather.forecast">' is not assignable to parameter of type 'WidgetDefinition<keyof WidgetDataMap>'.
+  Type 'WidgetDefinition<"weather.current_weather">' is not assignable to type 'WidgetDefinition<keyof WidgetDataMap>'.
+    Type '"weather.current_weather"' is not assignable to type 'keyof WidgetDataMap'.
+src/services/weather/weather.widgets.spec.ts(51,12): error TS2571: Object is of type 'unknown'.
+src/services/weather/weather.widgets.ts(7,20): error TS2344: Type '"weather.current_weather"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/weather/weather.widgets.ts(8,20): error TS2344: Type '"weather.forecast"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/weather/weather.widgets.ts(10,42): error TS2344: Type '"weather.current_weather"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/weather/weather.widgets.ts(36,36): error TS2344: Type '"weather.forecast"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/youtube/youtube-widgets.spec.ts(15,10): error TS2352: Conversion of type 'WidgetDefinition<"youtube.channel_stats"> | WidgetDefinition<"youtube.latest_videos"> | WidgetDefinition<"youtube.trending_videos">' to type 'WidgetDefinition<keyof WidgetDataMap>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'WidgetDefinition<"youtube.trending_videos">' is not comparable to type 'WidgetDefinition<keyof WidgetDataMap>'.
+    Type '"youtube.trending_videos"' is not comparable to type 'keyof WidgetDataMap'.
+src/services/youtube/youtube-widgets.ts(4,26): error TS2305: Module '"@dashboard/shared"' has no exported member 'YoutubeVideo'.
+src/services/youtube/youtube-widgets.ts(59,20): error TS2344: Type '"youtube.channel_stats"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/youtube/youtube-widgets.ts(60,20): error TS2344: Type '"youtube.latest_videos"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/youtube/youtube-widgets.ts(61,20): error TS2344: Type '"youtube.trending_videos"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/youtube/youtube-widgets.ts(63,40): error TS2344: Type '"youtube.channel_stats"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/youtube/youtube-widgets.ts(83,40): error TS2344: Type '"youtube.latest_videos"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/youtube/youtube-widgets.ts(108,42): error TS2344: Type '"youtube.trending_videos"' does not satisfy the constraint 'keyof WidgetDataMap'.
+src/services/youtube/youtube.module.ts(18,106): error TS2345: Argument of type 'WidgetDefinition<"youtube.channel_stats"> | WidgetDefinition<"youtube.latest_videos"> | WidgetDefinition<"youtube.trending_videos">' is not assignable to parameter of type 'WidgetDefinition<keyof WidgetDataMap>'.
+  Type 'WidgetDefinition<"youtube.channel_stats">' is not assignable to type 'WidgetDefinition<keyof WidgetDataMap>'.
+    Type '"youtube.channel_stats"' is not assignable to type 'keyof WidgetDataMap'.
+src/timer/fetch-error.ts(5,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetErrorCode'.
+src/timer/realtime.gateway.ts(27,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetSubscribePayload'.
+src/timer/realtime.gateway.ts(27,39): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetUnsubscribePayload'.
+src/timer/timer.service.ts(4,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetErrorCode'.
+test/github-widgets.e2e-spec.ts(17,30): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetDataPayload'.
+test/github-widgets.e2e-spec.ts(17,49): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetErrorPayload'.
+test/github-widgets.e2e-spec.ts(172,13): error TS2339: Property 'commits' does not exist on type 'unknown'.
+test/github-widgets.e2e-spec.ts(172,32): error TS2344: Type '"github.recent_commits"' does not satisfy the constraint 'keyof WidgetDataMap'.
+test/github-widgets.e2e-spec.ts(174,32): error TS7006: Parameter 'c' implicitly has an 'any' type.
+test/github-widgets.e2e-spec.ts(187,25): error TS2344: Type '"github.pull_requests"' does not satisfy the constraint 'keyof WidgetDataMap'.
+test/github-widgets.e2e-spec.ts(189,12): error TS18046: 'data' is of type 'unknown'.
+test/github-widgets.e2e-spec.ts(190,12): error TS18046: 'data' is of type 'unknown'.
+test/github-widgets.e2e-spec.ts(190,28): error TS7006: Parameter 'p' implicitly has an 'any' type.
+test/github-widgets.e2e-spec.ts(245,12): error TS2571: Object is of type 'unknown'.
+test/github-widgets.e2e-spec.ts(245,19): error TS2344: Type '"github.recent_commits"' does not satisfy the constraint 'keyof WidgetDataMap'.
+test/github-widgets.e2e-spec.ts(246,12): error TS2571: Object is of type 'unknown'.
+test/github-widgets.e2e-spec.ts(246,19): error TS2344: Type '"github.recent_commits"' does not satisfy the constraint 'keyof WidgetDataMap'.
+test/steam-widgets.e2e-spec.ts(17,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetDataPayload'.
+test/steam-widgets.e2e-spec.ts(17,34): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetErrorPayload'.
+test/timer-realtime.e2e-spec.ts(16,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetDataPayload'.
+test/timer-realtime.e2e-spec.ts(16,34): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetErrorPayload'.
+test/weather.e2e-spec.ts(15,15): error TS2305: Module '"@dashboard/shared"' has no exported member 'CurrentWeatherData'.
+test/weather.e2e-spec.ts(15,35): error TS2305: Module '"@dashboard/shared"' has no exported member 'ForecastData'.
+test/weather.e2e-spec.ts(15,49): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetDataPayload'.
+test/weather.e2e-spec.ts(15,68): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetErrorPayload'.
+test/youtube-widgets.e2e-spec.ts(17,30): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetDataPayload'.
+test/youtube-widgets.e2e-spec.ts(17,49): error TS2305: Module '"@dashboard/shared"' has no exported member 'WidgetErrorPayload'.
+test/youtube-widgets.e2e-spec.ts(277,13): error TS2339: Property 'videos' does not exist on type 'unknown'.
+test/youtube-widgets.e2e-spec.ts(277,31): error TS2344: Type '"youtube.latest_videos"' does not satisfy the constraint 'keyof WidgetDataMap'.
+test/youtube-widgets.e2e-spec.ts(279,31): error TS7006: Parameter 'v' implicitly has an 'any' type.
+test/youtube-widgets.e2e-spec.ts(289,25): error TS2344: Type '"youtube.trending_videos"' does not satisfy the constraint 'keyof WidgetDataMap'.
+test/youtube-widgets.e2e-spec.ts(291,12): error TS18046: 'data' is of type 'unknown'.
+test/youtube-widgets.e2e-spec.ts(292,12): error TS18046: 'data' is of type 'unknown'.
+test/youtube-widgets.e2e-spec.ts(292,29): error TS7006: Parameter 'v' implicitly has an 'any' type.
+test/youtube-widgets.e2e-spec.ts(301,12): error TS2571: Object is of type 'unknown'.
+test/youtube-widgets.e2e-spec.ts(301,19): error TS2344: Type '"youtube.trending_videos"' does not satisfy the constraint 'keyof WidgetDataMap'.
+test/youtube-widgets.e2e-spec.ts(362,12): error TS2571: Object is of type 'unknown'.
+test/youtube-widgets.e2e-spec.ts(362,19): error TS2344: Type '"youtube.channel_stats"' does not satisfy the constraint 'keyof WidgetDataMap'.
+exit code: 1
