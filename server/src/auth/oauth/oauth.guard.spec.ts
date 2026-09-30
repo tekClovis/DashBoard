@@ -221,23 +221,35 @@ describe('GithubOAuthGuard', () => {
     });
 
     it('does not let the request through when the provider handshake fails on a login state', async () => {
-      stubPassport({ err: new Error('token exchange failed') });
+      const failure = new Error('token exchange failed');
+      stubPassport({ err: failure });
       const { guard } = makeGuard();
       const state = signOAuthState({ intent: 'login', provider: 'github' }, SECRET);
       const { req, context } = makeExchange({ code: 'c', state }, { [OAUTH_STATE_COOKIE]: state });
 
-      await expect(guard.canActivate(context)).rejects.toBeInstanceOf(Error);
+      await expect(guard.canActivate(context)).rejects.toBe(failure);
       expect(req.user).toBeUndefined();
     });
 
-    // Bug, see features/tests-auth-oauth/verification/findings.md #1.
-    it.fails('surfaces a provider handshake error on a login state instead of masking it as INVALID_STATE', async () => {
+    it('surfaces a provider handshake error on a login state instead of masking it as INVALID_STATE', async () => {
       stubPassport({ err: new Error('token exchange failed') });
       const { guard } = makeGuard();
       const state = signOAuthState({ intent: 'login', provider: 'github' }, SECRET);
       const { context } = makeExchange({ code: 'c', state }, { [OAUTH_STATE_COOKIE]: state });
 
       await expect(guard.canActivate(context)).rejects.toThrow('token exchange failed');
+    });
+
+    it('surfaces the no-user outcome on a login state instead of masking it as INVALID_STATE', async () => {
+      stubPassport({ user: false, info: { message: 'access_denied' } });
+      const { guard } = makeGuard();
+      const state = signOAuthState({ intent: 'login', provider: 'github' }, SECRET);
+      const { context } = makeExchange({ code: 'c', state }, { [OAUTH_STATE_COOKIE]: state });
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject({
+        status: 401,
+        response: { message: 'access_denied' },
+      });
     });
 
     it('accepts a CSRF-bound connect state and dispatches to the connect strategy', async () => {
@@ -342,14 +354,14 @@ describe('GoogleOAuthGuard', () => {
     expect(verifyConnectState(options.state, 'google', setCookie(OAUTH_CSRF_COOKIE), SECRET).userId).toBe('u1');
   });
 
-  // Bug, see features/tests-auth-oauth/verification/findings.md #2.
-  it.fails('rejects a login state that was signed for another provider', async () => {
-    stubPassport();
+  it('rejects a login state that was signed for another provider', async () => {
+    const authenticate = stubPassport();
     const { guard } = makeGuard();
     const state = signOAuthState({ intent: 'login', provider: 'github' }, SECRET);
     const { context } = makeExchange({ code: 'c', state }, { [OAUTH_STATE_COOKIE]: state });
 
-    await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 401 });
+    await expect(guard.canActivate(context)).rejects.toMatchObject(INVALID_STATE);
+    expect(authenticate).not.toHaveBeenCalled();
   });
 });
 
