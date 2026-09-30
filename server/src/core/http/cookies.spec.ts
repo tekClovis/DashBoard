@@ -38,9 +38,12 @@ describe('readCookie', () => {
     expect(readCookie('session=', 'session')).toBe('');
   });
 
-  // Bug: decodeURIComponent throws URIError on a malformed escape, so a client-sent `session=%`
-  // makes JwtGuard throw a non-HTTP error (500) instead of treating the cookie as unusable (401).
-  it.fails('does not throw on a malformed percent-escape', () => {
+  // A client-sent malformed escape must read as an absent cookie (401 upstream), not a URIError (500).
+  it('does not throw on a malformed percent-escape', () => {
     expect(() => readCookie('session=%E0%A4%A', 'session')).not.toThrow();
+  });
+
+  it('returns null for a value with a malformed percent-escape', () => {
+    expect(readCookie('session=%E0%A4%A', 'session')).toBeNull();
   });
 });
