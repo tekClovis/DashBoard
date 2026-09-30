@@ -1,0 +1,4 @@
+ server/src/services/github/github-api.spec.ts   | 153 ++++++++++++++++
+ server/src/services/weather/open-meteo.spec.ts  | 202 ++++++++++++++++++++
+ server/src/services/youtube/youtube-api.spec.ts | 233 ++++++++++++++++++++++++
+ 3 files changed, 588 insertions(+)
