@@ -1,0 +1,138 @@
+==================================================================
+MUTATION: M1 flip banned check in resolveSessionUser
+file: server/src/auth/session-user.ts:26
+original:   if (revoked || !user || user.bannedAt || user.tokenVersion !== payload.tv) return null;
+mutated:    if (revoked || !user || !user.bannedAt || user.tokenVersion !== payload.tv) return null;
+command: npx vitest run src/auth/session-user.spec.ts
+ ❯ src/auth/session-user.spec.ts (6 tests | 2 failed) 15ms
+     × returns only the request-facing fields of the token owner 10ms
+     × returns null for a banned user 1ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/auth/session-user.spec.ts > resolveSessionUser > returns only the request-facing fields of the token owner
+AssertionError: expected null to deeply equal { id: 'u1', email: 'a@b.com', …(2) }
+ FAIL  src/auth/session-user.spec.ts > resolveSessionUser > returns null for a banned user
+AssertionError: expected { id: 'u1', email: 'a@b.com', …(2) } to be null
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+restored: 0 modified lines in git status for src/auth/session-user.ts (0 = clean)
+==================================================================
+MUTATION: M2 flip banned check in OAuth login callback
+file: server/src/auth/oauth/oauth.controller.ts:114
+original:       if (user.bannedAt) {
+mutated:        if (!user.bannedAt) {
+command: npx vitest run src/auth/oauth/oauth.controller.spec.ts
+ ❯ src/auth/oauth/oauth.controller.spec.ts (13 tests | 2 failed) 17ms
+       × sets a session cookie for the resolved user and redirects into the app 3ms
+       × refuses a banned user without issuing a session 3ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/auth/oauth/oauth.controller.spec.ts > OAuthController > login > sets a session cookie for the resolved user and redirects into the app
+ FAIL  src/auth/oauth/oauth.controller.spec.ts > OAuthController > login > refuses a banned user without issuing a session
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+ Test Files  1 failed (1)
+      Tests  2 failed | 11 passed (13)
+restored: 0 modified lines in git status for src/auth/oauth/oauth.controller.ts (0 = clean)
+==================================================================
+MUTATION: M3 flip connect-intent branch on guard start leg
+file: server/src/auth/oauth/oauth.guard.ts:144
+original:     if (intent === 'connect') {
+mutated:      if (intent !== 'connect') {
+command: npx vitest run src/auth/oauth/oauth.guard.spec.ts
+ ❯ src/auth/oauth/oauth.guard.spec.ts (31 tests | 8 failed) 41ms
+       × signs a login state, binds it to a short-lived cookie and hands it to the login strategy 7ms
+       × marks the state cookie secure when the app is served over https 1ms
+       × treats an unrecognised intent as login 1ms
+       × binds a link state to the session user id 1ms
+       × rejects a connect start without a session before contacting the provider 3ms
+       × signs a CSRF-bound connect state for the session user and uses the connect strategy 3ms
+     × signs login states for google and uses the google strategy 1ms
+     × requests offline YouTube access on a connect start 1ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > signs a login state, binds it to a short-lived cookie and hands it to the login strategy
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > marks the state cookie secure when the app is served over https
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > treats an unrecognised intent as login
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > binds a link state to the session user id
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a connect start without a session before contacting the provider
+AssertionError: promise resolved "true" instead of rejecting
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > signs a CSRF-bound connect state for the session user and uses the connect strategy
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'oauth_csrf', undefined, { …(5) } ]
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GoogleOAuthGuard > signs login states for google and uses the google strategy
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GoogleOAuthGuard > requests offline YouTube access on a connect start
+AssertionError: expected 'google' to be 'google-connect' // Object.is equality
+ Test Files  1 failed (1)
+      Tests  8 failed | 21 passed | 2 expected fail (31)
+restored: 0 modified lines in git status for src/auth/oauth/oauth.guard.ts (0 = clean)
+==================================================================
+MUTATION: M4 (extra) boundary: ttlSec <= 0 -> ttlSec < 0
+file: server/src/auth/token-revocation.service.ts:20
+original:     if (ttlSec <= 0) return;
+mutated:      if (ttlSec < 0) return;
+command: npx vitest run src/auth/token-revocation.service.spec.ts
+ ❯ src/auth/token-revocation.service.spec.ts (4 tests | 1 failed) 13ms
+     × stores nothing for a token expiring this very second 5ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/auth/token-revocation.service.spec.ts > TokenRevocationService > stores nothing for a token expiring this very second
+AssertionError: expected 1 to be +0 // Object.is equality
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed (4)
+restored: 0 modified lines in git status for src/auth/token-revocation.service.ts (0 = clean)
+==================================================================
+MUTATION: M5 (extra) flip primary-email predicate
+file: server/src/auth/oauth/github.strategy.ts:32
+original:     const primary = emails.find((e) => e.primary) ?? emails[0];
+mutated:      const primary = emails.find((e) => !e.primary) ?? emails[0];
+command: npx vitest run src/auth/oauth/github.strategy.spec.ts
+ ❯ src/auth/oauth/github.strategy.spec.ts (6 tests | 2 failed) 16ms
+     × normalises the primary email, not merely the first one 10ms
+     × takes the verified flag from the chosen email only 2ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/auth/oauth/github.strategy.spec.ts > GithubStrategy.validate > normalises the primary email, not merely the first one
+AssertionError: expected "vi.fn()" to be called once with arguments: [ null, { provider: 'GITHUB', …(3) } ]
+ FAIL  src/auth/oauth/github.strategy.spec.ts > GithubStrategy.validate > takes the verified flag from the chosen email only
+AssertionError: expected "vi.fn()" to be called with arguments: [ null, ObjectContaining{…} ]
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+restored: 0 modified lines in git status for src/auth/oauth/github.strategy.ts (0 = clean)
+==================================================================
+MUTATION: M6 (extra) flip secure flag of Steam guard cookies
+file: server/src/auth/oauth/oauth.guard.ts:214
+original:       secure: appUrl.startsWith('https'),
+mutated:        secure: !appUrl.startsWith('https'),
+command: npx vitest run src/auth/oauth/oauth.guard.spec.ts
+ ❯ src/auth/oauth/oauth.guard.spec.ts (31 tests | 1 failed) 40ms
+     × stores the CSRF-bound state in a cookie on start, since OpenID cannot echo it 3ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > stores the CSRF-bound state in a cookie on start, since OpenID cannot echo it
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'oauth_state', …(2) ]
+ Test Files  1 failed (1)
+      Tests  1 failed | 28 passed | 2 expected fail (31)
+restored: 0 modified lines in git status for src/auth/oauth/oauth.guard.ts (0 = clean)
+==================================================================
+MUTATION: M7 (extra) flip Steam openid.mode callback detection
+file: server/src/auth/oauth/oauth.guard.ts:197
+original:     if (typeof req.query['openid.mode'] === 'string') {
+mutated:      if (typeof req.query['openid.mode'] !== 'string') {
+command: npx vitest run src/auth/oauth/oauth.guard.spec.ts
+ ❯ src/auth/oauth/oauth.guard.spec.ts (31 tests | 6 failed) 45ms
+     × rejects a start without a session 3ms
+     × stores the CSRF-bound state in a cookie on start, since OpenID cannot echo it 1ms
+     × accepts an OpenID callback whose cookie state matches the CSRF cookie 1ms
+     × rejects an OpenID callback with no state cookie 2ms
+     × rejects an OpenID callback with no CSRF cookie 1ms
+     × rejects an OpenID callback with a mismatched CSRF cookie 1ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects a start without a session
+AssertionError: expected UnauthorizedException: Unauthorized Excep… { …(4) } to match object { status: 401, …(1) }
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > stores the CSRF-bound state in a cookie on start, since OpenID cannot echo it
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > accepts an OpenID callback whose cookie state matches the CSRF cookie
+AssertionError: promise rejected "UnauthorizedException: Unauthorized Excep… { …(4) }" instead of resolving
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects an OpenID callback with no state cookie
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects an OpenID callback with no CSRF cookie
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects an OpenID callback with a mismatched CSRF cookie
+AssertionError: expected UnauthorizedException: Unauthorized Excep… { …(4) } to match object { status: 401, …(1) }
+ Test Files  1 failed (1)
+      Tests  6 failed | 23 passed | 2 expected fail (31)
+restored: 0 modified lines in git status for src/auth/oauth/oauth.guard.ts (0 = clean)
+==================================================================
+git status --short (whole worktree) after all mutations restored:
+?? features/tests-auth-oauth/
+git diff --stat (tracked changes, expect empty):
