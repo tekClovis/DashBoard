@@ -106,7 +106,7 @@ describe('githubGet', () => {
     expect(res.bodyUsed).toBe(true);
   });
 
-  it('maps a network failure to UPSTREAM_ERROR carrying the cause', async () => {
+  it('maps a network failure to UPSTREAM_ERROR with a fixed message', async () => {
     stubFetch(() => {
       throw new TypeError('fetch failed');
     });
@@ -114,7 +114,7 @@ describe('githubGet', () => {
     await expect(githubGet('o/r', '/commits', {}, TOKEN)).rejects.toMatchObject({
       name: 'FetchError',
       code: 'UPSTREAM_ERROR',
-      message: 'GitHub request failed: fetch failed',
+      message: 'GitHub request failed.',
     });
   });
 
@@ -126,7 +126,7 @@ describe('githubGet', () => {
 
     await expect(githubGet('o/r', '/commits', {}, TOKEN)).rejects.toMatchObject({
       code: 'UPSTREAM_ERROR',
-      message: 'GitHub request failed: socket hang up',
+      message: 'GitHub request failed.',
     });
   });
 
@@ -137,9 +137,9 @@ describe('githubGet', () => {
     await expect(githubGet('o/r', '/commits', {}, TOKEN)).rejects.toBeInstanceOf(SyntaxError);
   });
 
-  // BUG (github-api.ts:44): the fetch error's text is copied into the message the Timer sends to
-  // the client, and Node quotes an invalid Authorization header — token included — in that text.
-  it.fails('keeps the access token out of a transport error message', async () => {
+  // The Timer sends the message to the client, and Node quotes an invalid Authorization header —
+  // token included — in its fetch error text.
+  it('keeps the access token out of a transport error message', async () => {
     // What Node's fetch throws for a token with a character that is illegal in a header.
     stubFetch(() => {
       throw new TypeError(`Headers.append: "Bearer ${TOKEN}" is an invalid header value.`);
