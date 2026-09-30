@@ -27,7 +27,7 @@ describe('revokeAtProvider', () => {
     vi.unstubAllGlobals();
   });
 
-  it('deletes the GitHub grant with the app credentials as basic auth and the token in the body', async () => {
+  it('deletes the GitHub grant with the login app credentials as basic auth when no connect app is configured and the token in the body', async () => {
     await revokeAtProvider('github', 'gho_token', makeConfig(GITHUB_ENV));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -49,7 +49,7 @@ describe('revokeAtProvider', () => {
 
   // Connect tokens are granted to the connect OAuth app (github-connect.strategy.ts prefers
   // GITHUB_CONNECT_CLIENT_ID/SECRET), so the grant must be deleted with that app's credentials.
-  it.fails('revokes the GitHub grant with the connect app credentials when they are configured', async () => {
+  it('revokes the GitHub grant with the connect app credentials when they are configured', async () => {
     await revokeAtProvider(
       'github',
       'gho_token',

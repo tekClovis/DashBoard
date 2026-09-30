@@ -17,13 +17,19 @@ export interface ConnectProfileResult {
   scopes: string[];
 }
 
+/** The OAuth app the connect flow grants tokens to. Revoking those tokens must use the same app. */
+export function githubConnectClient(config: ConfigService): { clientID: string; clientSecret: string } {
+  return {
+    clientID: config.get<string>('GITHUB_CONNECT_CLIENT_ID') ?? config.get<string>('GITHUB_CLIENT_ID') ?? '',
+    clientSecret: config.get<string>('GITHUB_CONNECT_CLIENT_SECRET') ?? config.get<string>('GITHUB_CLIENT_SECRET') ?? '',
+  };
+}
+
 @Injectable()
 export class GithubConnectStrategy extends PassportStrategy(Strategy, 'github-connect') {
   constructor(config: ConfigService) {
     super({
-      clientID: config.get<string>('GITHUB_CONNECT_CLIENT_ID') ?? config.get<string>('GITHUB_CLIENT_ID') ?? '',
-      clientSecret:
-        config.get<string>('GITHUB_CONNECT_CLIENT_SECRET') ?? config.get<string>('GITHUB_CLIENT_SECRET') ?? '',
+      ...githubConnectClient(config),
       callbackURL: `${config.getOrThrow<string>('APP_URL')}/api/oauth/github/callback`,
       scope: GITHUB_CONNECT_SCOPES,
     });

@@ -3,6 +3,7 @@
 // provider where an API allows it"). Steam has no token to revoke.
 
 import { ConfigService } from '@nestjs/config';
+import { githubConnectClient } from './strategies/github-connect.strategy.js';
 
 export async function revokeAtProvider(
   service: string,
@@ -13,8 +14,7 @@ export async function revokeAtProvider(
 
   try {
     if (service === 'github') {
-      const clientId = config.get<string>('GITHUB_CLIENT_ID');
-      const clientSecret = config.get<string>('GITHUB_CLIENT_SECRET');
+      const { clientID: clientId, clientSecret } = githubConnectClient(config);
       if (!clientId || !clientSecret) return;
       await fetch(`https://api.github.com/applications/${clientId}/grant`, {
         method: 'DELETE',
