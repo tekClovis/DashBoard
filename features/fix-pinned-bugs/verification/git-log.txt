@@ -1,0 +1,5 @@
+9b38287 [C.NE][server/core] fix: treat a malformed cookie escape as an absent cookie
+bf51a18 [C.NE][server/core] fix: reject an empty JWT_SECRET at boot
+d784023 [C.NE][server/connections] fix: revoke GitHub grants with the connect app credentials
+d42d846 [C.NE][server/services] fix: keep transport error text out of GitHub fetch errors
+54cd398 [C.NE][server/auth] fix: surface login handshake errors and bind login state to its provider

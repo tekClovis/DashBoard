@@ -1,0 +1,108 @@
+## Temporary revert of fix A only (handshake errors on a login state swallowed and fall through; B provider check kept)
+diff --git a/server/src/auth/oauth/oauth.guard.ts b/server/src/auth/oauth/oauth.guard.ts
+index 32f58a8..3444be8 100644
+--- a/server/src/auth/oauth/oauth.guard.ts
++++ b/server/src/auth/oauth/oauth.guard.ts
+@@ -125,7 +125,11 @@ class BaseProviderOAuthGuard implements CanActivate {
+       // A login/link state signed for another provider falls through too, so it ends as INVALID_STATE.
+       if (loginState?.provider === this.cfg.provider) {
+         req.oauthState = loginState;
+-        return runPassport(req, res, this.cfg.provider, { session: false });
++        try {
++          return await runPassport(req, res, this.cfg.provider, { session: false });
++        } catch {
++          // reverted A: fall through to the connect verifier
++        }
+       }
+ 
+       const csrf = readCookie(req.headers.cookie, OAUTH_CSRF_COOKIE) ?? undefined;
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a0ae87d755049ca7d/server
+
+ ❯ src/auth/oauth/oauth.guard.spec.ts (32 tests | 3 failed) 38ms
+       × does not let the request through when the provider handshake fails on a login state 7ms
+       × surfaces a provider handshake error on a login state instead of masking it as INVALID_STATE 3ms
+       × surfaces the no-user outcome on a login state instead of masking it as INVALID_STATE 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > does not let the request through when the provider handshake fails on a login state
+AssertionError: expected UnauthorizedException: Unauthorized Excep… { …(4) } to be Error: token exchange failed // Object.is equality
+
+- Expected
++ Received
+
+- Error {
+-   "message": "token exchange failed",
++ UnauthorizedException {
++   "message": "Unauthorized Exception",
++   "response": {
++     "error": "INVALID_STATE",
++   },
++   "status": 401,
++   "options": {},
++   "errorCode": undefined,
++   "name": "UnauthorizedException",
+  }
+
+ ❯ src/auth/oauth/oauth.guard.spec.ts:230:47
+    228|       const { req, context } = makeExchange({ code: 'c', state }, { [O…
+    229|
+    230|       await expect(guard.canActivate(context)).rejects.toBe(failure);
+       |                                               ^
+    231|       expect(req.user).toBeUndefined();
+    232|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > surfaces a provider handshake error on a login state instead of masking it as INVALID_STATE
+AssertionError: expected [Function] to throw error including 'token exchange failed' but got 'Unauthorized Exception'
+
+Expected: "token exchange failed"
+Received: "Unauthorized Exception"
+
+ ❯ src/auth/oauth/oauth.guard.spec.ts:240:47
+    238|       const { context } = makeExchange({ code: 'c', state }, { [OAUTH_…
+    239|
+    240|       await expect(guard.canActivate(context)).rejects.toThrow('token …
+       |                                               ^
+    241|     });
+    242|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > surfaces the no-user outcome on a login state instead of masking it as INVALID_STATE
+AssertionError: expected UnauthorizedException: Unauthorized Excep… { …(4) } to match object { status: 401, …(1) }
+(6 matching properties omitted from actual)
+
+- Expected
++ Received
+
+- {
++ UnauthorizedException {
+    "response": {
+-     "message": "access_denied",
++     "error": "INVALID_STATE",
+    },
+    "status": 401,
+  }
+
+ ❯ src/auth/oauth/oauth.guard.spec.ts:249:47
+    247|       const { context } = makeExchange({ code: 'c', state }, { [OAUTH_…
+    248|
+    249|       await expect(guard.canActivate(context)).rejects.toMatchObject({
+       |                                               ^
+    250|         status: 401,
+    251|         response: { message: 'access_denied' },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 29 passed (32)
+   Start at  20:18:03
+   Duration  441ms (transform 97ms, setup 0ms, import 279ms, tests 38ms, environment 0ms)
+
+EXIT: 1
