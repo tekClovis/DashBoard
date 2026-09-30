@@ -40,8 +40,9 @@ export async function githubGet<T>(
       },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-  } catch (err) {
-    throw new FetchError('UPSTREAM_ERROR', `GitHub request failed: ${err instanceof Error ? err.message : String(err)}`);
+  } catch {
+    // Fixed text: a fetch error can quote the request, e.g. an invalid Authorization header with the token.
+    throw new FetchError('UPSTREAM_ERROR', 'GitHub request failed.');
   }
 
   if (res.ok) return (await res.json()) as T;

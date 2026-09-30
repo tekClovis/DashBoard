@@ -2,7 +2,7 @@
 // The server refuses to start without JWT_SECRET and a 32-byte TOKEN_ENC_KEY.
 
 import { plainToInstance } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
 
 export class EnvironmentVariables {
   @IsUrl({ require_tld: false })
@@ -15,6 +15,7 @@ export class EnvironmentVariables {
   REDIS_URL!: string;
 
   @IsString()
+  @IsNotEmpty()
   JWT_SECRET!: string;
 
   @IsString()

@@ -1,0 +1,14 @@
+ server/src/auth/jwt.guard.spec.ts                  |  8 +++++++
+ server/src/auth/oauth/oauth.guard.spec.ts          | 28 +++++++++++++++-------
+ server/src/auth/oauth/oauth.guard.ts               |  9 +++++--
+ server/src/connections/provider-revoke.spec.ts     |  4 ++--
+ server/src/connections/provider-revoke.ts          |  4 ++--
+ .../strategies/github-connect.strategy.spec.ts     | 24 ++++++++++++++++++-
+ .../strategies/github-connect.strategy.ts          | 12 +++++++---
+ server/src/core/config/env.validation.spec.ts      |  6 ++---
+ server/src/core/config/env.validation.ts           |  3 ++-
+ server/src/core/http/cookies.spec.ts               |  9 ++++---
+ server/src/core/http/cookies.ts                    | 12 ++++++++--
+ server/src/services/github/github-api.spec.ts      | 12 +++++-----
+ server/src/services/github/github-api.ts           |  5 ++--
+ 13 files changed, 101 insertions(+), 35 deletions(-)

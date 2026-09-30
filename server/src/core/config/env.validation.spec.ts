@@ -21,6 +21,7 @@ describe('validate (env)', () => {
 
     expect(env).toMatchObject({
       APP_URL: 'http://localhost:8080',
+      JWT_SECRET: 'a-long-enough-jwt-secret',
       TOKEN_ENC_KEY,
       SMTP_HOST: 'mailpit',
       SMTP_PORT: 1025,
@@ -53,9 +54,8 @@ describe('validate (env)', () => {
     expect(() => validate({ ...validEnv(), TOKEN_ENC_KEY: key })).toThrow(/TOKEN_ENC_KEY must be 32 bytes/);
   });
 
-  // Bug: `.env.example` ships `JWT_SECRET=` and docs/Architecture.md §11 says the server refuses to
-  // start without it, but an empty string passes @IsString() and JWTs get HMAC-signed with ''.
-  it.fails('rejects an empty JWT_SECRET', () => {
+  // `.env.example` ships `JWT_SECRET=`; docs/Architecture.md §11 says the server refuses to start without it.
+  it('rejects an empty JWT_SECRET', () => {
     expect(() => validate({ ...validEnv(), JWT_SECRET: '' })).toThrow(/JWT_SECRET/);
   });
 });

@@ -1,7 +1,7 @@
 import type { ConfigService } from '@nestjs/config';
 import type { Profile } from 'passport-github2';
 import { describe, expect, it } from 'vitest';
-import { GithubConnectStrategy } from './github-connect.strategy.js';
+import { GithubConnectStrategy, githubConnectClient } from './github-connect.strategy.js';
 
 function makeStrategy(): GithubConnectStrategy {
   const values: Record<string, string> = {
@@ -30,5 +30,27 @@ describe('GithubConnectStrategy', () => {
 
       expect(result.externalAccountId).toBe('583231');
     });
+  });
+});
+
+describe('githubConnectClient', () => {
+  const LOGIN_ENV = { GITHUB_CLIENT_ID: 'login-id', GITHUB_CLIENT_SECRET: 'login-secret' };
+  const makeConfig = (values: Record<string, string>) =>
+    ({ get: (key: string) => values[key] }) as unknown as ConfigService;
+
+  it('prefers the dedicated connect app over the login app', () => {
+    const client = githubConnectClient(
+      makeConfig({ ...LOGIN_ENV, GITHUB_CONNECT_CLIENT_ID: 'connect-id', GITHUB_CONNECT_CLIENT_SECRET: 'connect-secret' }),
+    );
+
+    expect(client).toEqual({ clientID: 'connect-id', clientSecret: 'connect-secret' });
+  });
+
+  it('falls back to the login app when no connect app is configured', () => {
+    expect(githubConnectClient(makeConfig(LOGIN_ENV))).toEqual({ clientID: 'login-id', clientSecret: 'login-secret' });
+  });
+
+  it('falls back to empty strings when nothing is configured', () => {
+    expect(githubConnectClient(makeConfig({}))).toEqual({ clientID: '', clientSecret: '' });
   });
 });

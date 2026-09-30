@@ -1,0 +1,58 @@
+## Temporary revert of fix E: git checkout main -- server/src/core/config/env.validation.ts
+diff --git a/server/src/core/config/env.validation.ts b/server/src/core/config/env.validation.ts
+index f7b2f32..0ac395c 100644
+--- a/server/src/core/config/env.validation.ts
++++ b/server/src/core/config/env.validation.ts
+@@ -2,7 +2,7 @@
+ // The server refuses to start without JWT_SECRET and a 32-byte TOKEN_ENC_KEY.
+ 
+ import { plainToInstance } from 'class-transformer';
+-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
++import { IsInt, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
+ 
+ export class EnvironmentVariables {
+   @IsUrl({ require_tld: false })
+@@ -15,7 +15,6 @@ export class EnvironmentVariables {
+   REDIS_URL!: string;
+ 
+   @IsString()
+-  @IsNotEmpty()
+   JWT_SECRET!: string;
+ 
+   @IsString()
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a0ae87d755049ca7d/server
+
+ ❯ src/core/config/env.validation.spec.ts (15 tests | 1 failed) 34ms
+     × rejects an empty JWT_SECRET 9ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/core/config/env.validation.spec.ts > validate (env) > rejects an empty JWT_SECRET
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ src/core/config/env.validation.spec.ts:59:63
+     57|   // `.env.example` ships `JWT_SECRET=`; docs/Architecture.md §11 says…
+     58|   it('rejects an empty JWT_SECRET', () => {
+     59|     expect(() => validate({ ...validEnv(), JWT_SECRET: '' })).toThrow(…
+       |                                                               ^
+     60|   });
+     61| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 14 passed (15)
+   Start at  20:18:06
+   Duration  311ms (transform 45ms, setup 0ms, import 154ms, tests 34ms, environment 0ms)
+
+EXIT: 1

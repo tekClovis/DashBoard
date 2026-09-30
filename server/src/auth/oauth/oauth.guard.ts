@@ -116,11 +116,16 @@ class BaseProviderOAuthGuard implements CanActivate {
     if (req.query['code']) {
       const queryState = req.query['state'] as string | undefined;
       const cookieState = readCookie(req.headers.cookie, OAUTH_STATE_COOKIE) ?? undefined;
+      let loginState: OAuthStatePayload | undefined;
       try {
-        req.oauthState = assertBoundState(queryState, cookieState, jwtSecret);
-        return await runPassport(req, res, this.cfg.provider, { session: false });
+        loginState = assertBoundState(queryState, cookieState, jwtSecret);
       } catch {
         // Not a login/link state — fall through and try the connect verifier below.
+      }
+      // A login/link state signed for another provider falls through too, so it ends as INVALID_STATE.
+      if (loginState?.provider === this.cfg.provider) {
+        req.oauthState = loginState;
+        return runPassport(req, res, this.cfg.provider, { session: false });
       }
 
       const csrf = readCookie(req.headers.cookie, OAUTH_CSRF_COOKIE) ?? undefined;

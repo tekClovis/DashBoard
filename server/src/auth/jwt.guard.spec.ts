@@ -32,6 +32,14 @@ describe('JwtGuard', () => {
     await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
   });
 
+  it('rejects a cookie with a malformed percent-escape as 401, without verifying it', async () => {
+    const { guard, jwt } = makeGuard(null, null);
+    const req = { headers: { cookie: 'session=%E0%A4%A' } } as Request;
+
+    await expect(guard.canActivate(makeContext(req))).rejects.toMatchObject({ status: 401 });
+    expect(jwt.verify).not.toHaveBeenCalled();
+  });
+
   it('rejects when the user no longer exists', async () => {
     const { guard } = makeGuard(null, { sub: 'u1', role: 'USER', tv: 0, exp: 9999999999 });
     const req = { headers: { cookie: 'session=valid' } } as Request;
