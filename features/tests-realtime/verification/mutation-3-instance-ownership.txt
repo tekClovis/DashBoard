@@ -1,0 +1,76 @@
+
+> server@0.0.1 test
+> vitest run src/timer/instance-lookup.service.spec.ts
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-af67c561962c5cbb2/server
+
+ ❯ src/timer/instance-lookup.service.spec.ts (3 tests | 2 failed) 8ms
+     × returns only the Timer-facing fields of the caller's own instance 6ms
+     × returns null for an instance on another user's dashboard 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/timer/instance-lookup.service.spec.ts > InstanceLookupService.findOwned > returns only the Timer-facing fields of the caller's own instance
+AssertionError: expected null to strictly equal { id: 'w1', service: 'weather', …(3) }
+
+- Expected:
+{
+  "id": "w1",
+  "params": {
+    "city": "Paris",
+    "days": 3,
+  },
+  "refreshRate": 300,
+  "service": "weather",
+  "widget": "current",
+}
+
++ Received:
+null
+
+ ❯ src/timer/instance-lookup.service.spec.ts:28:55
+     26| describe('InstanceLookupService.findOwned', () => {
+     27|   it("returns only the Timer-facing fields of the caller's own instanc…
+     28|     expect(await makeService().findOwned('w1', 'u1')).toStrictEqual({
+       |                                                       ^
+     29|       id: 'w1',
+     30|       service: 'weather',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/timer/instance-lookup.service.spec.ts > InstanceLookupService.findOwned > returns null for an instance on another user's dashboard
+AssertionError: expected { id: 'w1', service: 'weather', …(3) } to be null
+
+- Expected:
+null
+
++ Received:
+{
+  "id": "w1",
+  "params": {
+    "city": "Paris",
+    "days": 3,
+  },
+  "refreshRate": 300,
+  "service": "weather",
+  "widget": "current",
+}
+
+ ❯ src/timer/instance-lookup.service.spec.ts:42:55
+     40|
+     41|   it("returns null for an instance on another user's dashboard", async…
+     42|     expect(await makeService().findOwned('w1', 'u2')).toBeNull();
+       |                                                       ^
+     43|   });
+     44| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 1 passed (3)
+   Start at  17:49:40
+   Duration  340ms (transform 80ms, setup 0ms, import 222ms, tests 8ms, environment 0ms)
+
