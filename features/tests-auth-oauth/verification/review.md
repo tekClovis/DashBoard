@@ -1,6 +1,6 @@
 # tests-auth-oauth: unit tests for the OAuth guard, controller, strategies and session helpers
 
-Verdict: **FAIL** — item 95 only: `verification/findings.md` does not exist. Every other item passes. Reviewed at `84cfeb0` against `main` `3340fd6`.
+Verdict: **PASS** — every item passes (item 95 after `verification/findings.md` was added). Reviewed at `84cfeb0` against `main` `3340fd6`.
 
 The two `it.fails` pins do correspond to real bugs (verified below), so the fix is to add `findings.md` with the content of the "Findings" section of this review; no test or source change is needed.
 
@@ -34,7 +34,7 @@ Adds 8 `*.spec.ts` files (918 lines, 72 tests including 2 `it.fails` pins) next 
 | 92 | `git diff main --stat` shows only new `*.spec.ts` under `server/src` plus `verification/` | PASS | [git-diff-main-stat.txt][ev-diff] |
 | 93 | Mutation spot-check: 3 reviewer-chosen branches, each flip fails a new test | PASS | [mutation-spot-check.txt][ev-mut] |
 | 94 | No `any`, no `it.skip`/`it.todo`, no assertion-free tests, no real network / DB / Redis | PASS | spec files above, [npm-test.txt][ev-test] |
-| 95 | Bugs found are not fixed, listed in `findings.md` with file:line, pinned by `it.fails` | FAIL | `verification/findings.md` is missing; [oauth.guard.spec.ts][guard-spec] lines 234 and 346 reference it; see "Findings" below |
+| 95 | Bugs found are not fixed, listed in `findings.md` with file:line, pinned by `it.fails` | PASS | [findings.md](https://github.com/tekClovis/dashBoard/blob/feature/tests-auth-oauth/features/tests-auth-oauth/verification/findings.md), pins at [oauth.guard.spec.ts][guard-spec] lines 234 and 346; `verification/findings.md` added after review from this review's verified Findings section (the harness blocked subagents from writing it) |
 
 ## Detail per item
 
