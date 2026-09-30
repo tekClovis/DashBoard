@@ -1,0 +1,15 @@
+### Mutation 2: dashboards.service.ts:137  'body.refreshRate !== undefined' -> 'body.refreshRate === undefined' (updateWidgetInstance)
+diff --git a/server/src/dashboards/dashboards.service.ts b/server/src/dashboards/dashboards.service.ts
+index 0c25113..ee05810 100644
+--- a/server/src/dashboards/dashboards.service.ts
++++ b/server/src/dashboards/dashboards.service.ts
+@@ -137 +137 @@ export class DashboardsService {
+-    if (body.refreshRate !== undefined) {
++    if (body.refreshRate === undefined) {
+       × rejects a refreshRate below the widget minimum with 400 INVALID_REFRESH_RATE and emits nothing 10ms
+       × rejects a refreshRate above the global maximum with 400 INVALID_REFRESH_RATE and emits nothing 2ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects a refreshRate below the widget minimum with 400 INVALID_REFRESH_RATE and emits nothing
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects a refreshRate above the global maximum with 400 INVALID_REFRESH_RATE and emits nothing
+ Test Files  1 failed (1)
+      Tests  2 failed | 44 passed (46)

@@ -1,0 +1,128 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-af43e64fb52d08c50/server
+
+ ✓ src/dashboards/dashboard-events.spec.ts > DashboardEventsService > delivers the whole event to listeners of its own type only 4ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateDashboardDto > accepts a name of allowed length (0) 4ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateDashboardDto > accepts a name of allowed length (1) 1ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateDashboardDto > rejects a name that is missing 1ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateDashboardDto > rejects a name that is empty 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateDashboardDto > rejects a name that is longer than 100 characters 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateDashboardDto > rejects a name that is not a string 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateDashboardDto > rejects an undeclared field 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > accepts an empty body 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > accepts only a name 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > accepts only a position 1ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > accepts both fields 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > rejects an empty name 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > rejects a name longer than 100 characters 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > rejects a non-string name 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > rejects a negative position 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > rejects a fractional position 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > rejects a numeric-string position 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateDashboardDto > rejects an undeclared field 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > accepts a complete body 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing service 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing widget 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing params 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing refreshRate 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing x 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing y 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing w 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a body missing h 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a non-string service 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a non-string widget 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects string params 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects array params 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects null params 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a fractional refreshRate 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a numeric-string refreshRate 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a fractional x 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a numeric-string y 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a fractional w 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects a null h 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > CreateWidgetInstanceDto > rejects an undeclared field 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > accepts an empty body 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > accepts only params 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > accepts only a refreshRate 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > accepts both fields 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > rejects string params 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > rejects array params 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > rejects a fractional refreshRate 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > rejects a numeric-string refreshRate 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > rejects a layout field, which only PATCH /layout may change 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > UpdateWidgetInstanceDto > rejects an attempt to retarget the widget 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > accepts a uuid id with integer coordinates 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects an entry missing id 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects an entry missing x 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects an entry missing y 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects an entry missing w 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects an entry missing h 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects a non-uuid id 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects a numeric id 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects a fractional x 0ms
+ ✓ src/dashboards/dto/dashboards.dto.spec.ts > LayoutUpdateDto > rejects a numeric-string w 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > list > returns only the caller's dashboards, ordered by position, without the userId 4ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > create > puts a user's first dashboard at position 0 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > create > appends after the caller's highest position 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > createDefault > creates the default-named dashboard at the default position for the user 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > update > applies only the supplied fields 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > update > rejects an unknown dashboard with 404 2ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > update > rejects another user's dashboard with 404 and leaves it untouched 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > remove > deletes the caller's dashboard 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > remove > rejects an unknown dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > remove > rejects another user's dashboard with 404 and keeps it 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > listWidgets > returns only the instances of the requested dashboard 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > listWidgets > rejects an unknown dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > listWidgets > rejects another user's dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > stores the instance with validated params and emits instance.created 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > fills in param defaults for omitted optional params 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an unknown dashboard with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects another user's dashboard with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an unknown service with 400 UNKNOWN_WIDGET and emits nothing 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an unknown widget of a known service with 400 UNKNOWN_WIDGET and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects a missing required param with 400 INVALID_PARAMS naming the param, and emits nothing 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an out-of-range integer with 400 INVALID_PARAMS naming the param, and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects a refreshRate below the widget minimum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects a refreshRate above the global maximum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > accepts a refreshRate equal to the widget minimum 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > accepts a refreshRate equal to the global maximum 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > creates an instance of a connection-scoped widget even though the user has no connection 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > updates params and refreshRate and emits instance.updated 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > leaves params alone when only refreshRate is supplied 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > leaves refreshRate alone when only params are supplied 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects an unknown instance with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects another user's instance with 404, leaves it untouched and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects an instance whose widget type is no longer registered with 400 UNKNOWN_WIDGET 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects invalid params with 400 INVALID_PARAMS, leaves the row untouched and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects a refreshRate below the widget minimum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects a refreshRate above the global maximum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > updates a connection-scoped instance even though the user has no connection 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > removeWidgetInstance > deletes the instance and emits instance.deleted with its id 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > removeWidgetInstance > rejects an unknown instance with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > removeWidgetInstance > rejects another user's instance with 404, keeps it and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > moves only the listed instances and leaves everything but x/y/w/h as it was 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > returns an empty list for an empty batch on an owned dashboard 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects an unknown dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects another user's dashboard with 404 and moves nothing 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id does not exist 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id belongs to another of the caller's dashboards 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id belongs to another user's dashboard 0ms
+ ✓ src/dashboards/widgets.controller.spec.ts > WidgetsController > reconfigures the instance named by the route id as the session user 4ms
+ ✓ src/dashboards/widgets.controller.spec.ts > WidgetsController > answers { ok: true } once the instance is removed 1ms
+ ✓ src/dashboards/widgets.controller.spec.ts > WidgetsController > propagates a removal failure instead of answering ok 1ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > wraps the caller's dashboards in a { dashboards } envelope 3ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > creates a dashboard for the session user from the dto name 1ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > updates the dashboard named by the route id as the session user 1ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > answers { ok: true } once the dashboard is removed 0ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > propagates a removal failure instead of answering ok 1ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > wraps a dashboard's instances in a { widgets } envelope 0ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > adds a widget instance to the dashboard named by the route id as the session user 0ms
+ ✓ src/dashboards/dashboards.controller.spec.ts > DashboardsController > applies a layout batch to the dashboard named by the route id as the session user 0ms
+
+ Test Files  5 passed (5)
+      Tests  117 passed (117)
+   Start at  17:39:45
+   Duration  782ms (transform 711ms, setup 0ms, import 2.15s, tests 73ms, environment 1ms)
+
+exit=0

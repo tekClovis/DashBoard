@@ -1,0 +1,13 @@
+### Mutation 3: dashboards.service.ts:201  'refreshRate > MAX_REFRESH_SEC' -> 'refreshRate >= MAX_REFRESH_SEC' (validateRefreshRateOrThrow boundary)
+diff --git a/server/src/dashboards/dashboards.service.ts b/server/src/dashboards/dashboards.service.ts
+index 0c25113..1e29b82 100644
+--- a/server/src/dashboards/dashboards.service.ts
++++ b/server/src/dashboards/dashboards.service.ts
+@@ -201 +201 @@ export class DashboardsService {
+-    if (refreshRate < minRefreshSec || refreshRate > MAX_REFRESH_SEC) {
++    if (refreshRate < minRefreshSec || refreshRate >= MAX_REFRESH_SEC) {
+       × accepts a refreshRate equal to the global maximum 5ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > accepts a refreshRate equal to the global maximum
+ Test Files  1 failed (1)
+      Tests  1 failed | 45 passed (46)

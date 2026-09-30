@@ -1,0 +1,6 @@
+ server/src/dashboards/dashboard-events.spec.ts     |  18 +
+ .../src/dashboards/dashboards.controller.spec.ts   |  81 +++
+ server/src/dashboards/dashboards.service.spec.ts   | 637 +++++++++++++++++++++
+ server/src/dashboards/dto/dashboards.dto.spec.ts   | 136 +++++
+ server/src/dashboards/widgets.controller.spec.ts   |  38 ++
+ 5 files changed, 910 insertions(+)
