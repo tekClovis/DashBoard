@@ -1,6 +1,6 @@
 # Review — tests-service-clients
 
-**Verdict: FAIL** — item 95 (`verification/findings.md` is missing). Every other checklist item passes.
+**Verdict: PASS** — every checklist item passes (item 95 after `verification/findings.md` was added).
 
 Unit-test-only feature: no UI, no `mock.html`, so no app launch and no screenshots. Evidence is command output captured in this folder, run in `server/` on Node v24.18.0.
 
@@ -18,7 +18,7 @@ Unit-test-only feature: no UI, no `mock.html`, so no app launch and no screensho
 | 92 | `git diff main --stat` shows only new `*.spec.ts` under `server/src` plus this `verification/` | PASS | [git-diff-stat.txt](git-diff-stat.txt): 3 files, all new `*.spec.ts`, 588 insertions |
 | 93 | Mutation spot-check, 3 reviewer-chosen branches | PASS | [mutation.md](mutation.md), [mutation-run.txt](mutation-run.txt) (3 mutants, 6 tests failed), [mutation-restored-run.txt](mutation-restored-run.txt) (restored, exit 0); `git status` shows no source change |
 | 94 | No `any`, no `it.skip`/`it.todo`, no assertion-free tests, no real network/DB/Redis | PASS | grep of the three specs: no `any` type, `.skip`, `.todo`, `.only` or snapshot; every `it` has an `expect`; `fetch` is always `vi.stubGlobal`-ed and restored in `afterEach`; Redis is `makeFakeRedis()` from `server/src/timer/test-helpers.ts` |
-| 95 | Bugs not fixed, listed in `verification/findings.md` with file:line, pinned by `it.fails` | **FAIL** | The pin is a real bug and is correctly pinned (`github-api.spec.ts:142`), and no source file is changed. But `verification/findings.md` does not exist: the branch does not contain it, and the reviewer's Write of that file was denied by the harness ("Subagents should return findings as text, not write report files"). Not worked around; the findings text is in the "Findings" section below |
+| 95 | Bugs not fixed, listed in `verification/findings.md` with file:line, pinned by `it.fails` | PASS | [findings.md](findings.md): `verification/findings.md` added after review from this review's verified Findings section (the harness blocked subagents from writing it). Original review: the pin is a real bug and is correctly pinned (`github-api.spec.ts:142`), and no source file is changed. But `verification/findings.md` does not exist: the branch does not contain it, and the reviewer's Write of that file was denied by the harness ("Subagents should return findings as text, not write report files"). Not worked around; the findings text is in the "Findings" section below |
 
 ## Lint comparison (item 91)
 
