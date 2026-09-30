@@ -15,6 +15,7 @@ import { TimerModule } from './timer/timer.module.js';
 import { SteamModule } from './services/steam/steam.module.js';
 import { GithubModule } from './services/github/github.module.js';
 import { WeatherModule } from './services/weather/weather.module.js';
+import { YoutubeModule } from './services/youtube/youtube.module.js';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { WeatherModule } from './services/weather/weather.module.js';
     SteamModule,
     GithubModule,
     WeatherModule,
+    YoutubeModule,
   ],
 })
 export class AppModule {}

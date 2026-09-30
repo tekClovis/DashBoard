@@ -219,7 +219,7 @@ A logged-in user can also link or unlink identities from Profile. The last remai
 
 - Key: `TOKEN_ENC_KEY` (32 bytes, base64, from env).
 - Random 12-byte IV per value, stored as `iv:tag:ciphertext`.
-- Tokens are decrypted only inside `FetchContext` and never serialized to the client. The client only sees `{ service, connected, status }`.
+- Tokens are decrypted only inside `FetchContext` (plus the youtube service's refresh-token exchange) and never serialized to the client. The client only sees `{ service, connected, status }`.
 
 **Disconnecting** deletes the row and revokes the token at the provider where an API allows it. Existing instances stay on the dashboard and show a *"Reconnect"* state.
 
@@ -351,7 +351,7 @@ Socket events (`shared/src/socket.ts`):
 | Passwords | bcrypt cost 12; generic login errors; no account enumeration on register/resend |
 | Session theft | httpOnly cookie, JWT never exposed to JS; tokenVersion revocation |
 | CSRF | SameSite=Lax + JSON-only bodies; OAuth `state` signed and cookie-bound |
-| Third-party tokens | AES-256-GCM at rest, key from env, decrypted only in `FetchContext`, never sent to the client |
+| Third-party tokens | AES-256-GCM at rest, key from env, decrypted only in `FetchContext` and the youtube token refresh, never sent to the client |
 | Cross-user leakage | ownership in every query; `:conn:` cache scoping; socket subscribe checks ownership |
 | Injection into upstream URLs | params validated by `ParamSpec` (`pattern` for `owner/repo`, enums, bounds) and URL-encoded |
 | Brute force | rate limit on `/auth/*` |

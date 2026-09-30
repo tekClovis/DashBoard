@@ -8,15 +8,24 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, type Profile } from 'passport-google-oauth20';
 import type { ConnectProfileResult } from './github-connect.strategy.js';
 
-export const YOUTUBE_CONNECT_SCOPES = ['https://www.googleapis.com/auth/youtube.readonly'];
+// `openid` is required alongside the widget scope: passport-google-oauth20 always calls
+// Google's userinfo endpoint after token exchange to build `profile`, and that call is
+// rejected with `invalid_request` if the granted token carries no openid scope.
+export const YOUTUBE_CONNECT_SCOPES = ['openid', 'https://www.googleapis.com/auth/youtube.readonly'];
+
+/** The OAuth client the connect flow grants tokens to. Refreshing those tokens must use the same client. */
+export function googleConnectClient(config: ConfigService): { clientID: string; clientSecret: string } {
+  return {
+    clientID: config.get<string>('GOOGLE_CONNECT_CLIENT_ID') ?? config.get<string>('GOOGLE_CLIENT_ID') ?? '',
+    clientSecret: config.get<string>('GOOGLE_CONNECT_CLIENT_SECRET') ?? config.get<string>('GOOGLE_CLIENT_SECRET') ?? '',
+  };
+}
 
 @Injectable()
 export class GoogleConnectStrategy extends PassportStrategy(Strategy, 'google-connect') {
   constructor(config: ConfigService) {
     super({
-      clientID: config.get<string>('GOOGLE_CONNECT_CLIENT_ID') ?? config.get<string>('GOOGLE_CLIENT_ID') ?? '',
-      clientSecret:
-        config.get<string>('GOOGLE_CONNECT_CLIENT_SECRET') ?? config.get<string>('GOOGLE_CLIENT_SECRET') ?? '',
+      ...googleConnectClient(config),
       callbackURL: `${config.getOrThrow<string>('APP_URL')}/api/oauth/google/callback`,
       scope: YOUTUBE_CONNECT_SCOPES,
     });

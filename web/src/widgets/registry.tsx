@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { GameNewsView, RecentlyPlayedView } from './steam.js';
 import { PullRequestsView, RecentCommitsView, SecurityAlertsView } from './github.js';
 import { CurrentWeatherView, ForecastView } from './weather.js';
+import { ChannelStatsView, LatestVideosView, TrendingVideosView } from './youtube.js';
 
 export interface WidgetViewProps {
   data: unknown;
@@ -23,6 +24,9 @@ export const views: Record<string, ComponentType<WidgetViewProps>> = {
   'github.security_alerts': SecurityAlertsView,
   'weather.current_weather': CurrentWeatherView,
   'weather.forecast': ForecastView,
+  'youtube.channel_stats': ChannelStatsView,
+  'youtube.latest_videos': LatestVideosView,
+  'youtube.trending_videos': TrendingVideosView,
 };
 
 export function getView(service: string, widget: string): ComponentType<WidgetViewProps> {
