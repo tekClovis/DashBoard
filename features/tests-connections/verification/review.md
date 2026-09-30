@@ -1,6 +1,6 @@
 # tests-connections — review
 
-Verdict: **FAIL** (items 3 and 95).
+Verdict: **FAIL** (item 3; item 95 passes after `verification/findings.md` was added).
 
 Unit-test-only feature: no UI, no app launch, no screenshots. Evidence is command output, run in `server/` on `feature/tests-connections` at `4c0f377`.
 
@@ -17,7 +17,7 @@ Unit-test-only feature: no UI, no app launch, no screenshots. Evidence is comman
 | 92 | `git diff main --stat` shows only new `*.spec.ts` under `server/src` plus this feature's `verification/` | PASS | 5 new spec files, 357 insertions, nothing else — [git-diff-stat.txt](https://github.com/tekClovis/dashBoard/blob/feature/tests-connections/features/tests-connections/verification/git-diff-stat.txt) |
 | 93 | Mutation spot-check: 3 reviewer-chosen branches, each flip fails at least one new test | PASS | See "Mutation spot-check" below; sources restored, `git status` shows no source changes |
 | 94 | No `any`, no `it.skip` / `it.todo`, no assertion-free tests, no real network / DB / Redis | PASS | Read of the 5 specs: no `any`, no skip / todo, every test asserts, `fetch` stubbed with `vi.stubGlobal`, Prisma and cipher faked in memory |
-| 95 | Bug found in src not fixed, listed in `verification/findings.md` with file:line, pinned by `it.fails` | **FAIL** | The pinned bug is real and is not fixed, and the `it.fails` pin is correct (`provider-revoke.spec.ts:52`, reported as "1 expected fail"). The item fails only because `verification/findings.md` is missing: the reviewer's Write of that file was denied by the harness ("Subagents should return findings as text, not write report files") and was not worked around. The findings text is in "Findings" below. |
+| 95 | Bug found in src not fixed, listed in `verification/findings.md` with file:line, pinned by `it.fails` | PASS | [findings.md](https://github.com/tekClovis/dashBoard/blob/feature/tests-connections/features/tests-connections/verification/findings.md): `verification/findings.md` added after review from this review's verified Findings section (the harness blocked subagents from writing it). Original review: the pinned bug is real and is not fixed, and the `it.fails` pin is correct (`provider-revoke.spec.ts:52`, reported as "1 expected fail"). The item fails only because `verification/findings.md` is missing: the reviewer's Write of that file was denied by the harness ("Subagents should return findings as text, not write report files") and was not worked around. The findings text is in "Findings" below. |
 
 ## Mutation spot-check (item 93)
 
