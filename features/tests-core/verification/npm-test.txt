@@ -1,0 +1,16 @@
+
+> server@0.0.1 test
+> vitest run
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a69bb6e6c8cc9b974/server
+
+[33m[Nest] 728989  - [39m09/30/2026, 7:28:34 PM [33m   WARN[39m [38;5;3m[AdminSeedService] [39m[33mADMIN_EMAIL admin@b.com matches an existing user; refusing to overwrite it. Skipping admin boot-seed.[39m
+[32m[Nest] 728989  - [39m09/30/2026, 7:28:34 PM [32m    LOG[39m [38;5;3m[AdminSeedService] [39m[32mSeeded admin user admin@b.com[39m
+
+ Test Files  33 passed (33)
+      Tests  296 passed | 2 expected fail (298)
+   Start at  19:28:33
+   Duration  3.24s (transform 5.34s, setup 0ms, import 19.26s, tests 3.02s, environment 5ms)
+

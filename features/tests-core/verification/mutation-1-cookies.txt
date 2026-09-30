@@ -1,0 +1,169 @@
+diff --git a/server/src/core/http/cookies.ts b/server/src/core/http/cookies.ts
+index 6431832..88caa4b 100644
+--- a/server/src/core/http/cookies.ts
++++ b/server/src/core/http/cookies.ts
+@@ -7,7 +7,7 @@ export function readCookie(header: string | undefined, name: string): string | n
+     if (eq === -1) continue;
+ 
+     const key = part.slice(0, eq).trim();
+-    if (key === name) {
++    if (key !== name) {
+       return decodeURIComponent(part.slice(eq + 1).trim());
+     }
+   }
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a69bb6e6c8cc9b974/server
+
+ ❯ src/core/http/cookies.spec.ts (9 tests | 8 failed) 13ms
+     × returns null when the named cookie is absent 4ms
+     × picks the named cookie out of several, ignoring surrounding whitespace 3ms
+     × matches the whole name, not a prefix or suffix 0ms
+     × keeps "=" characters inside the value 0ms
+     × skips parts without "=" instead of stopping 0ms
+     × URI-decodes the value 0ms
+     × returns an empty string for a present but empty cookie 0ms
+     × does not throw on a malformed percent-escape 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > returns null when the named cookie is absent
+AssertionError: expected 'dark' to be null
+
+- Expected:
+null
+
++ Received:
+"dark"
+
+ ❯ src/core/http/cookies.spec.ts:11:58
+      9|
+     10|   it('returns null when the named cookie is absent', () => {
+     11|     expect(readCookie('theme=dark; lang=en', 'session')).toBeNull();
+       |                                                          ^
+     12|   });
+     13|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > picks the named cookie out of several, ignoring surrounding whitespace
+AssertionError: expected 'dark' to be 'abc.def' // Object.is equality
+
+Expected: "abc.def"
+Received: "dark"
+
+ ❯ src/core/http/cookies.spec.ts:17:43
+     15|     const header = 'theme=dark;  session = abc.def ;lang=en';
+     16|
+     17|     expect(readCookie(header, 'session')).toBe('abc.def');
+       |                                           ^
+     18|     expect(readCookie(header, 'lang')).toBe('en');
+     19|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > matches the whole name, not a prefix or suffix
+AssertionError: expected 'x' to be null
+
+- Expected:
+null
+
++ Received:
+"x"
+
+ ❯ src/core/http/cookies.spec.ts:22:65
+     20|
+     21|   it('matches the whole name, not a prefix or suffix', () => {
+     22|     expect(readCookie('old_session=x; sessionid=y', 'session')).toBeNu…
+       |                                                                 ^
+     23|   });
+     24|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > keeps "=" characters inside the value
+AssertionError: expected null to be 'a=b==' // Object.is equality
+
+- Expected:
+"a=b=="
+
++ Received:
+null
+
+ ❯ src/core/http/cookies.spec.ts:26:52
+     24|
+     25|   it('keeps "=" characters inside the value', () => {
+     26|     expect(readCookie('session=a=b==', 'session')).toBe('a=b==');
+       |                                                    ^
+     27|   });
+     28|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > skips parts without "=" instead of stopping
+AssertionError: expected null to be 'abc' // Object.is equality
+
+- Expected:
+"abc"
+
++ Received:
+null
+
+ ❯ src/core/http/cookies.spec.ts:30:56
+     28|
+     29|   it('skips parts without "=" instead of stopping', () => {
+     30|     expect(readCookie('flag; session=abc', 'session')).toBe('abc');
+       |                                                        ^
+     31|   });
+     32|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > URI-decodes the value
+AssertionError: expected null to be 'a b;c' // Object.is equality
+
+- Expected:
+"a b;c"
+
++ Received:
+null
+
+ ❯ src/core/http/cookies.spec.ts:34:52
+     32|
+     33|   it('URI-decodes the value', () => {
+     34|     expect(readCookie('state=a%20b%3Bc', 'state')).toBe('a b;c');
+       |                                                    ^
+     35|   });
+     36|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > returns an empty string for a present but empty cookie
+AssertionError: expected null to be '' // Object.is equality
+
+- Expected:
+""
+
++ Received:
+null
+
+ ❯ src/core/http/cookies.spec.ts:38:47
+     36|
+     37|   it('returns an empty string for a present but empty cookie', () => {
+     38|     expect(readCookie('session=', 'session')).toBe('');
+       |                                               ^
+     39|   });
+     40|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  src/core/http/cookies.spec.ts > readCookie > does not throw on a malformed percent-escape
+Error: Expect test to fail
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 1 passed (9)
+   Start at  19:29:13
+   Duration  188ms (transform 25ms, setup 0ms, import 38ms, tests 13ms, environment 0ms)
+
