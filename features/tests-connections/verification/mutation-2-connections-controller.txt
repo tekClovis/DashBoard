@@ -1,0 +1,69 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a0af0c0161d5ac3c7/server
+
+ ❯ src/connections/connections.controller.spec.ts (7 tests | 4 failed) 28ms
+       × deletes the current user's connection and revokes its token at the provider 4ms
+       × is idempotent when nothing is connected: still ok, no provider call 1ms
+       × still succeeds when the provider revoke request fails 1ms
+       × revokes the decrypted token of the deleted row without returning it 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/connections/connections.controller.spec.ts > ConnectionsController > disconnect > deletes the current user's connection and revokes its token at the provider
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ revokedToken src/connections/connections.controller.spec.ts:32:23
+     30|   /** The access token sent to the provider by the single outbound rev…
+     31|   function revokedToken(): unknown {
+     32|     expect(fetchMock).toHaveBeenCalledTimes(1);
+       |                       ^
+     33|     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+     34|     return (JSON.parse(init.body as string) as { access_token: unknown…
+ ❯ src/connections/connections.controller.spec.ts:68:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/connections/connections.controller.spec.ts > ConnectionsController > disconnect > is idempotent when nothing is connected: still ok, no provider call
+TypeError: Cannot read properties of null (reading 'accessToken')
+ ❯ ConnectionsController.disconnect src/connections/connections.controller.ts:31:48
+     29|     await this.connections.disconnect(user.id, service);
+     30|     if (!existing) {
+     31|       await revokeAtProvider(service, existing.accessToken, this.confi…
+       |                                                ^
+     32|     }
+     33|
+ ❯ src/connections/connections.controller.spec.ts:74:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/connections/connections.controller.spec.ts > ConnectionsController > disconnect > still succeeds when the provider revoke request fails
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ src/connections/connections.controller.spec.ts:88:25
+     86|
+     87|       expect(result).toEqual({ ok: true });
+     88|       expect(fetchMock).toHaveBeenCalledTimes(1);
+       |                         ^
+     89|       expect(service.disconnect).toHaveBeenCalledWith('user-1', 'youtu…
+     90|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/connections/connections.controller.spec.ts > ConnectionsController > with the real service over stored tokens > revokes the decrypted token of the deleted row without returning it
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ revokedToken src/connections/connections.controller.spec.ts:32:23
+     30|   /** The access token sent to the provider by the single outbound rev…
+     31|   function revokedToken(): unknown {
+     32|     expect(fetchMock).toHaveBeenCalledTimes(1);
+       |                       ^
+     33|     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+     34|     return (JSON.parse(init.body as string) as { access_token: unknown…
+ ❯ src/connections/connections.controller.spec.ts:140:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 3 passed (7)
+   Start at  18:08:10
+   Duration  523ms (transform 130ms, setup 0ms, import 365ms, tests 28ms, environment 0ms)
+
