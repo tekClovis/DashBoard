@@ -188,6 +188,36 @@ describe('AdminPage', () => {
     expect((screen.getByRole('button', { name: 'Next page' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('moves focus to the other pager button when the first or last page is reached', async () => {
+    mockMe('ADMIN');
+    users = many(20);
+    renderPage();
+    await screen.findByText('1–8 of 20');
+    const prev = () => screen.getByRole('button', { name: 'Previous page' });
+    const next = () => screen.getByRole('button', { name: 'Next page' });
+
+    next().focus();
+    fireEvent.click(next());
+    expect(document.activeElement).toBe(next());
+    fireEvent.click(next());
+    expect(document.activeElement).toBe(prev());
+
+    fireEvent.click(prev());
+    expect(document.activeElement).toBe(prev());
+    fireEvent.click(prev());
+    expect(document.activeElement).toBe(next());
+  });
+
+  it('moves focus to Previous on reaching the last of two pages', async () => {
+    mockMe('ADMIN');
+    users = many(10);
+    renderPage();
+    await screen.findByText('1–8 of 10');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Previous page' }));
+  });
+
   it('searching resets to the first page', async () => {
     mockMe('ADMIN');
     users = many(20);

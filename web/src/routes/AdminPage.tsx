@@ -1,6 +1,7 @@
 import type { AdminUserEntry } from '@dashboard/shared';
 import { ChevronLeft, ChevronRight, OctagonX, Search } from 'lucide-react';
 import { useId, useRef, useState, type MouseEvent } from 'react';
+import { flushSync } from 'react-dom';
 import { Link } from 'react-router';
 import { useAdminUsers, useDeleteAdminUser, useUpdateAdminUser } from '@/api/admin.js';
 import { useMe } from '@/api/auth.js';
@@ -70,6 +71,8 @@ function UserTable({ selfId }: { selfId: string }) {
   const remove = useDeleteAdminUser();
   const searchRef = useRef<HTMLInputElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const prevRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
   const noteId = useId();
 
   const all = users.data ?? [];
@@ -235,11 +238,16 @@ function UserTable({ selfId }: { selfId: string }) {
               {from + 1}–{from + rows.length} of {matches.length}
             </span>
             <Button
+              ref={prevRef}
               variant="outline"
               size="icon-sm"
               aria-label="Previous page"
               disabled={current === 1}
-              onClick={() => setPage(current - 1)}
+              onClick={() => {
+                // As the mock: render, then on reaching page 1 move focus to Next instead of losing it to body.
+                flushSync(() => setPage(current - 1));
+                if (current - 1 === 1) nextRef.current?.focus();
+              }}
             >
               <ChevronLeft className="size-3.5" />
             </Button>
@@ -247,11 +255,15 @@ function UserTable({ selfId }: { selfId: string }) {
               {current} / {pages}
             </span>
             <Button
+              ref={nextRef}
               variant="outline"
               size="icon-sm"
               aria-label="Next page"
               disabled={current === pages}
-              onClick={() => setPage(current + 1)}
+              onClick={() => {
+                flushSync(() => setPage(current + 1));
+                if (current + 1 === pages) prevRef.current?.focus();
+              }}
             >
               <ChevronRight className="size-3.5" />
             </Button>

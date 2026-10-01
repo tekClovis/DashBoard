@@ -1,4 +1,4 @@
-import { LayoutGrid, LogOut, Menu, Moon, OctagonX, Plug, Sun, TriangleAlert, User, Users, type LucideIcon } from 'lucide-react';
+import { LayoutGrid, LogOut, Menu, OctagonX, Plug, TriangleAlert, User, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout, useMe } from '@/api/auth.js';
@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dropdown-menu.js';
 import { Lamp } from '@/components/ui/lamp.js';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet.js';
-import { useTheme } from '@/lib/theme.js';
 import { cn } from '@/lib/utils.js';
 import { SocketProvider, useSocket } from '@/realtime/SocketProvider.js';
 
@@ -54,15 +53,12 @@ function useShellNav() {
   const items: NavItem[] = [
     { to: `/d/${homeId}`, match: '/d/', label: 'Dashboard', icon: LayoutGrid },
     { to: '/services', match: '/services', label: 'Services', icon: Plug },
+    { to: '/profile', match: '/profile', label: 'Profile', icon: User },
   ];
   const admin: NavItem = { to: '/admin', match: '/admin', label: 'Admin', icon: Users };
-  const profile: NavItem = { to: '/profile', match: '/profile', label: 'Profile', icon: User };
-  const isAdmin = me?.role === 'ADMIN';
   return {
     me,
-    nav: isAdmin ? [...items, admin] : items,
-    /** The mobile sheet also carries Profile (the account menu is desktop only). */
-    sheetNav: isAdmin ? [...items, profile, admin] : [...items, profile],
+    nav: me?.role === 'ADMIN' ? [...items, admin] : items,
     current: (item: NavItem) => (pathname.startsWith(item.match) ? ('page' as const) : undefined),
   };
 }
@@ -172,9 +168,8 @@ function AccountMenu({ email }: { email: string }) {
   );
 }
 
-function MobileMenu({ me, sheetNav, current }: Omit<ReturnType<typeof useShellNav>, 'nav'>) {
+function MobileMenu({ me, nav, current }: ReturnType<typeof useShellNav>) {
   const { logOut, pending } = useLogoutToLogin();
-  const [theme, toggleTheme] = useTheme();
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const email = me?.email ?? '';
@@ -212,7 +207,7 @@ function MobileMenu({ me, sheetNav, current }: Omit<ReturnType<typeof useShellNa
           </span>
         </div>
         <nav ref={navRef} aria-label="Main" className="grid gap-0.5 p-2">
-          {sheetNav.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.match}
               to={item.to}
@@ -226,10 +221,6 @@ function MobileMenu({ me, sheetNav, current }: Omit<ReturnType<typeof useShellNa
           ))}
         </nav>
         <div className="mt-auto grid gap-2.5 border-t px-4 py-3">
-          <Button variant="outline" onClick={toggleTheme}>
-            {theme === 'dark' ? <Sun strokeWidth={1.75} /> : <Moon strokeWidth={1.75} />}
-            {theme === 'dark' ? 'Light theme' : 'Dark theme'}
-          </Button>
           <div className="flex items-center gap-2.5">
             <span className="bg-secondary grid size-7 place-items-center rounded-full text-xs font-semibold">
               {email.charAt(0).toUpperCase()}
@@ -250,8 +241,8 @@ function MobileMenu({ me, sheetNav, current }: Omit<ReturnType<typeof useShellNa
 }
 
 function ShellHeader() {
-  const { nav, ...shellNav } = useShellNav();
-  const { me, current } = shellNav;
+  const shellNav = useShellNav();
+  const { me, nav, current } = shellNav;
 
   return (
     <header className="bg-background/92 sticky top-0 z-30 flex h-12 items-center gap-2 border-b pr-2 pl-4 backdrop-blur-sm md:gap-5 md:px-6">
