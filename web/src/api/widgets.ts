@@ -5,14 +5,27 @@ import type {
   WidgetInstanceEntry,
   WidgetsResponse,
 } from '@dashboard/shared';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client.js';
+
+const widgetsQuery = (dashboardId: string) => ({
+  queryKey: ['widgets', dashboardId],
+  queryFn: () => apiFetch<WidgetsResponse>(`/dashboards/${dashboardId}/widgets`),
+});
 
 /** Widget instances of a dashboard — GET /api/dashboards/{id}/widgets. */
 export function useWidgets(dashboardId: string) {
-  return useQuery({
-    queryKey: ['widgets', dashboardId],
-    queryFn: () => apiFetch<WidgetsResponse>(`/dashboards/${dashboardId}/widgets`),
+  return useQuery(widgetsQuery(dashboardId));
+}
+
+/** Widget instances across several dashboards; `undefined` until every list has loaded. */
+export function useWidgetsOf(dashboardIds: string[] | undefined): WidgetInstanceEntry[] | undefined {
+  return useQueries({
+    queries: (dashboardIds ?? []).map(widgetsQuery),
+    combine: (results) =>
+      dashboardIds && results.every((r) => r.data)
+        ? results.flatMap((r) => r.data?.widgets ?? [])
+        : undefined,
   });
 }
 

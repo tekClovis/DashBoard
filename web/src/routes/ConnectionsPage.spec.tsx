@@ -6,12 +6,29 @@ import * as catalogApi from '@/api/catalog.js';
 import * as connectionsApi from '@/api/connections.js';
 import { ConnectionsPage } from './ConnectionsPage.js';
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
-function renderPage(connections: ConnectionEntry[], mutate = vi.fn()) {
+/** Stubs GET /api/dashboards and GET /api/dashboards/:id/widgets with the given widget services per dashboard. */
+function stubWidgets(byDashboard: Record<string, string[]>) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) => {
+      const id = /\/dashboards\/([^/]+)\/widgets$/.exec(url)?.[1];
+      const body = id
+        ? { widgets: (byDashboard[id] ?? []).map((service, i) => ({ id: `${id}-${i}`, dashboardId: id, service })) }
+        : { dashboards: Object.keys(byDashboard).map((d, i) => ({ id: d, name: d, position: i })) };
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+    }),
+  );
+}
+
+function renderPage(connections: ConnectionEntry[] | undefined, mutate = vi.fn()) {
   vi.spyOn(connectionsApi, 'useConnections').mockReturnValue({
-    data: { connections },
-    isPending: false,
+    data: connections && { connections },
+    isPending: !connections,
   } as unknown as ReturnType<typeof connectionsApi.useConnections>);
   vi.spyOn(connectionsApi, 'useDisconnect').mockReturnValue({
     mutate,
@@ -103,6 +120,27 @@ describe('ConnectionsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
 
     expect(startConnect).toHaveBeenCalledWith('github');
+  });
+
+  it('counts the affected widgets across dashboards in the expired-access alert', async () => {
+    stubWidgets({ d1: ['github', 'weather', 'github'], d2: ['github', 'steam'] });
+    renderPage([{ service: 'github', connected: true, status: 'REAUTH' }]);
+
+    expect(
+      await screen.findByText('Your 3 GitHub widgets stopped updating. Reconnect to resume them. Their settings are kept.'),
+    ).toBeTruthy();
+  });
+
+  it('renders skeleton status and action cells while connections load', () => {
+    renderPage(undefined);
+
+    expect(screen.queryByText('Loading…')).toBeNull();
+    expect(within(row('Weather')).getByText('Always on')).toBeTruthy();
+    for (const name of ['GitHub', 'Steam', 'YouTube']) {
+      expect(within(row(name)).queryByRole('button')).toBeNull();
+      expect(row(name).querySelectorAll('[data-slot="skeleton"]')).toHaveLength(2);
+    }
+    expect(screen.getByRole('table', { name: 'Services' }).getAttribute('aria-busy')).toBe('true');
   });
 
   it('shows no expired-access alert when every connection is OK', () => {

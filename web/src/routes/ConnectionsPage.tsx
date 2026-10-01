@@ -4,12 +4,15 @@ import { useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useCatalog } from '@/api/catalog.js';
 import { startConnect, useConnections, useDisconnect } from '@/api/connections.js';
+import { useDashboards } from '@/api/dashboards.js';
+import { useWidgetsOf } from '@/api/widgets.js';
 import { PageHead } from '@/components/page-head.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Card } from '@/components/ui/card.js';
 import { Lamp } from '@/components/ui/lamp.js';
+import { Skeleton } from '@/components/ui/skeleton.js';
 import { cn } from '@/lib/utils.js';
 
 interface ServiceMeta {
@@ -41,6 +44,11 @@ export function ConnectionsPage() {
   const { data: catalog } = useCatalog();
   const disconnect = useDisconnect();
   const expired = data?.connections.filter((c) => c.connected && c.status === 'REAUTH') ?? [];
+  // Affected-widget counts for the expired alert; only fetched when something has expired.
+  const { data: dashboards } = useDashboards({ enabled: expired.length > 0 });
+  const widgets = useWidgetsOf(dashboards?.dashboards.map((d) => d.id));
+  const rows: ConnectionEntry[] =
+    data?.connections ?? Object.keys(SERVICES).map((service) => ({ service, connected: false, status: 'OK' }));
 
   return (
     <div className="mx-auto max-w-[880px]">
@@ -51,20 +59,22 @@ export function ConnectionsPage() {
 
       {expired.map(({ service }) => {
         const { label } = metaOf(service);
+        const count = widgets?.filter((w) => w.service === service).length;
+        const what = count ? `${count} ${label} widget${count === 1 ? '' : 's'}` : `${label} widgets`;
         return (
           <Alert key={service} tone="warning" className="mb-3">
             <TriangleAlert strokeWidth={1.75} aria-hidden />
             <AlertContent>
               <AlertTitle>{label} access expired</AlertTitle>
               <AlertDescription>
-                Your {label} widgets stopped updating. Reconnect to resume them. Their settings are kept.
+                Your {what} stopped updating. Reconnect to resume them. Their settings are kept.
               </AlertDescription>
             </AlertContent>
           </Alert>
         );
       })}
 
-      <Card role="table" aria-label="Services" className="overflow-hidden">
+      <Card role="table" aria-label="Services" aria-busy={isPending} className="overflow-hidden">
         <div role="row" className={cn(rowClass, 'text-muted-foreground hidden py-2 text-xs md:grid')}>
           <span role="columnheader">Service and widgets</span>
           <span role="columnheader">Sign-in</span>
@@ -73,11 +83,11 @@ export function ConnectionsPage() {
             Actions
           </span>
         </div>
-        {isPending && <p className="text-muted-foreground p-4 text-sm">Loading…</p>}
-        {data?.connections.map((entry) => (
+        {rows.map((entry) => (
           <ServiceRow
             key={entry.service}
             entry={entry}
+            loading={isPending}
             widgets={catalog?.services.find((s) => s.name === entry.service)?.widgets.map((w) => widgetLabel(w.name)) ?? []}
             onDisconnect={(onSettled) => disconnect.mutate(entry.service, { onSettled })}
             disconnecting={disconnect.isPending && disconnect.variables === entry.service}
@@ -90,17 +100,21 @@ export function ConnectionsPage() {
 
 function ServiceRow({
   entry,
+  loading,
   widgets,
   onDisconnect,
   disconnecting,
 }: {
   entry: ConnectionEntry;
+  loading: boolean;
   widgets: string[];
   onDisconnect: (onSettled: () => void) => void;
   disconnecting: boolean;
 }) {
   const { label, provider, signIn, icon: Icon } = metaOf(entry.service);
   const alwaysOn = entry.service === 'weather';
+  // Matches the mock's `services=loading`: weather is static, the others show skeleton status/actions.
+  const skeleton = loading && !alwaysOn;
 
   return (
     <div role="row" className={rowClass}>
@@ -120,10 +134,12 @@ function ServiceRow({
         {signIn}
       </div>
       <div role="cell" className="max-md:col-start-2 max-md:row-start-1">
-        <StatusBadge alwaysOn={alwaysOn} entry={entry} />
+        {skeleton ? <Skeleton className="h-[18px] w-[90px]" /> : <StatusBadge alwaysOn={alwaysOn} entry={entry} />}
       </div>
       <div role="cell" className="flex flex-wrap items-center justify-end gap-1.5 max-md:col-span-full max-md:justify-start">
-        {alwaysOn ? (
+        {skeleton ? (
+          <Skeleton className="h-7 w-[88px]" />
+        ) : alwaysOn ? (
           <span className="text-muted-foreground text-xs">Nothing to connect</span>
         ) : entry.connected ? (
           <ConnectedActions
