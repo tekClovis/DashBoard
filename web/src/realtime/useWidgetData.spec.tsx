@@ -53,7 +53,12 @@ describe('useWidgetData', () => {
 
     await waitFor(() => {
       const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
-      expect(cached).toEqual({ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z', error: null });
+      expect(cached).toEqual({
+        data: { count: 3 },
+        fetchedAt: '2026-01-01T00:00:00Z',
+        error: null,
+        history: [{ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z' }],
+      });
     });
   });
 

@@ -29,12 +29,15 @@ describe('weather views', () => {
     expect(container.querySelector('svg[role="img"]')).toBeNull();
   });
 
-  it('current_weather: sparkline of the pushes received, with a delta since the first one', () => {
+  it('current_weather: sparkline of the cached pushes, with a delta since the first one', () => {
     const View = getView('weather', 'current_weather');
     const t = (m: number) => new Date(2026, 9, 1, 13, m).toISOString();
-    const { container, rerender } = render(<View data={now} fetchedAt={t(32)} />);
-    rerender(<View data={{ ...now, temperature: 18.4 }} fetchedAt={t(37)} />);
-    rerender(<View data={{ ...now, temperature: 19.1 }} fetchedAt={t(42)} />);
+    const history = [
+      { data: now, fetchedAt: t(32) },
+      { data: { ...now, temperature: 18.4 }, fetchedAt: t(37) },
+    ];
+    // The latest payload is appended when the history does not end on it yet.
+    const { container } = render(<View data={{ ...now, temperature: 19.1 }} fetchedAt={t(42)} history={history} />);
 
     expect(screen.getByRole('img').getAttribute('aria-label')).toBe('Temperature, last 3 updates, °C');
     expect(screen.getByText('↑ 1.5° since 13:32')).toBeTruthy();

@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import type { WidgetPush } from '@/realtime/useWidgetData.js';
 import { GameNewsView, RecentlyPlayedView } from './steam.js';
 import { PullRequestsView, RecentCommitsView, SecurityAlertsView } from './github.js';
 import { CurrentWeatherView, ForecastView } from './weather.js';
@@ -20,6 +21,8 @@ export interface WidgetViewProps {
   data: unknown;
   /** When this payload arrived (ISO), for client-side history such as sparklines and deltas. */
   fetchedAt?: string | null;
+  /** Recent pushes from the query cache, oldest first, so trends survive a remount. */
+  history?: WidgetPush[];
   /** Shown under an error band: channel + detail only, no stat. */
   compact?: boolean;
 }

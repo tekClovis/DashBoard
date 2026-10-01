@@ -1,5 +1,6 @@
 import type { WidgetDataMap, WidgetInstanceEntry } from '@dashboard/shared';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SocketContext } from '@/realtime/SocketProvider.js';
@@ -150,5 +151,86 @@ describe('WidgetFrame states', () => {
     expect(screen.getByText('failed')).toBeTruthy();
     expect(screen.getByText('GitHub didn’t respond')).toBeTruthy();
     expect(container.querySelector('[data-state="live"]')).toBeNull();
+  });
+});
+
+describe('WidgetFrame push history (design-reference §5)', () => {
+  function fakeSocket() {
+    const handlers = new Map<string, (payload: unknown) => void>();
+    return {
+      emit: vi.fn(),
+      on: vi.fn((event: string, handler: (payload: unknown) => void) => void handlers.set(event, handler)),
+      off: vi.fn(),
+      /** Delivers one event and lets the batched cache notification render it. */
+      trigger: (event: string, payload: unknown) =>
+        act(async () => {
+          handlers.get(event)?.(payload);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }),
+    };
+  }
+
+  /** Mounts the real frame (real `useWidgetData`) over a shared query client; returns a remount helper. */
+  function mountLive(inst: WidgetInstanceEntry) {
+    const socket = fakeSocket();
+    const queryClient = new QueryClient();
+    const tree = () => (
+      <QueryClientProvider client={queryClient}>
+        <SocketContext.Provider value={{ socket: socket as never, connected: true }}>
+          <MemoryRouter>
+            <WidgetFrame instance={inst} onConfigure={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} />
+          </MemoryRouter>
+        </SocketContext.Provider>
+      </QueryClientProvider>
+    );
+    const view = render(tree());
+    return {
+      push: (data: unknown, fetchedAt: string) => socket.trigger('widget:data', { instanceId: inst.id, data, fetchedAt }),
+      fail: () => socket.trigger('widget:error', { instanceId: inst.id, code: 'UPSTREAM_ERROR', message: 'down' }),
+      remount: () => {
+        view.unmount();
+        return render(tree());
+      },
+    };
+  }
+
+  /** Query-cache notifications are batched, so wait for the panel to show its sparkline. */
+  const sparkLabel = async () => (await screen.findByRole('img')).getAttribute('aria-label');
+  const at = (m: number) => new Date(Date.now() - (10 - m) * 1000).toISOString();
+  const weather = { ...instance, id: 'w1', service: 'weather', widget: 'current_weather', params: { city: 'Paris' } };
+  const temp = (temperature: number) => ({ location: 'Paris, France', temperature, unit: '°C', condition: 'Clear' });
+
+  it('current_weather: the sparkline survives a view remount', async () => {
+    const live = mountLive(weather);
+    await live.push(temp(17.6), at(1));
+    await live.push(temp(18.4), at(2));
+    await live.push(temp(19.1), at(3));
+    expect(await sparkLabel()).toBe('Temperature, last 3 updates, °C');
+
+    live.remount();
+    expect(await sparkLabel()).toBe('Temperature, last 3 updates, °C');
+    expect(await screen.findByText(/↑ 1\.5° since/)).toBeTruthy();
+  });
+
+  it('current_weather: the sparkline survives an error band and recovery', async () => {
+    const live = mountLive(weather);
+    await live.push(temp(17.6), at(1));
+    await live.push(temp(18.4), at(2));
+    await live.fail();
+    expect(await sparkLabel()).toBe('Temperature, last 2 updates, °C');
+    await live.push(temp(19.1), at(3));
+    expect(await sparkLabel()).toBe('Temperature, last 3 updates, °C');
+  });
+
+  it('pull_requests: the delta since the previous push survives a view remount', async () => {
+    const pr = (n: number) => ({ number: n, title: `t${n}`, state: 'open' as const, author: 'a', url: 'https://x' });
+    const prs = { ...instance, id: 'p1', widget: 'pull_requests', params: { repo: 'acme/telemetry', state: 'open' } };
+    const live = mountLive(prs);
+    await live.push({ repo: 'acme/telemetry', state: 'open', pulls: [pr(1)] }, at(1));
+    await live.push({ repo: 'acme/telemetry', state: 'open', pulls: [pr(1), pr(2), pr(3)] }, at(2));
+    expect(await screen.findByText(/↑2 since/)).toBeTruthy();
+
+    live.remount();
+    expect(await screen.findByText(/↑2 since/)).toBeTruthy();
   });
 });

@@ -1,11 +1,13 @@
 import type { WidgetDataMap } from '@dashboard/shared';
 import { hhmm } from '@/lib/time.js';
-import { Channel, Delta, Sparkline, Stat, usePushTrail } from './parts.js';
+import { Channel, Delta, Sparkline, Stat, pushTrail } from './parts.js';
 import type { WidgetViewProps } from './registry.js';
 
-export function CurrentWeatherView({ data, fetchedAt, compact }: WidgetViewProps) {
-  const { location, temperature, unit, condition } = data as WidgetDataMap['weather.current_weather'];
-  const trail = usePushTrail(fetchedAt, temperature);
+type CurrentWeather = WidgetDataMap['weather.current_weather'];
+
+export function CurrentWeatherView({ data, fetchedAt, history, compact }: WidgetViewProps) {
+  const { location, temperature, unit, condition } = data as CurrentWeather;
+  const trail = pushTrail({ data, fetchedAt, history }, (d: CurrentWeather) => d.temperature);
   const delta = trail[trail.length - 1].value - trail[0].value;
   return (
     <>

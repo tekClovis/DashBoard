@@ -4,11 +4,18 @@ import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useSocket } from './SocketProvider.js';
 
-export interface WidgetCacheEntry {
+export interface WidgetPush {
   data: unknown;
   fetchedAt: string | null;
-  error: { code: WidgetErrorCode; message: string; retryAt?: string } | null;
 }
+
+export interface WidgetCacheEntry extends WidgetPush {
+  error: { code: WidgetErrorCode; message: string; retryAt?: string } | null;
+  /** The last `PUSH_HISTORY` pushes, oldest first (one per `fetchedAt`), for sparklines and deltas. */
+  history?: WidgetPush[];
+}
+
+const PUSH_HISTORY = 12;
 
 /**
  * Subscribes to one widget instance's realtime updates for the lifetime of the calling
@@ -29,10 +36,11 @@ export function useWidgetData(instanceId: string) {
 
     function onData(event: WidgetDataPayload) {
       if (event.instanceId !== instanceId) return;
-      queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], {
-        data: event.data,
-        fetchedAt: event.fetchedAt,
-        error: null,
+      const push = { data: event.data, fetchedAt: event.fetchedAt };
+      queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], (prev) => {
+        // A re-push of the same fetch (e.g. on resubscribe) replaces its point instead of adding one.
+        const kept = (prev?.history ?? []).filter((p) => p.fetchedAt !== push.fetchedAt);
+        return { ...push, error: null, history: [...kept, push].slice(-PUSH_HISTORY) };
       });
     }
 
@@ -42,6 +50,7 @@ export function useWidgetData(instanceId: string) {
         data: prev?.data ?? null,
         fetchedAt: prev?.fetchedAt ?? null,
         error: { code: event.code, message: event.message, retryAt: event.retryAt },
+        history: prev?.history,
       }));
     }
 

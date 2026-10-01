@@ -182,7 +182,7 @@ export function WidgetFrame({ instance, onConfigure, onDelete, onMove }: WidgetF
         {hasPrev && (
           <div className="grid content-start gap-2.5 border-t border-dashed pt-2.5 @min-[720px]:border-t-0 @min-[720px]:border-l @min-[720px]:pt-0 @min-[720px]:pl-6">
             <p className="text-muted-foreground font-mono text-[0.6875rem]">Last data from {hhmm(entry?.fetchedAt ?? now)}</p>
-            <View data={entry?.data} fetchedAt={entry?.fetchedAt} compact />
+            <View data={entry?.data} fetchedAt={entry?.fetchedAt} history={entry?.history} compact />
           </div>
         )}
       </div>
@@ -192,7 +192,7 @@ export function WidgetFrame({ instance, onConfigure, onDelete, onMove }: WidgetF
       <>
         {/* Persistent live region scoped to the view only, not the panel. */}
         <div aria-live="polite" className={cn('grid gap-2.5', WIDE_VIEW)}>
-          <View data={entry?.data} fetchedAt={entry?.fetchedAt} />
+          <View data={entry?.data} fetchedAt={entry?.fetchedAt} history={entry?.history} />
         </div>
         {state === 'stale' && (
           <BodyNote lamp="stale">{`No update for ${since}. Expected every ${every(instance.refreshRate)}.`}</BodyNote>

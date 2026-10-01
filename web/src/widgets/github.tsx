@@ -2,7 +2,7 @@ import type { GithubSecurityAlert, WidgetDataMap } from '@dashboard/shared';
 import type { ReactNode } from 'react';
 import { ago, hhmm } from '@/lib/time.js';
 import { cn } from '@/lib/utils.js';
-import { Channel, Delta, Empty, Row, RowId, RowMeta, Rows, RowTitle, Stat, usePushTrail } from './parts.js';
+import { Channel, Delta, Empty, Row, RowId, RowMeta, Rows, RowTitle, Stat, pushTrail } from './parts.js';
 import type { WidgetViewProps } from './registry.js';
 
 const WEEK_MS = 7 * 24 * 3_600_000;
@@ -74,9 +74,11 @@ export function RecentCommitsView({ data, compact }: WidgetViewProps) {
   );
 }
 
-export function PullRequestsView({ data, fetchedAt, compact }: WidgetViewProps) {
-  const { repo, state, pulls } = data as WidgetDataMap['github.pull_requests'];
-  const trail = usePushTrail(fetchedAt, pulls.length);
+type PullRequests = WidgetDataMap['github.pull_requests'];
+
+export function PullRequestsView({ data, fetchedAt, history, compact }: WidgetViewProps) {
+  const { repo, state, pulls } = data as PullRequests;
+  const trail = pushTrail({ data, fetchedAt, history }, (d: PullRequests) => d.pulls.length);
   const prev = trail.at(-2);
   const diff = prev ? pulls.length - prev.value : 0;
   return (

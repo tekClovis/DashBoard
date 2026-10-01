@@ -78,10 +78,12 @@ describe('github widget views', () => {
     const base = { repo: 'acme/telemetry', state: 'open' as const };
     const View = getView('github', 'pull_requests');
     const first = new Date(2026, 9, 1, 13, 40).toISOString();
-    const { container, rerender } = render(<View data={{ ...base, pulls: [pr(1)] }} fetchedAt={first} />);
+    const firstPush = { data: { ...base, pulls: [pr(1)] }, fetchedAt: first };
+    const { container, rerender } = render(<View {...firstPush} history={[firstPush]} />);
     expect(container.textContent).not.toContain('since');
 
-    rerender(<View data={{ ...base, pulls: [pr(1), pr(2)] }} fetchedAt={new Date(2026, 9, 1, 13, 41).toISOString()} />);
+    const second = { data: { ...base, pulls: [pr(1), pr(2)] }, fetchedAt: new Date(2026, 9, 1, 13, 41).toISOString() };
+    rerender(<View {...second} history={[firstPush, second]} />);
     expect(stat(container)?.textContent).toContain('↑1 since 13:40');
   });
 

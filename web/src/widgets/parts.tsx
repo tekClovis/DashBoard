@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { hhmm } from '@/lib/time.js';
+import type { WidgetPush } from '@/realtime/useWidgetData.js';
 import { cn } from '@/lib/utils.js';
 
 /* Shared anatomy of every widget view (design-reference §5): channel line → stat → detail. */
@@ -97,15 +98,13 @@ export interface TrailPoint<T> {
   value: T;
 }
 
-/** The last `max` pushes seen by this view, kept client-side only (one entry per `fetchedAt`). */
-export function usePushTrail<T>(at: string | null | undefined, value: T, max = 12): TrailPoint<T>[] {
-  const [trail, setTrail] = useState<TrailPoint<T>[]>([{ at, value }]);
-  if (trail.at(-1)?.at !== at) {
-    const next = [...trail, { at, value }].slice(-max);
-    setTrail(next);
-    return next;
-  }
-  return trail;
+/** One point per cached push (oldest first), always ending on the payload being shown. */
+export function pushTrail<D, T>(
+  { data, fetchedAt, history = [] }: { data: unknown; fetchedAt?: string | null; history?: WidgetPush[] },
+  pick: (data: D) => T,
+): TrailPoint<T>[] {
+  const pushes = history.at(-1)?.fetchedAt === fetchedAt ? history : [...history, { data, fetchedAt: fetchedAt ?? null }];
+  return pushes.map((p) => ({ at: p.fetchedAt, value: pick(p.data as D) }));
 }
 
 const SPARK_H = 40;
