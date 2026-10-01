@@ -1,19 +1,26 @@
 import type { AdminUserEntry, AdminUserPatch, AdminUsersResponse, OkResponse } from '@dashboard/shared';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client.js';
 
-export const ADMIN_PAGE_SIZE = 20;
+/** The server's largest accepted `pageSize`. */
+const FETCH_PAGE_SIZE = 100;
 
-/** GET /api/admin/users — only mount for an admin (AdminPage gates), so a non-admin never fires the request. */
-export function useAdminUsers({ q, page }: { q: string; page: number }) {
+/**
+ * GET /api/admin/users, every page: the admin table searches and pages client-side.
+ * Only mount for an admin (AdminPage gates), so a non-admin never fires the request.
+ */
+export function useAdminUsers() {
   return useQuery({
-    queryKey: ['admin', 'users', { q, page }],
-    queryFn: () => {
-      const qs = new URLSearchParams({ page: String(page), pageSize: String(ADMIN_PAGE_SIZE) });
-      if (q) qs.set('q', q);
-      return apiFetch<AdminUsersResponse>(`/admin/users?${qs}`);
+    queryKey: ['admin', 'users'],
+    queryFn: async () => {
+      const users: AdminUserEntry[] = [];
+      for (let page = 1; ; page++) {
+        const qs = new URLSearchParams({ page: String(page), pageSize: String(FETCH_PAGE_SIZE) });
+        const res = await apiFetch<AdminUsersResponse>(`/admin/users?${qs}`);
+        users.push(...res.users);
+        if (res.users.length < FETCH_PAGE_SIZE || users.length >= res.total) return users;
+      }
     },
-    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,14 +1,15 @@
 import type { AdminUserEntry } from '@dashboard/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import * as authApi from '@/api/auth.js';
 import * as client from '@/api/client.js';
 import { AdminPage } from './AdminPage.js';
 
 const ME_ID = 'me';
 let users: AdminUserEntry[];
-let fetchMock: ReturnType<typeof vi.spyOn>;
+let fetchMock: MockInstance<typeof client.apiFetch>;
 
 const user = (id: string, email: string, extra: Partial<AdminUserEntry> = {}): AdminUserEntry => ({
   id,
@@ -19,11 +20,16 @@ const user = (id: string, email: string, extra: Partial<AdminUserEntry> = {}): A
   ...extra,
 });
 
+const many = (n: number) =>
+  Array.from({ length: n }, (_, i) => user(`u${i}`, `user${String(i).padStart(3, '0')}@example.com`));
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <AdminPage />
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -35,15 +41,15 @@ function mockMe(role: 'USER' | 'ADMIN') {
   } as unknown as ReturnType<typeof authApi.useMe>);
 }
 
-/** Stateful fake server behind apiFetch. */
+/** Stateful fake server behind apiFetch; GET pages like the real one (no `q` — search is client-side). */
 function installServer() {
   fetchMock = vi.spyOn(client, 'apiFetch').mockImplementation((async (path: string, init?: RequestInit) => {
     const method = init?.method ?? 'GET';
     if (method === 'GET') {
-      const q = new URL(path, 'http://x').searchParams.get('q') ?? '';
-      const page = Number(new URL(path, 'http://x').searchParams.get('page') ?? 1);
-      const matched = users.filter((u) => u.email.includes(q));
-      return { users: matched.slice((page - 1) * 20, page * 20), total: matched.length, page, pageSize: 20 };
+      const params = new URL(path, 'http://x').searchParams;
+      const page = Number(params.get('page'));
+      const pageSize = Number(params.get('pageSize'));
+      return { users: users.slice((page - 1) * pageSize, page * pageSize), total: users.length, page, pageSize };
     }
     const id = path.split('/').pop()!;
     if (method === 'PATCH') {
@@ -55,6 +61,8 @@ function installServer() {
     return { ok: true };
   }) as typeof client.apiFetch);
 }
+
+const gets = () => fetchMock.mock.calls.filter(([, init]) => !init?.method);
 
 beforeEach(() => {
   users = [
@@ -70,93 +78,208 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const rowOf = (email: string) => screen.getByText(email).closest('tr') as HTMLElement;
+// The mobile cards render alongside the table (CSS picks one), so scope lookups to the table.
+const table = () => screen.getByRole('table');
+const rowOf = (email: string) => within(table()).getByText(email).closest('tr') as HTMLElement;
 
 describe('AdminPage', () => {
-  it('shows a 403 and never requests the user list for a non-admin', () => {
+  it('shows "Admins only" and never requests the user list for a non-admin', () => {
     mockMe('USER');
     renderPage();
 
-    expect(screen.getByText(/403/)).toBeTruthy();
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByText('Admins only')).toBeTruthy();
+    expect(within(alert).getByRole('link', { name: 'Back to dashboard' }).getAttribute('href')).toBe('/');
     expect(screen.queryByRole('table')).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('renders the user table with role/ban state and disables actions on the admin’s own row', async () => {
+  it('shows skeleton rows while the users load', async () => {
     mockMe('ADMIN');
     renderPage();
 
-    await screen.findByText('alice@example.com');
+    expect(table().getAttribute('aria-busy')).toBe('true');
+    expect(table().querySelector('[data-slot="skeleton"]')).toBeTruthy();
+    await within(table()).findByText('alice@example.com');
+    expect(table().getAttribute('aria-busy')).toBe('false');
+  });
+
+  it('renders the count, role and status badges, and marks the admin’s own row', async () => {
+    mockMe('ADMIN');
+    renderPage();
+
+    await within(table()).findByText('alice@example.com');
+    expect(screen.getByText('3', { selector: '.font-mono' }).parentElement?.textContent).toBe(
+      '3 user accounts. Changes apply immediately.',
+    );
+    const own = rowOf('admin@example.com');
+    expect(within(own).getByText('You')).toBeTruthy();
+    expect(within(own).getByText('ADMIN')).toBeTruthy();
     for (const name of ['Ban', 'Demote', 'Delete'] as const) {
-      expect((within(rowOf('admin@example.com')).getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(true);
+      const btn = within(own).getByRole('button', { name });
+      expect(btn.getAttribute('aria-disabled')).toBe('true');
+      expect(btn.getAttribute('aria-describedby')).toBe(screen.getByText(/can’t ban, demote or delete your own/).id);
     }
-    expect(within(rowOf('alice@example.com')).getByRole('button', { name: 'Ban' })).toBeTruthy();
-    expect(within(rowOf('bob@example.com')).getByText('banned')).toBeTruthy();
+    expect(within(rowOf('alice@example.com')).getByText('Active')).toBeTruthy();
+    expect(within(rowOf('bob@example.com')).getByText('Banned')).toBeTruthy();
     expect(within(rowOf('bob@example.com')).getByRole('button', { name: 'Unban' })).toBeTruthy();
   });
 
-  it('filters rows by email search', async () => {
+  it('ignores clicks on the admin’s own aria-disabled actions', async () => {
     mockMe('ADMIN');
     renderPage();
-    await screen.findByText('alice@example.com');
+    await within(table()).findByText('alice@example.com');
 
-    fireEvent.change(screen.getByLabelText('Search users by email'), { target: { value: 'bob' } });
+    fireEvent.click(within(rowOf('admin@example.com')).getByRole('button', { name: 'Ban' }));
+    fireEvent.click(within(rowOf('admin@example.com')).getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => expect(screen.queryByText('alice@example.com')).toBeNull());
-    expect(screen.getByText('bob@example.com')).toBeTruthy();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method)).toBe(false);
+  });
+
+  it('loads every page of users, beyond the server’s 100-per-request cap', async () => {
+    mockMe('ADMIN');
+    users = many(150);
+    renderPage();
+
+    await screen.findByText('1–8 of 150');
+    expect(gets()).toHaveLength(2);
+  });
+
+  it('filters the loaded users by email client-side, without refetching', async () => {
+    mockMe('ADMIN');
+    renderPage();
+    await within(table()).findByText('alice@example.com');
+
+    fireEvent.change(screen.getByLabelText('Search users by email'), { target: { value: 'BOB' } });
+
+    expect(within(table()).queryByText('alice@example.com')).toBeNull();
+    expect(within(table()).getByText('bob@example.com')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('1 user found.');
+    expect(gets()).toHaveLength(1);
+  });
+
+  it('says so when no user matches the search', async () => {
+    mockMe('ADMIN');
+    renderPage();
+    await within(table()).findByText('alice@example.com');
+
+    fireEvent.change(screen.getByLabelText('Search users by email'), { target: { value: 'zed' } });
+
+    expect(screen.getByText('No users match “zed”.')).toBeTruthy();
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Next page' })).toBeNull();
+  });
+
+  it('pages through users eight at a time', async () => {
+    mockMe('ADMIN');
+    users = many(20);
+    renderPage();
+
+    await screen.findByText('1–8 of 20');
+    expect(screen.getByText('1 / 3')).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Previous page' }) as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    expect(screen.getByText('17–20 of 20')).toBeTruthy();
+    expect(within(table()).getByText('user019@example.com')).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Next page' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('searching resets to the first page', async () => {
+    mockMe('ADMIN');
+    users = many(20);
+    renderPage();
+    await screen.findByText('1–8 of 20');
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    fireEvent.change(screen.getByLabelText('Search users by email'), { target: { value: 'user01' } });
+
+    expect(screen.getByText('1–8 of 10')).toBeTruthy();
+  });
+
+  it('shows a load error with a Retry that refetches', async () => {
+    mockMe('ADMIN');
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementationOnce((async () => {
+      throw new client.ApiError(500, 'INTERNAL');
+    }) as typeof client.apiFetch);
+    renderPage();
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('Couldn’t load users')).toBeTruthy();
+    fetchMock.mockImplementation(base);
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+
+    expect(within(await screen.findByRole('table')).getByText('alice@example.com')).toBeTruthy();
   });
 
   it('Ban / Promote flip the row’s buttons from server state once the action completes', async () => {
     mockMe('ADMIN');
     renderPage();
-    await screen.findByText('alice@example.com');
+    await within(table()).findByText('alice@example.com');
 
     fireEvent.click(within(rowOf('alice@example.com')).getByRole('button', { name: 'Ban' }));
     await waitFor(() => expect(within(rowOf('alice@example.com')).getByRole('button', { name: 'Unban' })).toBeTruthy());
-    expect(within(rowOf('alice@example.com')).getByText('banned')).toBeTruthy();
+    expect(within(rowOf('alice@example.com')).getByText('Banned')).toBeTruthy();
 
     fireEvent.click(within(rowOf('alice@example.com')).getByRole('button', { name: 'Promote' }));
     await waitFor(() => expect(within(rowOf('alice@example.com')).getByRole('button', { name: 'Demote' })).toBeTruthy());
   });
 
-  it('Delete removes the row after confirmation, and not when cancelled', async () => {
+  it('Delete asks in an alertdialog; Cancel keeps the user and returns focus to the row action', async () => {
     mockMe('ADMIN');
     renderPage();
-    await screen.findByText('alice@example.com');
+    await within(table()).findByText('alice@example.com');
 
-    vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
-    fireEvent.click(within(rowOf('alice@example.com')).getByRole('button', { name: 'Delete' }));
-    expect(screen.getByText('alice@example.com')).toBeTruthy();
+    const trigger = within(rowOf('alice@example.com')).getByRole('button', { name: 'Delete' });
+    trigger.focus();
+    fireEvent.click(trigger);
 
-    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete alice@example.com?' });
+    expect(within(dialog).getByText(/removes the account, its dashboards, widgets and service connections/)).toBeTruthy();
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => expect(document.activeElement).toBe(trigger)); // Radix restores focus on the next tick
+    expect(document.activeElement).toBe(trigger);
+    expect(within(table()).getByText('alice@example.com')).toBeTruthy();
+  });
+
+  it('Delete account removes the user and moves focus to the search', async () => {
+    mockMe('ADMIN');
+    renderPage();
+    await within(table()).findByText('alice@example.com');
+
     fireEvent.click(within(rowOf('alice@example.com')).getByRole('button', { name: 'Delete' }));
-    await waitFor(() => expect(screen.queryByText('alice@example.com')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+
+    await waitFor(() => expect(within(table()).queryByText('alice@example.com')).toBeNull());
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByLabelText('Search users by email'));
   });
 
   it('steps back a page when deleting the last row of the last page', async () => {
     mockMe('ADMIN');
-    users = [
-      user(ME_ID, 'admin@example.com', { role: 'ADMIN' }),
-      ...Array.from({ length: 20 }, (_, i) => user(`u${i}`, `user${String(i).padStart(2, '0')}@example.com`)),
-    ];
+    users = [user(ME_ID, 'admin@example.com', { role: 'ADMIN' }), ...many(8)];
     renderPage();
-    await screen.findByText('Page 1 of 2');
+    await screen.findByText('1–8 of 9');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    await screen.findByText('Page 2 of 2');
-    await screen.findByText('user19@example.com'); // page 2 loaded (placeholder still shows page 1 until then)
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    fireEvent.click(within(rowOf('user19@example.com')).getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    fireEvent.click(within(rowOf('user007@example.com')).getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
 
-    await screen.findByText('Page 1 of 1');
-    expect(screen.queryByText('No users found.')).toBeNull();
-    expect(screen.getByText('admin@example.com')).toBeTruthy();
+    await screen.findByText('1–8 of 8');
+    expect(screen.getByText('1 / 1')).toBeTruthy();
   });
 
   it('shows an error and refetches when a mutation fails', async () => {
     mockMe('ADMIN');
     renderPage();
-    await screen.findByText('alice@example.com');
+    await within(table()).findByText('alice@example.com');
     const base = fetchMock.getMockImplementation()!;
     fetchMock.mockImplementation((async (path: string, init?: RequestInit) => {
       if (init?.method === 'PATCH') {
@@ -170,6 +293,6 @@ describe('AdminPage', () => {
     fireEvent.click(within(rowOf('alice@example.com')).getByRole('button', { name: 'Ban' }));
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/no longer exists/);
-    await waitFor(() => expect(screen.queryByText('alice@example.com')).toBeNull());
+    await waitFor(() => expect(within(table()).queryByText('alice@example.com')).toBeNull());
   });
 });

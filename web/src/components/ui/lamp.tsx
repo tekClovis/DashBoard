@@ -10,6 +10,7 @@ const LAMP_SHAPES = {
   error: 'rounded-[1px] bg-destructive',
   waiting: 'rounded-full border-[1.5px] border-dashed border-muted-foreground',
   off: 'rounded-full border-[1.5px] border-muted-foreground',
+  neutral: 'rounded-full bg-muted-foreground',
 } as const;
 
 type LampState = keyof typeof LAMP_SHAPES;
