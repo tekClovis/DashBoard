@@ -80,7 +80,7 @@ export function renderPage() {
 }
 
 export async function openMenuItem(name: string) {
-  const trigger = await screen.findByRole('button', { name: 'weather.forecast menu' });
+  const trigger = await screen.findByRole('button', { name: 'Weather Forecast options' });
   fireEvent(trigger, new MouseEvent('pointerdown', { button: 0, bubbles: true }));
   fireEvent.click(await screen.findByRole('menuitem', { name }));
 }

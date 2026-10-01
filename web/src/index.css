@@ -143,3 +143,29 @@
     font-variant-numeric: tabular-nums slashed-zero;
   }
 }
+
+/* Widget resize handle (design-reference §5): two diagonal hairlines, shown on hover or focus.
+   Unlayered with a doubled class so it beats react-grid-layout's own (unlayered) stylesheet. */
+.react-grid-item > .react-resizable-handle.react-resizable-handle {
+  right: 2px;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(
+    135deg,
+    transparent 46%,
+    var(--muted-foreground) 46% 54%,
+    transparent 54% 71%,
+    var(--muted-foreground) 71% 79%,
+    transparent 79%
+  );
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle::after {
+  display: none;
+}
+.react-grid-item:hover > .react-resizable-handle.react-resizable-handle,
+.react-grid-item:focus-within > .react-resizable-handle.react-resizable-handle {
+  opacity: 1;
+}

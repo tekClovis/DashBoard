@@ -1,26 +1,49 @@
 import type { WidgetDataMap } from '@dashboard/shared';
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getView } from './registry.js';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+const stat = (c: HTMLElement) => c.querySelector('[data-slot="widget-stat"]');
+const channel = (c: HTMLElement) => c.querySelector('[data-slot="widget-channel"]');
+
+const now: WidgetDataMap['weather.current_weather'] = {
+  location: 'Paris, France',
+  temperature: 17.6,
+  unit: '°C',
+  condition: 'Partly cloudy',
+};
 
 describe('weather views', () => {
-  it('current_weather shows the rounded temperature with its unit and the condition', () => {
-    const data: WidgetDataMap['weather.current_weather'] = {
-      location: 'Paris, France',
-      temperature: 17.6,
-      unit: '°C',
-      condition: 'Partly cloudy',
-    };
+  it('current_weather: location channel, temperature + unit stat with the condition', () => {
     const View = getView('weather', 'current_weather');
-    render(<View data={data} />);
+    const { container } = render(<View data={now} fetchedAt={new Date().toISOString()} />);
 
-    expect(screen.getByText('18°C')).toBeTruthy();
-    expect(screen.getByText('Partly cloudy')).toBeTruthy();
+    expect(channel(container)?.textContent).toBe('Paris, France');
+    expect(stat(container)?.textContent).toBe('17.6°CPartly cloudy');
+    // One push: nothing to draw a trend from.
+    expect(container.querySelector('svg[role="img"]')).toBeNull();
   });
 
-  it('forecast shows one weekday tile per day with its max temperature', () => {
+  it('current_weather: sparkline of the pushes received, with a delta since the first one', () => {
+    const View = getView('weather', 'current_weather');
+    const t = (m: number) => new Date(2026, 9, 1, 13, m).toISOString();
+    const { container, rerender } = render(<View data={now} fetchedAt={t(32)} />);
+    rerender(<View data={{ ...now, temperature: 18.4 }} fetchedAt={t(37)} />);
+    rerender(<View data={{ ...now, temperature: 19.1 }} fetchedAt={t(42)} />);
+
+    expect(screen.getByRole('img').getAttribute('aria-label')).toBe('Temperature, last 3 updates, °C');
+    expect(screen.getByText('↑ 1.5° since 13:32')).toBeTruthy();
+    const cells = [...container.querySelectorAll('table td')].map((td) => td.textContent);
+    expect(cells).toEqual(['13:32', '17.6°', '13:37', '18.4°', '13:42', '19.1°']);
+  });
+
+  it('forecast: location and overall min–max channel, one range row per day', () => {
+    vi.useFakeTimers({ now: new Date(2026, 8, 21, 9), toFake: ['Date'] });
     const data: WidgetDataMap['weather.forecast'] = {
       location: 'Paris, France',
       days: [
@@ -29,10 +52,13 @@ describe('weather views', () => {
       ],
     };
     const View = getView('weather', 'forecast');
-    render(<View data={data} />);
+    const { container } = render(<View data={data} />);
 
-    const tiles = screen.getAllByRole('listitem');
-    expect(tiles.map((tile) => tile.textContent)).toEqual(['Mon17°', 'Tue19°']);
-    expect(tiles[1].getAttribute('title')).toBe('Overcast');
+    expect(channel(container)?.textContent).toBe('Paris, France9–19°C');
+    expect(stat(container)).toBeNull();
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'TodayClear skylow 9°high 17°',
+      'TueOvercastlow 10°high 19°',
+    ]);
   });
 });
