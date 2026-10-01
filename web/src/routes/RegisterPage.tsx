@@ -1,79 +1,148 @@
-import { useState } from 'react';
+import { Check, Circle, Mail, OctagonX } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { useRegister } from '@/api/auth.js';
+import { useRegister, useResend } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
+import { Alert, AlertContent, AlertTitle } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import { isValidEmail, isValidPassword } from '@/lib/validation.js';
-import { AuthLayout } from './AuthLayout.js';
+import { AuthFooter, AuthFooterLink, AuthLayout, FieldError, ResentNotice } from './AuthLayout.js';
+
+/** Mirrors the shared PASSWORD_PATTERN, one rule per line. */
+const PASSWORD_RULES: [string, (pw: string) => boolean][] = [
+  ['8 to 72 characters', (pw) => pw.length >= 8 && pw.length <= 72],
+  ['At least one digit', (pw) => /\d/.test(pw)],
+  ['At least one symbol', (pw) => /[^A-Za-z0-9]/.test(pw)],
+];
+
+function SentState({ email }: { email: string }) {
+  const resend = useResend();
+  useEffect(() => document.getElementById('main')?.focus(), []);
+  return (
+    <AuthLayout title="Check your email">
+      <p className="text-muted-foreground">
+        We sent a confirmation link to <b className="text-foreground font-[550]">{email}</b>. Open it to activate
+        your account.
+      </p>
+      {resend.isSuccess ? (
+        <ResentNotice />
+      ) : (
+        <Alert>
+          <Mail strokeWidth={1.75} aria-hidden />
+          <AlertContent>Nothing after a few minutes? Check spam, or send it again.</AlertContent>
+        </Alert>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        disabled={resend.isSuccess || resend.isPending}
+        onClick={() => resend.mutate({ email })}
+      >
+        Send a new link
+      </Button>
+      <AuthFooter>
+        Already confirmed? <AuthFooterLink to="/login">Log in</AuthFooterLink>
+      </AuthFooter>
+    </AuthLayout>
+  );
+}
 
 export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [touched, setTouched] = useState(false);
   const register = useRegister();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
-  const canSubmit = isValidEmail(email) && isValidPassword(password);
+  const emailBad = touched && !isValidEmail(email);
+  const passwordBad = touched && !isValidPassword(password);
+  const emailInUse = register.error instanceof ApiError && register.error.code === 'EMAIL_IN_USE';
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canSubmit) return;
-    register.mutate({ email, password });
+    const valid = isValidEmail(email) && isValidPassword(password);
+    setTouched(!valid);
+    if (valid) register.mutate({ email, password });
+    else (isValidEmail(email) ? passwordRef : emailRef).current?.focus();
   }
 
-  if (register.isSuccess) {
-    return (
-      <AuthLayout title="Check your email">
-        <p className="text-muted-foreground text-sm">
-          We sent a confirmation link to {email}. Follow it to activate your account.
-        </p>
-      </AuthLayout>
-    );
-  }
+  if (register.isSuccess) return <SentState email={email} />;
 
   return (
-    <AuthLayout title="Register">
-      <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-        <div className="flex flex-col gap-2">
+    <AuthLayout title="Create an account">
+      <form className="grid gap-3.5" noValidate onSubmit={onSubmit}>
+        <div className="grid gap-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            ref={emailRef}
             type="email"
             autoComplete="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={emailBad || undefined}
+            aria-describedby={emailBad ? 'email-err' : emailInUse ? 'register-err' : undefined}
           />
+          {emailBad && <FieldError id="email-err">Enter an email like name@example.com.</FieldError>}
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="grid gap-1.5">
           <Label htmlFor="password">Password</Label>
+          <ul id="password-rules" aria-label="Password requirements" className="text-muted-foreground grid gap-1 text-xs">
+            {PASSWORD_RULES.map(([rule, test]) => {
+              const ok = test(password);
+              const Icon = ok ? Check : Circle;
+              return (
+                <li key={rule} data-ok={ok || undefined} className="data-ok:text-foreground flex items-center gap-1.5">
+                  <Icon className="in-data-ok:text-success size-3.5" strokeWidth={1.75} aria-hidden />
+                  <span>{rule}</span>
+                  <span className="sr-only">{ok ? ', met' : ', not met'}</span>
+                </li>
+              );
+            })}
+          </ul>
           <Input
             id="password"
+            ref={passwordRef}
             type="password"
             autoComplete="new-password"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={passwordBad || undefined}
+            aria-describedby={passwordBad ? 'password-rules password-err' : 'password-rules'}
           />
-          <p className="text-muted-foreground text-xs">
-            8-72 characters, at least one digit and one symbol.
-          </p>
+          {passwordBad && <FieldError id="password-err">Meet every rule above.</FieldError>}
         </div>
         {register.isError && (
-          <p className="text-destructive text-sm">
-            {register.error instanceof ApiError && register.error.code === 'EMAIL_IN_USE'
-              ? 'That email is already registered.'
-              : 'Something went wrong. Please try again.'}
-          </p>
+          <Alert tone="destructive" id="register-err">
+            <OctagonX strokeWidth={1.75} aria-hidden />
+            <AlertContent>
+              {emailInUse ? (
+                <>
+                  <AlertTitle>That email is already registered</AlertTitle>
+                  <Button variant="link" className="mt-1 justify-self-start" asChild>
+                    <Link to="/login" state={{ email }}>
+                      Log in instead
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <AlertTitle>Something went wrong. Please try again.</AlertTitle>
+              )}
+            </AlertContent>
+          </Alert>
         )}
-        <Button type="submit" disabled={!canSubmit || register.isPending}>
-          {register.isPending ? 'Creating account…' : 'Register'}
+        <Button type="submit" className="w-full" disabled={register.isPending}>
+          {register.isPending ? 'Creating account…' : 'Create account'}
         </Button>
       </form>
-      <p className="text-muted-foreground mt-4 text-sm">
-        Already have an account?{' '}
-        <Link to="/login" className="text-primary underline underline-offset-4">
-          Log in
-        </Link>
-      </p>
+      <AuthFooter>
+        Already have an account? <AuthFooterLink to="/login">Log in</AuthFooterLink>
+      </AuthFooter>
     </AuthLayout>
   );
 }
