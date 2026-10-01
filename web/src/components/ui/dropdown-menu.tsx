@@ -10,7 +10,10 @@ function DropdownMenuContent({ className, ...props }: React.ComponentProps<typeo
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         align="end"
-        className={cn('bg-popover text-popover-foreground z-50 min-w-36 rounded-md border p-1 shadow-md', className)}
+        className={cn(
+          'bg-popover text-popover-foreground z-50 min-w-46 rounded-md border p-1 shadow-[0_8px_24px_-8px_oklch(0_0_0/35%)]',
+          className,
+        )}
         {...props}
       />
     </DropdownMenuPrimitive.Portal>
@@ -21,7 +24,7 @@ function DropdownMenuItem({ className, ...props }: React.ComponentProps<typeof D
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        'focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm outline-none select-none data-[disabled]:opacity-50',
+        'focus:bg-accent focus:text-accent-foreground focus-visible:outline-ring relative flex h-7.5 cursor-default items-center gap-2 rounded-sm px-2 text-[0.8125rem] outline-none select-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid data-[disabled]:opacity-45 [&_svg]:size-4 [&_svg]:shrink-0',
         className,
       )}
       {...props}
