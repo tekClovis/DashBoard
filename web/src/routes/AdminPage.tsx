@@ -362,11 +362,18 @@ function UserCard(props: RowProps) {
   );
 }
 
-/** Own row: `aria-disabled` (stays focusable) and points at the note; a row mid-request is plain disabled. */
+/**
+ * Own row: `aria-disabled` and points at the note. A row mid-request is `aria-disabled` too, never `disabled`,
+ * so the clicked action keeps keyboard focus (as the mock) instead of dropping it to <body>.
+ */
 function RowActions({ user: u, self, busy, noteId, onBan, onRole, onDelete }: RowProps) {
-  const lock = self ? { 'aria-disabled': true, 'aria-describedby': noteId } : { disabled: busy };
+  const lock = self
+    ? { 'aria-disabled': true, 'aria-describedby': noteId }
+    : busy
+      ? { 'aria-disabled': true }
+      : {};
   const act = (fn: RowActionHandlers['onDelete']) => (e: MouseEvent<HTMLButtonElement>) => {
-    if (!self) fn(u, e.currentTarget);
+    if (!self && !busy) fn(u, e.currentTarget);
   };
   return (
     <>

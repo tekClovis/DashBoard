@@ -259,6 +259,35 @@ describe('AdminPage', () => {
     await waitFor(() => expect(within(rowOf('alice@example.com')).getByRole('button', { name: 'Demote' })).toBeTruthy());
   });
 
+  it('keeps focus on Ban while its request is pending (aria-disabled, not disabled) and ignores repeat clicks', async () => {
+    mockMe('ADMIN');
+    renderPage();
+    await within(table()).findByText('alice@example.com');
+    const base = fetchMock.getMockImplementation()!;
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    fetchMock.mockImplementation((async (path: string, init?: RequestInit) => {
+      if (init?.method === 'PATCH') await held;
+      return base(path, init);
+    }) as typeof client.apiFetch);
+    const patches = () => fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH');
+
+    const ban = within(rowOf('alice@example.com')).getByRole('button', { name: 'Ban' }) as HTMLButtonElement;
+    ban.focus();
+    fireEvent.click(ban);
+
+    await waitFor(() => expect(ban.getAttribute('aria-disabled')).toBe('true'));
+    expect(ban.disabled).toBe(false);
+    expect(document.activeElement).toBe(ban);
+    fireEvent.click(ban);
+    expect(patches()).toHaveLength(1);
+
+    release();
+    await waitFor(() => expect(ban.textContent).toBe('Unban'));
+    expect(ban.getAttribute('aria-disabled')).toBeNull();
+    expect(document.activeElement).toBe(ban);
+  });
+
   it('Delete asks in an alertdialog; Cancel keeps the user and returns focus to the row action', async () => {
     mockMe('ADMIN');
     renderPage();
