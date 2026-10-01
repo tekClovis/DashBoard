@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { oauthStartUrl, useLogout, useLogoutAll, useMe, useUnlinkIdentity, type OAuthProvider } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
+import { PageHead } from '@/components/page-head.js';
 import { Button } from '@/components/ui/button.js';
 
 /**
@@ -56,42 +57,38 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mx-auto flex max-w-md flex-col gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Profile</h1>
-          <p className="text-muted-foreground text-sm">
-            {me.email} ({me.role})
-          </p>
-        </div>
+    <div className="mx-auto flex max-w-md flex-col gap-4">
+      <PageHead className="mb-0" title="Profile" sub="Your account and how you sign in." />
+      <p className="text-muted-foreground text-sm">
+        {me.email} ({me.role})
+      </p>
 
-        <div className="border-border bg-card rounded-lg border p-6">
-          <Row label="Password" status={me.hasPassword ? 'set' : 'not set'} />
-          <IdentityRow
-            label="GitHub"
-            linked={linked.has('GITHUB')}
-            disableUnlink={soleLoginMethod}
-            onLink={() => handleLink('github')}
-            onUnlink={() => handleUnlink('github')}
-          />
-          <IdentityRow
-            label="Google"
-            linked={linked.has('GOOGLE')}
-            disableUnlink={soleLoginMethod}
-            onLink={() => handleLink('google')}
-            onUnlink={() => handleUnlink('google')}
-          />
-          {toast && <p className="bg-muted mt-3 rounded-md px-3 py-2 text-sm">{toast}</p>}
-        </div>
+      <div className="border-border bg-card rounded-lg border p-6">
+        <Row label="Password" status={me.hasPassword ? 'set' : 'not set'} />
+        <IdentityRow
+          label="GitHub"
+          linked={linked.has('GITHUB')}
+          disableUnlink={soleLoginMethod}
+          onLink={() => handleLink('github')}
+          onUnlink={() => handleUnlink('github')}
+        />
+        <IdentityRow
+          label="Google"
+          linked={linked.has('GOOGLE')}
+          disableUnlink={soleLoginMethod}
+          onLink={() => handleLink('google')}
+          onUnlink={() => handleUnlink('google')}
+        />
+        {toast && <p className="bg-muted mt-3 rounded-md px-3 py-2 text-sm">{toast}</p>}
+      </div>
 
-        <div className="flex flex-col gap-2">
-          <Button variant="secondary" disabled={logout.isPending} onClick={onLogout}>
-            Log out
-          </Button>
-          <Button variant="outline" disabled={logoutAll.isPending} onClick={onLogoutAll}>
-            Log out of all devices
-          </Button>
-        </div>
+      <div className="flex flex-col gap-2">
+        <Button variant="secondary" disabled={logout.isPending} onClick={onLogout}>
+          Log out
+        </Button>
+        <Button variant="outline" disabled={logoutAll.isPending} onClick={onLogoutAll}>
+          Log out of all devices
+        </Button>
       </div>
     </div>
   );

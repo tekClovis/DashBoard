@@ -12,6 +12,7 @@ const fakeSocket = {
   off: vi.fn(),
   emit: vi.fn(),
   disconnect: vi.fn(),
+  io: { on: vi.fn(), off: vi.fn() },
 };
 vi.mock("socket.io-client", () => ({ io: () => fakeSocket }));
 

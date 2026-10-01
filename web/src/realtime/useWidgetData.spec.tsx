@@ -17,8 +17,14 @@ function fakeSocket() {
   };
 }
 
-function wrapper(socketValue: SocketContextValue) {
+function wrapper({ socket, connected }: Pick<SocketContextValue, 'socket' | 'connected'>) {
   const queryClient = new QueryClient();
+  const socketValue: SocketContextValue = {
+    socket,
+    connected,
+    connection: connected ? { status: 'live' } : { status: 'reconnecting', attempt: 0 },
+    retry: () => {},
+  };
   return {
     queryClient,
     Wrapper: ({ children }: { children: ReactNode }) => (

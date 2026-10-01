@@ -1,4 +1,4 @@
-// jsdom doesn't implement matchMedia — needed by src/lib/theme.ts's getInitialTheme().
+// jsdom doesn't implement matchMedia — needed by DashboardPage's breakpoint check.
 if (typeof window !== 'undefined' && !window.matchMedia) {
   window.matchMedia = (query: string) =>
     ({
