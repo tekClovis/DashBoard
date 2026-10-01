@@ -1,72 +1,118 @@
+import { Mail, OctagonX, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
-import { oauthStartUrl, useLogin } from '@/api/auth.js';
+import { useNavigate, useSearchParams } from 'react-router';
+import { oauthStartUrl, useLogin, useResend } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
+import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import { isValidEmail } from '@/lib/validation.js';
-import { AuthLayout } from './AuthLayout.js';
+import { AuthFooter, AuthFooterLink, AuthLayout, RESENT_MESSAGE } from './AuthLayout.js';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [invalidInput, setInvalidInput] = useState(false);
   const login = useLogin();
+  const resend = useResend();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const canSubmit = isValidEmail(email) && password.length > 0;
   // Set by the oauth callback redirect (server/src/auth/oauth) when account-linking rule
   // 2's refusal branch fires — docs/Architecture.md §5.1 "Account linking".
   const linkRequired = searchParams.get('error') === 'EMAIL_LINK_REQUIRED';
+  const unconfirmed = login.error instanceof ApiError && login.error.code === 'EMAIL_NOT_CONFIRMED';
+  const wrongCredentials = invalidInput || (login.isError && !unconfirmed);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canSubmit) return;
+    const valid = isValidEmail(email) && password.length > 0;
+    setInvalidInput(!valid);
+    if (!valid) {
+      login.reset();
+      return;
+    }
+    resend.reset();
     login.mutate({ email, password }, { onSuccess: () => navigate('/') });
   }
+
+  const errorProps = wrongCredentials ? { 'aria-invalid': true, 'aria-describedby': 'login-err' } : {};
 
   return (
     <AuthLayout title="Log in">
       {linkRequired && (
-        <p className="text-destructive bg-destructive/10 border-destructive/30 mb-4 rounded-md border px-3 py-2 text-sm">
-          You already have an account with this email. Log in with your password, then link the provider from
-          Profile.
-        </p>
+        <Alert tone="warning">
+          <TriangleAlert strokeWidth={1.75} aria-hidden />
+          <AlertContent>
+            <AlertTitle>This email already has an account</AlertTitle>
+            <AlertDescription>Log in with your password, then link the provider from Profile.</AlertDescription>
+          </AlertContent>
+        </Alert>
       )}
-      <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-        <div className="flex flex-col gap-2">
+      <form className="grid gap-3.5" noValidate onSubmit={onSubmit}>
+        <div className="grid gap-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            {...errorProps}
           />
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="grid gap-1.5">
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
             type="password"
             autoComplete="current-password"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            {...errorProps}
           />
         </div>
-        {login.isError && (
-          <p className="text-destructive text-sm">
-            {login.error instanceof ApiError && login.error.code === 'EMAIL_NOT_CONFIRMED'
-              ? 'Please confirm your email before logging in.'
-              : 'Invalid email or password.'}
-          </p>
+        {wrongCredentials && (
+          <Alert tone="destructive" id="login-err">
+            <OctagonX strokeWidth={1.75} aria-hidden />
+            <AlertContent>
+              <AlertTitle>Email or password is incorrect</AlertTitle>
+            </AlertContent>
+          </Alert>
         )}
-        <Button type="submit" disabled={!canSubmit || login.isPending}>
+        {unconfirmed && (
+          <Alert tone="warning" role="alert">
+            <Mail strokeWidth={1.75} aria-hidden />
+            <AlertContent>
+              <AlertTitle>Confirm your email first</AlertTitle>
+              <AlertDescription>Open the link we sent to {email}.</AlertDescription>
+              {resend.isSuccess ? (
+                <AlertDescription role="status">{RESENT_MESSAGE}</AlertDescription>
+              ) : (
+                <Button
+                  type="button"
+                  variant="link"
+                  className="mt-1 justify-self-start"
+                  disabled={resend.isPending}
+                  onClick={() => resend.mutate({ email })}
+                >
+                  Send a new link
+                </Button>
+              )}
+            </AlertContent>
+          </Alert>
+        )}
+        <Button type="submit" className="w-full" disabled={login.isPending}>
           {login.isPending ? 'Logging in…' : 'Log in'}
         </Button>
       </form>
-      <div className="mt-4 flex flex-col gap-2">
+      <div className="text-muted-foreground before:bg-border after:bg-border flex items-center gap-2.5 text-xs before:h-px before:flex-1 after:h-px after:flex-1">
+        or
+      </div>
+      <div className="grid gap-2">
         <Button variant="outline" asChild>
           <a href={oauthStartUrl('github')}>Continue with GitHub</a>
         </Button>
@@ -74,12 +120,9 @@ export function LoginPage() {
           <a href={oauthStartUrl('google')}>Continue with Google</a>
         </Button>
       </div>
-      <p className="text-muted-foreground mt-4 text-sm">
-        No account?{' '}
-        <Link to="/register" className="text-primary underline underline-offset-4">
-          Register
-        </Link>
-      </p>
+      <AuthFooter>
+        No account? <AuthFooterLink to="/register">Register</AuthFooterLink>
+      </AuthFooter>
     </AuthLayout>
   );
 }
