@@ -165,4 +165,25 @@ describe('AppShell mobile menu', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
+
+  it('closes the sheet when the viewport grows to md or wider', () => {
+    const listeners = new Set<(e: { matches: boolean }) => void>();
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((media: string) => ({
+        matches: false,
+        media,
+        addEventListener: (_: string, l: (e: { matches: boolean }) => void) => listeners.add(l),
+        removeEventListener: (_: string, l: (e: { matches: boolean }) => void) => listeners.delete(l),
+      })),
+    );
+    mockMe('USER');
+    renderShell();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeTruthy();
+
+    act(() => listeners.forEach((l) => l({ matches: true })));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });

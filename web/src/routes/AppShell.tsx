@@ -1,5 +1,5 @@
 import { LayoutGrid, LogOut, Menu, Moon, OctagonX, Plug, Sun, TriangleAlert, User, Users, type LucideIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout, useMe } from '@/api/auth.js';
 import { useDashboards } from '@/api/dashboards.js';
@@ -178,6 +178,16 @@ function MobileMenu({ me, sheetNav, current }: Omit<ReturnType<typeof useShellNa
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const email = me?.email ?? '';
+
+  // The sheet is below md only: close it if the viewport grows.
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 768px)');
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setOpen(false);
+    };
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
