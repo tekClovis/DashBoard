@@ -1,97 +1,231 @@
 import type { ConnectionEntry } from '@dashboard/shared';
+import { CloudSun, Gamepad2, GitCommitHorizontal, Plug, SquarePlay, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { useCatalog } from '@/api/catalog.js';
 import { startConnect, useConnections, useDisconnect } from '@/api/connections.js';
 import { PageHead } from '@/components/page-head.js';
+import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
+import { Card } from '@/components/ui/card.js';
+import { Lamp } from '@/components/ui/lamp.js';
+import { cn } from '@/lib/utils.js';
 
-const SERVICE_NAMES: Record<string, string> = {
-  weather: 'Weather (Open-Meteo)',
-  github: 'GitHub',
-  steam: 'Steam',
-  youtube: 'YouTube',
+interface ServiceMeta {
+  label: string;
+  provider?: string;
+  signIn: string;
+  icon: LucideIcon;
+}
+
+const SERVICES: Record<string, ServiceMeta> = {
+  weather: { label: 'Weather', provider: 'Open-Meteo', signIn: 'No account needed', icon: CloudSun },
+  github: { label: 'GitHub', signIn: 'OAuth', icon: GitCommitHorizontal },
+  steam: { label: 'Steam', signIn: 'OpenID', icon: Gamepad2 },
+  youtube: { label: 'YouTube', signIn: 'Google OAuth', icon: SquarePlay },
 };
 
-/** Matches features/connections-api/mock.html's Services list. */
+const metaOf = (service: string): ServiceMeta => SERVICES[service] ?? { label: service, signIn: '', icon: Plug };
+
+/** `recent_commits` → `Recent commits`. */
+const widgetLabel = (name: string) => name.charAt(0).toUpperCase() + name.slice(1).replaceAll('_', ' ');
+
+/** Desktop: four columns; 375: name + status on top, actions full-width below (design-reference Services). */
+const rowClass =
+  'grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 border-b px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_170px_240px] md:gap-4';
+
+/** Matches mocks/index.html#screen=services (and `services=reauth` for an expired connection). */
 export function ConnectionsPage() {
   const { data, isPending } = useConnections();
+  const { data: catalog } = useCatalog();
   const disconnect = useDisconnect();
+  const expired = data?.connections.filter((c) => c.connected && c.status === 'REAUTH') ?? [];
 
   return (
-    <div className="mx-auto max-w-[520px]">
+    <div className="mx-auto max-w-[880px]">
       <PageHead
         title="Services"
         sub="Connect accounts so their widgets can fetch data. Disconnecting stops those widgets but keeps them on your dashboards."
       />
 
-      <div className="bg-card overflow-hidden rounded-lg border">
+      {expired.map(({ service }) => {
+        const { label } = metaOf(service);
+        return (
+          <Alert key={service} tone="warning" className="mb-3">
+            <TriangleAlert strokeWidth={1.75} aria-hidden />
+            <AlertContent>
+              <AlertTitle>{label} access expired</AlertTitle>
+              <AlertDescription>
+                Your {label} widgets stopped updating. Reconnect to resume them. Their settings are kept.
+              </AlertDescription>
+            </AlertContent>
+          </Alert>
+        );
+      })}
+
+      <Card role="table" aria-label="Services" className="overflow-hidden">
+        <div role="row" className={cn(rowClass, 'text-muted-foreground hidden py-2 text-xs md:grid')}>
+          <span role="columnheader">Service and widgets</span>
+          <span role="columnheader">Sign-in</span>
+          <span role="columnheader">Status</span>
+          <span role="columnheader" className="sr-only">
+            Actions
+          </span>
+        </div>
         {isPending && <p className="text-muted-foreground p-4 text-sm">Loading…</p>}
-        {data?.connections.map((entry, i) => (
+        {data?.connections.map((entry) => (
           <ServiceRow
             key={entry.service}
             entry={entry}
-            isLast={i === data.connections.length - 1}
-            onDisconnect={() => disconnect.mutate(entry.service)}
+            widgets={catalog?.services.find((s) => s.name === entry.service)?.widgets.map((w) => widgetLabel(w.name)) ?? []}
+            onDisconnect={(onSettled) => disconnect.mutate(entry.service, { onSettled })}
             disconnecting={disconnect.isPending && disconnect.variables === entry.service}
           />
         ))}
-      </div>
+      </Card>
     </div>
   );
 }
 
 function ServiceRow({
   entry,
-  isLast,
+  widgets,
   onDisconnect,
   disconnecting,
 }: {
   entry: ConnectionEntry;
-  isLast: boolean;
-  onDisconnect: () => void;
+  widgets: string[];
+  onDisconnect: (onSettled: () => void) => void;
   disconnecting: boolean;
 }) {
+  const { label, provider, signIn, icon: Icon } = metaOf(entry.service);
   const alwaysOn = entry.service === 'weather';
 
   return (
-    <div className={`flex items-center justify-between p-4 ${isLast ? '' : 'border-b'}`}>
-      <div>
-        <div className="text-sm font-semibold">{SERVICE_NAMES[entry.service] ?? entry.service}</div>
-        <div className="text-muted-foreground text-xs">{entry.service}</div>
+    <div role="row" className={rowClass}>
+      <div role="cell" className="flex min-w-0 items-center gap-2.5">
+        <span className="text-muted-foreground grid size-7 flex-none place-items-center rounded-md border">
+          <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <b className="block text-[0.8125rem] font-semibold">
+            {label}
+            {provider && <span className="text-muted-foreground font-normal"> ({provider})</span>}
+          </b>
+          <span className="text-muted-foreground text-xs">{widgets.join(', ')}</span>
+        </div>
       </div>
-      <div className="flex items-center gap-2.5">
-        <Badge alwaysOn={alwaysOn} connected={entry.connected} status={entry.status} />
-        {!alwaysOn &&
-          (entry.connected ? (
-            <Button variant="outline" size="sm" onClick={onDisconnect} disabled={disconnecting}>
-              {disconnecting ? 'Disconnecting…' : 'Disconnect'}
-            </Button>
-          ) : (
-            <Button size="sm" onClick={() => startConnect(entry.service)}>
-              Connect
-            </Button>
-          ))}
+      <div role="cell" className="text-muted-foreground hidden text-[0.8125rem] md:block">
+        {signIn}
+      </div>
+      <div role="cell" className="max-md:col-start-2 max-md:row-start-1">
+        <StatusBadge alwaysOn={alwaysOn} entry={entry} />
+      </div>
+      <div role="cell" className="flex flex-wrap items-center justify-end gap-1.5 max-md:col-span-full max-md:justify-start">
+        {alwaysOn ? (
+          <span className="text-muted-foreground text-xs">Nothing to connect</span>
+        ) : entry.connected ? (
+          <ConnectedActions
+            reauth={entry.status === 'REAUTH'}
+            onReconnect={() => startConnect(entry.service)}
+            onDisconnect={onDisconnect}
+            disconnecting={disconnecting}
+          />
+        ) : (
+          <Button size="sm" onClick={() => startConnect(entry.service)}>
+            Connect {label}
+          </Button>
+        )}
       </div>
     </div>
   );
 }
 
-function Badge({
-  alwaysOn,
-  connected,
-  status,
+/** Disconnect asks inline ("Its widgets stop updating.") before calling the API; Cancel restores the row. */
+function ConnectedActions({
+  reauth,
+  onReconnect,
+  onDisconnect,
+  disconnecting,
 }: {
-  alwaysOn: boolean;
-  connected: boolean;
-  status: 'OK' | 'REAUTH';
+  reauth: boolean;
+  onReconnect: () => void;
+  onDisconnect: (onSettled: () => void) => void;
+  disconnecting: boolean;
 }) {
+  const [confirming, setConfirming] = useState(false);
+  const hintId = useId();
+  const disconnectRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  function toggle(next: boolean) {
+    flushSync(() => setConfirming(next));
+    (next ? cancelRef : disconnectRef).current?.focus();
+  }
+
+  if (confirming) {
+    return (
+      <>
+        <span id={hintId} className="text-muted-foreground mr-1 text-xs">
+          Its widgets stop updating.
+        </span>
+        <Button
+          variant="destructive"
+          size="sm"
+          aria-describedby={hintId}
+          disabled={disconnecting}
+          onClick={() => onDisconnect(() => setConfirming(false))}
+        >
+          {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+        </Button>
+        <Button ref={cancelRef} variant="ghost" size="sm" onClick={() => toggle(false)}>
+          Cancel
+        </Button>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {reauth && (
+        <Button size="sm" onClick={onReconnect}>
+          Reconnect
+        </Button>
+      )}
+      <Button ref={disconnectRef} variant="outline" size="sm" onClick={() => toggle(true)}>
+        Disconnect
+      </Button>
+    </>
+  );
+}
+
+function StatusBadge({ alwaysOn, entry }: { alwaysOn: boolean; entry: ConnectionEntry }) {
   if (alwaysOn) {
-    return <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs text-green-800">always on</span>;
+    return (
+      <Badge variant="success">
+        <Lamp state="live" />
+        Always on
+      </Badge>
+    );
   }
-  if (!connected) {
-    return <span className="bg-secondary rounded-full px-2.5 py-0.5 text-xs">not connected</span>;
+  if (!entry.connected) {
+    return (
+      <Badge>
+        <Lamp state="off" />
+        Not connected
+      </Badge>
+    );
   }
-  return status === 'REAUTH' ? (
-    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs text-amber-800">REAUTH</span>
+  return entry.status === 'REAUTH' ? (
+    <Badge variant="warning">
+      <Lamp state="warn" />
+      Reconnect needed
+    </Badge>
   ) : (
-    <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs text-green-800">OK</span>
+    <Badge variant="success">
+      <Lamp state="live" />
+      Connected
+    </Badge>
   );
 }
