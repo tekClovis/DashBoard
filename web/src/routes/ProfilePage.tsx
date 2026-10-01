@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { LogOut, TriangleAlert } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { oauthStartUrl, useLogout, useLogoutAll, useMe, useUnlinkIdentity, type OAuthProvider } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
 import { PageHead } from '@/components/page-head.js';
+import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.js';
+import { Lamp } from '@/components/ui/lamp.js';
 
-/**
- * Matches features/oauth-login/mock.html's "Profile — linked accounts" card plus the
- * Logout/Logout-all controls that were provisionally on DashboardPlaceholderPage — see
- * features/frontend-shell/spec.md.
- */
+interface Toast {
+  title: string;
+  body?: string;
+}
+
+/** 160px label column on desktop; at 375 the value drops under the label and the action sits on the right. */
+const kvClass =
+  'grid min-h-12 grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 border-t px-4 py-2.5 text-[0.8125rem] first:border-t-0 md:grid-cols-[160px_1fr_auto] max-md:[&>:nth-child(2)]:col-start-1 max-md:[&>:nth-child(2)]:row-start-2 max-md:[&>:nth-child(3)]:col-start-2 max-md:[&>:nth-child(3)]:row-span-2 max-md:[&>:nth-child(3)]:row-start-1';
+
+/** Matches mocks/index.html#screen=profile: Account, Sign-in methods and Sessions cards. */
 export function ProfilePage() {
   const { data: me } = useMe();
   const unlink = useUnlinkIdentity();
@@ -17,11 +27,14 @@ export function ProfilePage() {
   const logoutAll = useLogoutAll();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [toast, setToast] = useState<string | null>(
+  const [toast, setToast] = useState<Toast | null>(
     // Set by the oauth `link` callback redirect when the completed handshake's provider
     // identity is already linked to a different user (server/src/auth/oauth).
     searchParams.get('error') === 'IDENTITY_ALREADY_LINKED'
-      ? 'That provider account is already linked to a different user.'
+      ? {
+          title: 'That account belongs to another user',
+          body: 'It’s already linked to a different account here. Sign in with it there and unlink it first, or use another account.',
+        }
       : null,
   );
 
@@ -42,7 +55,7 @@ export function ProfilePage() {
     unlink.mutate(provider, {
       onError: (err) => {
         if (err instanceof ApiError && err.code === 'LAST_LOGIN_METHOD') {
-          setToast("Can't unlink your only remaining login method.");
+          setToast({ title: "Can't unlink your only remaining login method." });
         }
       },
     });
@@ -57,81 +70,142 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4">
+    <div className="mx-auto grid max-w-[640px] gap-4">
       <PageHead className="mb-0" title="Profile" sub="Your account and how you sign in." />
-      <p className="text-muted-foreground text-sm">
-        {me.email} ({me.role})
-      </p>
 
-      <div className="border-border bg-card rounded-lg border p-6">
-        <Row label="Password" status={me.hasPassword ? 'set' : 'not set'} />
+      <ProfileCard title="Account">
+        <dl>
+          <div className={kvClass}>
+            <dt className="text-muted-foreground">Email</dt>
+            <dd className="min-w-0 break-words">{me.email}</dd>
+          </div>
+          <div className={kvClass}>
+            <dt className="text-muted-foreground">Role</dt>
+            <dd>
+              <Badge className="font-mono">{me.role}</Badge>
+            </dd>
+          </div>
+          <div className={kvClass}>
+            <dt className="text-muted-foreground">Email confirmed</dt>
+            <dd>
+              {me.emailVerifiedAt ? (
+                <time className="font-mono text-xs" dateTime={me.emailVerifiedAt}>
+                  {me.emailVerifiedAt.slice(0, 10)}
+                </time>
+              ) : (
+                <Badge>
+                  <Lamp state="off" />
+                  Not confirmed
+                </Badge>
+              )}
+            </dd>
+          </div>
+        </dl>
+      </ProfileCard>
+
+      <ProfileCard title="Sign-in methods">
+        <div className={kvClass}>
+          <span className="text-muted-foreground">Password</span>
+          <span>
+            <StateBadge on={me.hasPassword} onLabel="Set" offLabel="Not set" />
+          </span>
+        </div>
         <IdentityRow
           label="GitHub"
           linked={linked.has('GITHUB')}
-          disableUnlink={soleLoginMethod}
+          sole={soleLoginMethod}
           onLink={() => handleLink('github')}
           onUnlink={() => handleUnlink('github')}
         />
         <IdentityRow
           label="Google"
           linked={linked.has('GOOGLE')}
-          disableUnlink={soleLoginMethod}
+          sole={soleLoginMethod}
           onLink={() => handleLink('google')}
           onUnlink={() => handleUnlink('google')}
         />
-        {toast && <p className="bg-muted mt-3 rounded-md px-3 py-2 text-sm">{toast}</p>}
-      </div>
+        {toast && (
+          <Alert tone="warning" className="mx-4 mb-4">
+            <TriangleAlert strokeWidth={1.75} aria-hidden />
+            <AlertContent>
+              <AlertTitle>{toast.title}</AlertTitle>
+              {toast.body && <AlertDescription>{toast.body}</AlertDescription>}
+            </AlertContent>
+          </Alert>
+        )}
+      </ProfileCard>
 
-      <div className="flex flex-col gap-2">
-        <Button variant="secondary" disabled={logout.isPending} onClick={onLogout}>
-          Log out
-        </Button>
-        <Button variant="outline" disabled={logoutAll.isPending} onClick={onLogoutAll}>
-          Log out of all devices
-        </Button>
-      </div>
+      <ProfileCard title="Sessions">
+        <CardContent className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" disabled={logout.isPending} onClick={onLogout}>
+            <LogOut strokeWidth={1.75} aria-hidden />
+            Log out
+          </Button>
+          <Button variant="outline" disabled={logoutAll.isPending} onClick={onLogoutAll}>
+            Log out of all devices
+          </Button>
+          <p className="text-muted-foreground basis-full text-xs">“All devices” ends every session, including this one.</p>
+        </CardContent>
+      </ProfileCard>
     </div>
   );
 }
 
-function Row({ label, status }: { label: string; status: string }) {
+function ProfileCard({ title, children }: { title: string; children: ReactNode }) {
+  const titleId = useId();
   return (
-    <div className="border-border flex items-center justify-between border-b py-2.5 last:border-none">
-      <span>{label}</span>
-      <span className="bg-secondary rounded-full px-2 py-0.5 text-xs">{status}</span>
-    </div>
+    <Card role="region" aria-labelledby={titleId}>
+      <CardHeader>
+        <CardTitle id={titleId}>{title}</CardTitle>
+      </CardHeader>
+      {children}
+    </Card>
+  );
+}
+
+function StateBadge({ on, onLabel, offLabel }: { on: boolean; onLabel: string; offLabel: string }) {
+  return on ? (
+    <Badge variant="success">
+      <Lamp state="live" />
+      {onLabel}
+    </Badge>
+  ) : (
+    <Badge>
+      <Lamp state="off" />
+      {offLabel}
+    </Badge>
   );
 }
 
 function IdentityRow({
   label,
   linked,
-  disableUnlink,
+  sole,
   onLink,
   onUnlink,
 }: {
   label: string;
   linked: boolean;
-  disableUnlink: boolean;
+  sole: boolean;
   onLink: () => void;
   onUnlink: () => void;
 }) {
   return (
-    <div className="border-border flex items-center justify-between border-b py-2.5 last:border-none">
-      <span>{label}</span>
-      <span className="text-muted-foreground text-sm">{linked ? 'linked' : 'not linked'}</span>
-      {linked && disableUnlink ? (
-        <span className="text-muted-foreground text-xs" title="Your only remaining login method">
+    <div className={kvClass}>
+      <span className="text-muted-foreground">{label}</span>
+      <span>
+        <StateBadge on={linked} onLabel="Linked" offLabel="Not linked" />
+      </span>
+      {linked && sole ? (
+        <span className="text-muted-foreground text-xs">Only sign-in method</span>
+      ) : linked ? (
+        <Button variant="outline" size="sm" onClick={onUnlink}>
           Unlink
-        </span>
+        </Button>
       ) : (
-        <button
-          type="button"
-          className="border-border rounded-md border px-2 py-1 text-xs"
-          onClick={linked ? onUnlink : onLink}
-        >
-          {linked ? 'Unlink' : 'Link'}
-        </button>
+        <Button variant="outline" size="sm" onClick={onLink}>
+          Link {label}
+        </Button>
       )}
     </div>
   );
