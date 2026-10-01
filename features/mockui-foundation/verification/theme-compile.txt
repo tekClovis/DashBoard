@@ -1,0 +1,18 @@
+# vite build of web/ (feature/mockui-foundation): rules generated from the @theme inline colour entries
+# source: grep of dist/assets/index-DoHjHlqG.css
+
+## text-success
+.text-success{color:var(--success)}
+
+## bg-warning
+.bg-warning,.bg-warning\/8{background-color:var(--warning)}
+
+## bg-live
+.bg-live{background-color:var(--live)}
+
+## text-destructive-foreground
+.text-destructive-foreground{color:var(--destructive-foreground)}
+
+## text-success-foreground
+
+## text-warning-foreground
