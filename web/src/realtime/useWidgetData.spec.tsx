@@ -59,7 +59,12 @@ describe('useWidgetData', () => {
 
     await waitFor(() => {
       const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
-      expect(cached).toEqual({ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z', error: null });
+      expect(cached).toEqual({
+        data: { count: 3 },
+        fetchedAt: '2026-01-01T00:00:00Z',
+        error: null,
+        history: [{ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z' }],
+      });
     });
   });
 
@@ -77,6 +82,26 @@ describe('useWidgetData', () => {
       expect(cached?.error).toEqual({ code: 'RATE_LIMITED', message: 'slow down', retryAt: undefined });
       expect(cached?.data).toEqual({ count: 3 });
     });
+  });
+
+  it('starts a new push history when the params change, without resubscribing', async () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+    const { rerender } = renderHook(({ params }) => useWidgetData('instance-1', params), {
+      wrapper: Wrapper,
+      initialProps: { params: { city: 'Paris' } as Record<string, unknown> },
+    });
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { t: 19.9 }, fetchedAt: '2026-01-01T00:00:00Z' });
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { t: 19.9 }, fetchedAt: '2026-01-01T00:01:00Z' });
+
+    rerender({ params: { city: 'Reykjavik' } });
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { t: 10 }, fetchedAt: '2026-01-01T00:02:00Z' });
+
+    await waitFor(() => {
+      const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
+      expect(cached?.history).toEqual([{ data: { t: 10 }, fetchedAt: '2026-01-01T00:02:00Z' }]);
+    });
+    expect(socket.emit.mock.calls.filter(([event]) => event === 'widget:subscribe')).toHaveLength(1);
   });
 
   it('ignores events for a different instanceId', async () => {
