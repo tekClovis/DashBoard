@@ -14,10 +14,14 @@ export function widgetCacheKey(
   params: Record<string, string | number>,
   connectionId?: string,
 ): string {
-  const canonical = JSON.stringify(sortedEntries(params));
-  const hash = createHash('sha256').update(canonical).digest('hex');
+  const hash = createHash('sha256').update(canonicalParams(params)).digest('hex');
   const base = `widget:${service}.${widget}:${hash}`;
   return connectionId ? `${base}:conn:${connectionId}` : base;
+}
+
+/** Params as key-sorted JSON, so equal params give the same string whatever their key order. */
+export function canonicalParams(params: Record<string, string | number>): string {
+  return JSON.stringify(sortedEntries(params));
 }
 
 function sortedEntries(params: Record<string, string | number>): [string, string | number][] {

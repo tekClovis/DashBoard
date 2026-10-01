@@ -108,6 +108,42 @@ describe('useWidgetData', () => {
     });
   });
 
+  it('starts a new history when pushes arrive under new params changed by another session', async () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+    // This session never sees the Configure: its params prop stays Paris throughout.
+    renderHook(() => useWidgetData('instance-1', { city: 'Paris' }), { wrapper: Wrapper });
+    socket.ackLastSubscribe();
+    socket.trigger('widget:data', {
+      instanceId: 'instance-1',
+      data: { t: 16.5 },
+      fetchedAt: '2026-01-01T00:00:00Z',
+      paramsKey: '[["city","Paris"]]',
+    });
+
+    // Another session saved London; the server now fetches London for the whole room.
+    socket.trigger('widget:data', {
+      instanceId: 'instance-1',
+      data: { t: 16 },
+      fetchedAt: '2026-01-01T00:05:00Z',
+      paramsKey: '[["city","London"]]',
+    });
+    socket.trigger('widget:data', {
+      instanceId: 'instance-1',
+      data: { t: 15 },
+      fetchedAt: '2026-01-01T00:10:00Z',
+      paramsKey: '[["city","London"]]',
+    });
+
+    await waitFor(() => {
+      const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
+      expect(cached?.history).toEqual([
+        { data: { t: 16 }, fetchedAt: '2026-01-01T00:05:00Z' },
+        { data: { t: 15 }, fetchedAt: '2026-01-01T00:10:00Z' },
+      ]);
+    });
+  });
+
   it('ignores events for a different instanceId', async () => {
     const socket = fakeSocket();
     const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });

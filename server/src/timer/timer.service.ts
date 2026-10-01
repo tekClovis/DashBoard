@@ -6,6 +6,7 @@ import type { Server } from 'socket.io';
 import type { Params, WidgetDefinition } from '../catalog/widget-definition.js';
 import { WidgetRegistryService } from '../catalog/widget-registry.service.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
+import { canonicalParams } from './cache-key.js';
 import { FetchError } from './fetch-error.js';
 import { FetchService } from './fetch.service.js';
 
@@ -110,14 +111,15 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
 
   private async run(instanceId: string, entry: TimerEntry): Promise<void> {
     try {
-      const data = await this.fetchService.get(entry.def, entry.params, entry.userId);
+      const params = entry.params;
+      const data = await this.fetchService.get(entry.def, params, entry.userId);
       // The entry may have been deactivated (unsubscribed) or replaced with new params while
       // the fetch was in flight; either way this result is not for the current subscribers.
       if (this.active.get(instanceId) !== entry) return;
       entry.failures = 0;
       entry.inFlight = false;
       entry.nextDueAt = Date.now() + entry.refreshRate * 1000;
-      this.emitData(instanceId, data);
+      this.emitData(instanceId, data, params);
     } catch (err) {
       if (this.active.get(instanceId) !== entry) return;
       entry.inFlight = false;
@@ -148,11 +150,14 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
     this.emitError(instanceId, code, message);
   }
 
-  private emitData(instanceId: string, data: unknown): void {
+  private emitData(instanceId: string, data: unknown, params: Params): void {
     this.server?.to(`instance:${instanceId}`).emit('widget:data', {
       instanceId,
       data,
       fetchedAt: new Date().toISOString(),
+      // Every room member sees which params this data is for, even one whose own copy of the
+      // instance predates another session's Configure.
+      paramsKey: canonicalParams(params),
     });
   }
 

@@ -259,7 +259,7 @@ sequenceDiagram
       F->>R: SET key, TTL = minRefreshSec
     end
     F-->>T: data
-    T->>W: widget:data {instanceId, data, fetchedAt} (room)
+    T->>W: widget:data {instanceId, data, fetchedAt, paramsKey} (room)
     T->>T: nextDueAt = now + refreshRate
   end
   W->>G: widget:unsubscribe / disconnect
@@ -325,7 +325,7 @@ Socket events (`shared/src/socket.ts`):
 | Direction | Event | Payload |
 |---|---|---|
 | client → server | `widget:subscribe`, `widget:unsubscribe` | `{ instanceId }` |
-| server → client | `widget:data` | `{ instanceId, data, fetchedAt }` |
+| server → client | `widget:data` | `{ instanceId, data, fetchedAt, paramsKey? }` |
 | server → client | `widget:error` | `{ instanceId, code, message, retryAt? }` |
 
 ## 9. Frontend

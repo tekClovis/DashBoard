@@ -12,6 +12,8 @@ export interface WidgetDataPayload {
   instanceId: string;
   data: unknown;
   fetchedAt: string;
+  /** Stable key of the params this data was fetched with; changes when the instance is reconfigured. */
+  paramsKey?: string;
 }
 
 /** See docs/Architecture.md §6's error-code table for cause/effect per code. */

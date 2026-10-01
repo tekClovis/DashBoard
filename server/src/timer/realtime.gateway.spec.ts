@@ -381,8 +381,8 @@ describe('RealtimeGateway', () => {
       await vi.advanceTimersByTimeAsync(TICK_MS);
 
       const fetchedAt = new Date(NOW.getTime() + TICK_MS).toISOString();
-      expect(a.received).toStrictEqual([['widget:data', { instanceId: 'w1', data: { echoed: 'w1' }, fetchedAt }]]);
-      expect(b.received).toStrictEqual([['widget:data', { instanceId: 'w2', data: { echoed: 'w2' }, fetchedAt }]]);
+      expect(a.received).toStrictEqual([['widget:data', { instanceId: 'w1', data: { echoed: 'w1' }, fetchedAt, paramsKey: '[["label","w1"]]' }]]);
+      expect(b.received).toStrictEqual([['widget:data', { instanceId: 'w2', data: { echoed: 'w2' }, fetchedAt, paramsKey: '[["label","w2"]]' }]]);
       expect(idle.received).toEqual([]);
     });
 

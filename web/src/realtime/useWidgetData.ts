@@ -49,7 +49,9 @@ export function useWidgetData(instanceId: string, params?: Record<string, unknow
     function onData(event: WidgetDataPayload) {
       if (event.instanceId !== instanceId) return;
       const push = { data: event.data, fetchedAt: event.fetchedAt };
-      const historyParams = subscribedParams.current;
+      // The server's key wins: another session's Configure changes what the room is fetched
+      // with without this session's params prop changing.
+      const historyParams = event.paramsKey ?? subscribedParams.current;
       queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], (prev) => {
         const previous = prev?.historyParams === historyParams ? (prev?.history ?? []) : [];
         // A re-push of the same fetch (e.g. on resubscribe) replaces its point instead of adding one.

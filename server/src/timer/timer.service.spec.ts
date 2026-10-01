@@ -112,6 +112,27 @@ describe('TimerService', () => {
     timer.onModuleDestroy();
   });
 
+  it('tags each widget:data with a stable key of the params it was fetched with', async () => {
+    const def = makeDef();
+    const get = vi.fn(async () => ({ ok: true }));
+    const { timer, emit } = activateWith({ get } as unknown as FetchService, def);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    timer.activate({ id: 'w1', service: 'fake', widget: 'echo', params: { label: 'y' }, refreshRate: 5, userId: 'u1' });
+    await vi.advanceTimersByTimeAsync(1000);
+    timer.reconfigure('w1', { params: { label: 'x' } });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    const keys = emit.mock.calls
+      .filter(([event]) => event === 'widget:data')
+      .map(([, payload]) => (payload as { paramsKey?: string }).paramsKey);
+    expect(keys).toHaveLength(3);
+    expect(keys[0]).toEqual(expect.any(String));
+    expect(keys[1]).not.toBe(keys[0]);
+    expect(keys[2]).toBe(keys[0]);
+    timer.onModuleDestroy();
+  });
+
   it('on RATE_LIMITED, emits widget:error with retryAt and backs off exponentially, capped at 15 min', async () => {
     const def = makeDef();
     const fetchService = {
