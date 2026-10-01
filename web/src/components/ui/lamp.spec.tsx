@@ -12,6 +12,7 @@ const shapes: [LampState, string[]][] = [
   ['error', ['rounded-[1px]', 'bg-destructive']],
   ['waiting', ['rounded-full', 'border-dashed', 'border-muted-foreground']],
   ['off', ['rounded-full', 'border-muted-foreground']],
+  ['neutral', ['rounded-full', 'bg-muted-foreground']],
 ];
 
 describe('Lamp', () => {

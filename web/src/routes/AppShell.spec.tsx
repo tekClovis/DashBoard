@@ -74,6 +74,17 @@ describe('AppShell nav', () => {
     expect(mainNav().getByRole('link', { name: 'Admin' })).toBeTruthy();
   });
 
+  it('lists Dashboard, Services, Profile and Admin in the header, as the mock does', () => {
+    mockMe('ADMIN');
+    renderShell();
+
+    const labels = mainNav()
+      .getAllByRole('link')
+      .map((l) => l.textContent);
+    expect(labels).toEqual(['Dashboard', 'Services', 'Profile', 'Admin']);
+    expect(mainNav().getByRole('link', { name: 'Profile' }).getAttribute('href')).toBe('/profile');
+  });
+
   it('marks the current page with aria-current', () => {
     mockMe('USER');
     renderShell();
@@ -146,7 +157,7 @@ describe('AppShell account menu', () => {
 });
 
 describe('AppShell mobile menu', () => {
-  it('opens a sheet with nav, theme and Log out; Escape closes it and refocuses the menu button', async () => {
+  it('opens a sheet with nav, account and Log out but no theme button; Escape closes it and refocuses the menu button', async () => {
     mockMe('ADMIN');
     renderShell();
     const trigger = screen.getByRole('button', { name: 'Open menu' });
@@ -158,7 +169,8 @@ describe('AppShell mobile menu', () => {
       expect(within(sheet).getByRole('link', { name })).toBeTruthy();
     }
     expect(within(sheet).getByRole('link', { name: 'Dashboard' }).getAttribute('aria-current')).toBe('page');
-    expect(within(sheet).getByRole('button', { name: /theme$/ })).toBeTruthy();
+    expect(within(sheet).queryByRole('button', { name: /theme$/i })).toBeNull();
+    expect(within(sheet).getByText('user@example.com')).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: 'Log out' })).toBeTruthy();
 
     fireEvent.keyDown(sheet, { key: 'Escape' });
