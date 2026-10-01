@@ -1,5 +1,6 @@
 import type { ConnectionEntry } from '@dashboard/shared';
 import { startConnect, useConnections, useDisconnect } from '@/api/connections.js';
+import { PageHead } from '@/components/page-head.js';
 import { Button } from '@/components/ui/button.js';
 
 const SERVICE_NAMES: Record<string, string> = {
@@ -15,22 +16,23 @@ export function ConnectionsPage() {
   const disconnect = useDisconnect();
 
   return (
-    <div className="p-6">
-      <div className="mx-auto max-w-[520px]">
-        <h1 className="mb-4 text-lg font-semibold">Services</h1>
+    <div className="mx-auto max-w-[520px]">
+      <PageHead
+        title="Services"
+        sub="Connect accounts so their widgets can fetch data. Disconnecting stops those widgets but keeps them on your dashboards."
+      />
 
-        <div className="bg-card overflow-hidden rounded-lg border">
-          {isPending && <p className="text-muted-foreground p-4 text-sm">Loading…</p>}
-          {data?.connections.map((entry, i) => (
-            <ServiceRow
-              key={entry.service}
-              entry={entry}
-              isLast={i === data.connections.length - 1}
-              onDisconnect={() => disconnect.mutate(entry.service)}
-              disconnecting={disconnect.isPending && disconnect.variables === entry.service}
-            />
-          ))}
-        </div>
+      <div className="bg-card overflow-hidden rounded-lg border">
+        {isPending && <p className="text-muted-foreground p-4 text-sm">Loading…</p>}
+        {data?.connections.map((entry, i) => (
+          <ServiceRow
+            key={entry.service}
+            entry={entry}
+            isLast={i === data.connections.length - 1}
+            onDisconnect={() => disconnect.mutate(entry.service)}
+            disconnecting={disconnect.isPending && disconnect.variables === entry.service}
+          />
+        ))}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import 'react-grid-layout/css/styles.css';
 import { useParams } from 'react-router';
 import { useDeleteWidget, useUpdateLayout, useWidgets } from '@/api/widgets.js';
 import { AddWidgetDialog } from '@/components/AddWidgetDialog.js';
+import { PageHead } from '@/components/page-head.js';
 import { Button } from '@/components/ui/button.js';
 import { WidgetFrame } from '@/components/WidgetFrame.js';
 import {
@@ -85,11 +86,10 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Dashboard</h1>
+    <>
+      <PageHead title="Dashboard" sub="Your widgets, updated live.">
         <Button onClick={() => setDialog({ open: true })}>Add widget</Button>
-      </div>
+      </PageHead>
 
       {(deleteWidget.isError || updateLayout.isError) && (
         <p role="alert" className="text-destructive mb-2 text-sm">
@@ -150,6 +150,6 @@ export function DashboardPage() {
         slot={nextSlot(widgets)}
         instance={dialog.instance}
       />
-    </div>
+    </>
   );
 }
