@@ -1,5 +1,5 @@
 import { Check, Circle, Mail, OctagonX } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useRegister, useResend } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
@@ -19,6 +19,7 @@ const PASSWORD_RULES: [string, (pw: string) => boolean][] = [
 
 function SentState({ email }: { email: string }) {
   const resend = useResend();
+  useEffect(() => document.getElementById('main')?.focus(), []);
   return (
     <AuthLayout title="Check your email">
       <p className="text-muted-foreground">
@@ -53,6 +54,8 @@ export function RegisterPage() {
   const [password, setPassword] = useState('');
   const [touched, setTouched] = useState(false);
   const register = useRegister();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const emailBad = touched && !isValidEmail(email);
   const passwordBad = touched && !isValidPassword(password);
@@ -63,6 +66,7 @@ export function RegisterPage() {
     const valid = isValidEmail(email) && isValidPassword(password);
     setTouched(!valid);
     if (valid) register.mutate({ email, password });
+    else (isValidEmail(email) ? passwordRef : emailRef).current?.focus();
   }
 
   if (register.isSuccess) return <SentState email={email} />;
@@ -74,6 +78,7 @@ export function RegisterPage() {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            ref={emailRef}
             type="email"
             autoComplete="email"
             required
@@ -101,6 +106,7 @@ export function RegisterPage() {
           </ul>
           <Input
             id="password"
+            ref={passwordRef}
             type="password"
             autoComplete="new-password"
             required
@@ -119,7 +125,9 @@ export function RegisterPage() {
                 <>
                   <AlertTitle>That email is already registered</AlertTitle>
                   <Button variant="link" className="mt-1 justify-self-start" asChild>
-                    <Link to="/login">Log in instead</Link>
+                    <Link to="/login" state={{ email }}>
+                      Log in instead
+                    </Link>
                   </Button>
                 </>
               ) : (

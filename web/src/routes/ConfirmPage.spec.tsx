@@ -33,6 +33,7 @@ describe('ConfirmPage', () => {
       'Enter an email like name@example.com.',
     );
     expect(calls).toHaveLength(1);
+    expect(document.activeElement).toBe(email);
 
     fireEvent.change(email, { target: { value: 'ada@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send a new link' }));

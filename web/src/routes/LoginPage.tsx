@@ -1,6 +1,6 @@
 import { Mail, OctagonX, TriangleAlert } from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { oauthStartUrl, useLogin, useResend } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
@@ -11,9 +11,17 @@ import { isValidEmail } from '@/lib/validation.js';
 import { AuthFooter, AuthFooterLink, AuthLayout, RESENT_MESSAGE } from './AuthLayout.js';
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
+  // "Log in instead" on register carries the typed email over in the location state.
+  const carried: unknown = useLocation().state;
+  const [email, setEmail] = useState(() =>
+    carried && typeof carried === 'object' && 'email' in carried && typeof carried.email === 'string'
+      ? carried.email
+      : '',
+  );
   const [password, setPassword] = useState('');
   const [invalidInput, setInvalidInput] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const login = useLogin();
   const resend = useResend();
   const navigate = useNavigate();
@@ -31,10 +39,14 @@ export function LoginPage() {
     setInvalidInput(!valid);
     if (!valid) {
       login.reset();
+      emailRef.current?.focus();
       return;
     }
     resend.reset();
-    login.mutate({ email, password }, { onSuccess: () => navigate('/') });
+    login.mutate(
+      { email, password },
+      { onSuccess: () => navigate('/'), onError: () => passwordRef.current?.focus() },
+    );
   }
 
   const errorProps = wrongCredentials ? { 'aria-invalid': true, 'aria-describedby': 'login-err' } : {};
@@ -55,6 +67,7 @@ export function LoginPage() {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            ref={emailRef}
             type="email"
             autoComplete="email"
             required
@@ -67,6 +80,7 @@ export function LoginPage() {
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
+            ref={passwordRef}
             type="password"
             autoComplete="current-password"
             required

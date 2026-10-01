@@ -1,4 +1,6 @@
-import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { calls, renderAt, stubAuthApi } from './auth-test-utils.js';
 import { LoginPage } from './LoginPage.js';
@@ -46,6 +48,7 @@ describe('LoginPage', () => {
       expect(input.getAttribute('aria-invalid')).toBe('true');
       expect(input.getAttribute('aria-describedby')).toBe(alert.id);
     }
+    expect(document.activeElement).toBe(screen.getByLabelText('Password'));
   });
 
   it('shows the error alert without calling the API when the input is invalid', () => {
@@ -54,6 +57,7 @@ describe('LoginPage', () => {
     fillAndSubmit('ada@example', '');
     expect(screen.getByRole('alert').textContent).toContain('Email or password is incorrect');
     expect(calls).toHaveLength(0);
+    expect(document.activeElement).toBe(screen.getByLabelText('Email'));
   });
 
   it('offers a new confirmation link when the email is not confirmed', async () => {
@@ -63,6 +67,7 @@ describe('LoginPage', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Confirm your email first');
     expect(alert.textContent).toContain('Open the link we sent to unconfirmed@example.com.');
+    expect(document.activeElement).toBe(screen.getByLabelText('Password'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Send a new link' }));
     expect(await screen.findByText('If that account needs a new link, it’s on its way.')).toBeTruthy();
@@ -72,6 +77,18 @@ describe('LoginPage', () => {
       body: { email: 'unconfirmed@example.com' },
     });
     expect(screen.queryByRole('button', { name: 'Send a new link' })).toBeNull();
+  });
+
+  it('prefills the email carried over from register', () => {
+    stubAuthApi();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[{ pathname: '/login', state: { email: 'ada@example.com' } }]}>
+          <LoginPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('ada@example.com');
   });
 
   it('explains the account-linking refusal from the OAuth callback', () => {

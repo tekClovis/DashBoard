@@ -1,5 +1,5 @@
 import { OctagonX } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useConfirm, useResend } from '@/api/auth.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
@@ -14,6 +14,7 @@ function ResendForm() {
   const resend = useResend();
   const [email, setEmail] = useState('');
   const [invalid, setInvalid] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
 
   if (resend.isSuccess) return <ResentNotice />;
 
@@ -26,12 +27,14 @@ function ResendForm() {
         const valid = isValidEmail(email);
         setInvalid(!valid);
         if (valid) resend.mutate({ email });
+        else emailRef.current?.focus();
       }}
     >
       <div className="grid gap-1.5">
         <Label htmlFor="resend-email">Email</Label>
         <Input
           id="resend-email"
+          ref={emailRef}
           type="email"
           autoComplete="email"
           required

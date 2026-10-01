@@ -1,6 +1,9 @@
-import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { calls, renderAt, stubAuthApi } from './auth-test-utils.js';
+import { LoginPage } from './LoginPage.js';
 import { RegisterPage } from './RegisterPage.js';
 
 afterEach(() => {
@@ -48,11 +51,30 @@ describe('RegisterPage', () => {
     const [, pwErrId] = pw.getAttribute('aria-describedby')!.split(' ');
     expect(document.getElementById(pwErrId!)?.textContent).toBe('Meet every rule above.');
     expect(calls).toHaveLength(0);
+    expect(document.activeElement).toBe(email);
+  });
+
+  it('focuses the password when only the password is invalid', () => {
+    stubAuthApi();
+    renderAt('/register', '/register', <RegisterPage />);
+    type('Email', 'ada@example.com');
+    type('Password', 'telemetry1');
+    submit();
+    expect(document.activeElement).toBe(screen.getByLabelText('Password'));
   });
 
   it('shows email-in-use as a destructive alert with a way to log in', async () => {
     stubAuthApi({ '/api/auth/register': [409, { error: 'EMAIL_IN_USE' }] });
-    renderAt('/register', '/register', <RegisterPage />);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/register']}>
+          <Routes>
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
     type('Email', 'ada@example.com');
     type('Password', 'correct-horse-1!');
     submit();
@@ -62,6 +84,10 @@ describe('RegisterPage', () => {
     expect(alert.textContent).toContain('That email is already registered');
     expect(within(alert).getByRole('link', { name: 'Log in instead' }).getAttribute('href')).toBe('/login');
     expect(screen.getByLabelText('Email').getAttribute('aria-describedby')).toBe(alert.id);
+
+    fireEvent.click(within(alert).getByRole('link', { name: 'Log in instead' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Log in' })).toBeTruthy();
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('ada@example.com');
   });
 
   it('shows the sent state after registering and can resend the link once', async () => {
@@ -72,6 +98,7 @@ describe('RegisterPage', () => {
     submit();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Check your email' })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole('main'));
     expect(screen.getByText('grace@example.com').tagName).toBe('B');
     expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
 
