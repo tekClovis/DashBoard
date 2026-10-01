@@ -25,25 +25,31 @@ const PUSH_HISTORY = 12;
  * incoming `widget:data`/`widget:error` into the query cache under `['widget', instanceId]` —
  * per docs/Architecture.md §9 and `timer-realtime`'s gateway (`shared/src/socket.ts`'s event
  * contract). Returns that cache entry like any other query so a widget view can render from
- * it directly. Pass the instance's `params` so a Configure change starts a new push history
- * instead of mixing the old city or repo into the new one's sparkline and deltas.
+ * it directly. Pass the instance's `params`: a Configure change resubscribes (so the server's
+ * Timer picks up the saved params) and starts a new push history once the server has
+ * acknowledged that subscribe, instead of mixing the old city or repo into the new one's
+ * sparkline and deltas.
  */
 export function useWidgetData(instanceId: string, params?: Record<string, unknown>) {
   const { socket } = useSocket();
   const queryClient = useQueryClient();
-  // Read through a ref so a params change does not resubscribe.
-  const paramsKey = useRef<string | undefined>(undefined);
-  paramsKey.current = params === undefined ? undefined : JSON.stringify(params);
+  const paramsKey = params === undefined ? undefined : JSON.stringify(params);
+  // The params the server is fetching with. Pushes still in transit when params change carry
+  // old-params data, so they keep the old tag until the resubscribe is acknowledged.
+  const subscribedParams = useRef(paramsKey);
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit(SOCKET_EVENTS.subscribe, { instanceId });
+    let current = true;
+    socket.emit(SOCKET_EVENTS.subscribe, { instanceId }, () => {
+      if (current) subscribedParams.current = paramsKey;
+    });
 
     function onData(event: WidgetDataPayload) {
       if (event.instanceId !== instanceId) return;
       const push = { data: event.data, fetchedAt: event.fetchedAt };
-      const historyParams = paramsKey.current;
+      const historyParams = subscribedParams.current;
       queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], (prev) => {
         const previous = prev?.historyParams === historyParams ? (prev?.history ?? []) : [];
         // A re-push of the same fetch (e.g. on resubscribe) replaces its point instead of adding one.
@@ -67,11 +73,12 @@ export function useWidgetData(instanceId: string, params?: Record<string, unknow
     socket.on(SOCKET_EVENTS.error, onError);
 
     return () => {
+      current = false;
       socket.emit(SOCKET_EVENTS.unsubscribe, { instanceId });
       socket.off(SOCKET_EVENTS.data, onData);
       socket.off(SOCKET_EVENTS.error, onError);
     };
-  }, [socket, instanceId, queryClient]);
+  }, [socket, instanceId, queryClient, paramsKey]);
 
   return useQuery<WidgetCacheEntry | undefined>({
     queryKey: ['widget', instanceId],

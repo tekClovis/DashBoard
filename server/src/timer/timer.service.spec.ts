@@ -75,6 +75,43 @@ describe('TimerService', () => {
     timer.onModuleDestroy();
   });
 
+  it('switches an already-active instance to new params on activate (another subscriber may hold the room open)', async () => {
+    const def = makeDef();
+    const get = vi.fn(async () => ({ ok: true }));
+    const { timer } = activateWith({ get } as unknown as FetchService, def);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    get.mockClear();
+
+    timer.activate({ id: 'w1', service: 'fake', widget: 'echo', params: { label: 'y' }, refreshRate: 5, userId: 'u1' });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(get).toHaveBeenCalledWith(def, { label: 'y' }, 'u1');
+    timer.onModuleDestroy();
+  });
+
+  it('drops a fetch that was in flight under params replaced by a re-activation', async () => {
+    const def = makeDef();
+    let resolveOld!: (data: unknown) => void;
+    const fetchService = {
+      get: vi
+        .fn()
+        .mockImplementationOnce(() => new Promise((resolve) => (resolveOld = resolve)))
+        .mockImplementation(async () => ({ label: 'y' })),
+    } as unknown as FetchService;
+    const { timer, emit } = activateWith(fetchService, def);
+
+    await vi.advanceTimersByTimeAsync(1000); // old-params fetch now in flight
+    timer.deactivate('w1');
+    timer.activate({ id: 'w1', service: 'fake', widget: 'echo', params: { label: 'y' }, refreshRate: 5, userId: 'u1' });
+    resolveOld({ label: 'x' });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(emit).not.toHaveBeenCalledWith('widget:data', expect.objectContaining({ data: { label: 'x' } }));
+    expect(emit).toHaveBeenCalledWith('widget:data', expect.objectContaining({ data: { label: 'y' } }));
+    timer.onModuleDestroy();
+  });
+
   it('on RATE_LIMITED, emits widget:error with retryAt and backs off exponentially, capped at 15 min', async () => {
     const def = makeDef();
     const fetchService = {

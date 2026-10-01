@@ -59,9 +59,13 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
     this.server = server;
   }
 
-  /** Adds the instance to the active set on its first subscriber. A no-op if already active. */
+  /**
+   * Adds the instance to the active set on its first subscriber. A no-op if already active
+   * with the same params; new params (a resubscribe after Configure) replace the entry.
+   */
   activate(instance: ActivateRequest): void {
-    if (this.active.has(instance.id)) return;
+    const existing = this.active.get(instance.id);
+    if (existing && JSON.stringify(existing.params) === JSON.stringify(instance.params)) return;
 
     const def = this.registry.get(instance.service, instance.widget);
     if (!def) return;
@@ -107,14 +111,15 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
   private async run(instanceId: string, entry: TimerEntry): Promise<void> {
     try {
       const data = await this.fetchService.get(entry.def, entry.params, entry.userId);
-      // The entry may have been deactivated (unsubscribed) while the fetch was in flight.
-      if (!this.active.has(instanceId)) return;
+      // The entry may have been deactivated (unsubscribed) or replaced with new params while
+      // the fetch was in flight; either way this result is not for the current subscribers.
+      if (this.active.get(instanceId) !== entry) return;
       entry.failures = 0;
       entry.inFlight = false;
       entry.nextDueAt = Date.now() + entry.refreshRate * 1000;
       this.emitData(instanceId, data);
     } catch (err) {
-      if (!this.active.has(instanceId)) return;
+      if (this.active.get(instanceId) !== entry) return;
       entry.inFlight = false;
       await this.handleFailure(instanceId, entry, err);
     }
