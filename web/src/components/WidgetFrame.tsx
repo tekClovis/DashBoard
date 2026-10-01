@@ -1,6 +1,6 @@
 import type { WidgetInstanceEntry } from '@dashboard/shared';
 import { Ellipsis, GripVertical, OctagonX, RefreshCw, SlidersHorizontal, TriangleAlert } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
@@ -93,6 +93,30 @@ function useNow(ms = 1000): number {
   return now;
 }
 
+const PULSE_MS = 900; // --dur-pulse
+
+/**
+ * Live pulse (design-reference §5): on each `widget:data` (a new `fetchedAt` in the cache, even
+ * when the values are unchanged), set `data-pulse` on the panel for 900 ms; index.css animates
+ * the lamp ping and header sweep. Restarts on back-to-back pushes; never fires for data already
+ * cached at mount or for an error.
+ */
+function usePulse(fetchedAt: string | null | undefined) {
+  const ref = useRef<HTMLElement>(null);
+  const seen = useRef(fetchedAt);
+  useEffect(() => {
+    const panel = ref.current;
+    if (!panel || fetchedAt === seen.current) return;
+    seen.current = fetchedAt;
+    panel.removeAttribute('data-pulse');
+    void panel.offsetWidth; // restart the animation if a pulse is already running
+    panel.setAttribute('data-pulse', '');
+    const id = setTimeout(() => panel.removeAttribute('data-pulse'), PULSE_MS);
+    return () => clearTimeout(id);
+  }, [fetchedAt]);
+  return ref;
+}
+
 /** One quiet line at the bottom of the body: waiting or stale. */
 function BodyNote({ lamp, children }: { lamp: LampState; children: string }) {
   return (
@@ -116,7 +140,8 @@ interface WidgetFrameProps {
 
 /** Panel around one widget instance: header strip, then the body for its derived state (design-reference §5). */
 export function WidgetFrame({ instance, onConfigure, onDelete, onMove }: WidgetFrameProps) {
-  const { data: entry } = useWidgetData(instance.id);
+  const { data: entry } = useWidgetData(instance.id, instance.params);
+  const panelRef = usePulse(entry?.fetchedAt);
   const { connected } = useSocket();
   const now = useNow();
   const { serviceLabel, label, icon: Icon } = getWidgetMeta(instance.service, instance.widget);
@@ -203,11 +228,13 @@ export function WidgetFrame({ instance, onConfigure, onDelete, onMove }: WidgetF
 
   return (
     <article
+      ref={panelRef}
       data-state={state}
       aria-label={name}
       className="bg-card text-card-foreground @container flex h-full flex-col overflow-hidden rounded-lg border forced-colors:border-[CanvasText]"
     >
       <div
+        data-slot="widget-head"
         className={cn(
           'relative flex h-8 flex-none items-center gap-1.5 border-b px-1 text-xs max-md:pl-2.5',
           state === 'warn' && 'bg-warning/7',

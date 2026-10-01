@@ -174,11 +174,11 @@ describe('WidgetFrame push history (design-reference §5)', () => {
   function mountLive(inst: WidgetInstanceEntry) {
     const socket = fakeSocket();
     const queryClient = new QueryClient();
-    const tree = () => (
+    const tree = (current = inst) => (
       <QueryClientProvider client={queryClient}>
         <SocketContext.Provider value={{ socket: socket as never, connected: true }}>
           <MemoryRouter>
-            <WidgetFrame instance={inst} onConfigure={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} />
+            <WidgetFrame instance={current} onConfigure={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} />
           </MemoryRouter>
         </SocketContext.Provider>
       </QueryClientProvider>
@@ -187,9 +187,10 @@ describe('WidgetFrame push history (design-reference §5)', () => {
     return {
       push: (data: unknown, fetchedAt: string) => socket.trigger('widget:data', { instanceId: inst.id, data, fetchedAt }),
       fail: () => socket.trigger('widget:error', { instanceId: inst.id, code: 'UPSTREAM_ERROR', message: 'down' }),
-      remount: () => {
+      /** Unmounts and mounts again, optionally with the instance as it is after a Configure save. */
+      remount: (next = inst) => {
         view.unmount();
-        return render(tree());
+        return render(tree(next));
       },
     };
   }
@@ -212,6 +213,20 @@ describe('WidgetFrame push history (design-reference §5)', () => {
     expect(await screen.findByText(/↑ 1\.5° since/)).toBeTruthy();
   });
 
+  it('current_weather: changing the city starts a new sparkline instead of mixing cities', async () => {
+    const live = mountLive(weather);
+    await live.push(temp(19.9), at(1));
+    await live.push(temp(19.9), at(2));
+    expect(await sparkLabel()).toBe('Temperature, last 2 updates, °C');
+
+    live.remount({ ...weather, params: { city: 'Reykjavik' } });
+    await live.push({ ...temp(10), location: 'Reykjavik, Iceland' }, at(3));
+    await live.push({ ...temp(10.5), location: 'Reykjavik, Iceland' }, at(4));
+    expect(await sparkLabel()).toBe('Temperature, last 2 updates, °C');
+    expect(screen.queryByText(/↓ 9\.9°/)).toBeNull();
+    expect(await screen.findByText(/↑ 0\.5° since/)).toBeTruthy();
+  });
+
   it('current_weather: the sparkline survives an error band and recovery', async () => {
     const live = mountLive(weather);
     await live.push(temp(17.6), at(1));
@@ -232,5 +247,57 @@ describe('WidgetFrame push history (design-reference §5)', () => {
 
     live.remount();
     expect(await screen.findByText(/↑2 since/)).toBeTruthy();
+  });
+
+  it('pull_requests: changing state= does not compare against the old filter', async () => {
+    const pr = (n: number) => ({ number: n, title: `t${n}`, state: 'open' as const, author: 'a', url: 'https://x' });
+    const prs = { ...instance, id: 'p2', widget: 'pull_requests', params: { repo: 'acme/telemetry', state: 'open' } };
+    const live = mountLive(prs);
+    await live.push({ repo: 'acme/telemetry', state: 'open', pulls: [pr(1)] }, at(1));
+
+    live.remount({ ...prs, params: { repo: 'acme/telemetry', state: 'all' } });
+    await live.push({ repo: 'acme/telemetry', state: 'all', pulls: [pr(1), pr(2), pr(3)] }, at(2));
+    expect(await screen.findByText('t3')).toBeTruthy();
+    expect(screen.queryByText(/since/)).toBeNull();
+  });
+});
+
+describe('WidgetFrame live pulse (design-reference §5)', () => {
+  it('sets data-pulse on the panel for --dur-pulse on each widget:data, not on mount or on errors', async () => {
+    const handlers = new Map<string, (payload: unknown) => void>();
+    const socket = { emit: vi.fn(), on: vi.fn((e: string, h: (p: unknown) => void) => void handlers.set(e, h)), off: vi.fn() };
+    const queryClient = new QueryClient();
+    queryClient.setQueryData<WidgetCacheEntry>(['widget', 'i1'], { data: commits, fetchedAt: secondsAgo(5), error: null });
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <SocketContext.Provider value={{ socket: socket as never, connected: true }}>
+          <MemoryRouter>
+            <WidgetFrame instance={instance} onConfigure={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} />
+          </MemoryRouter>
+        </SocketContext.Provider>
+      </QueryClientProvider>,
+    );
+    const deliver = (event: string, payload: object) =>
+      act(async () => {
+        handlers.get(event)?.({ instanceId: 'i1', ...payload });
+        // Flush the batched cache notification (a 0 ms timeout) under fake timers.
+        await vi.advanceTimersByTimeAsync(0);
+      });
+    expect(panel(container).hasAttribute('data-pulse')).toBe(false);
+
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      await deliver('widget:error', { code: 'UPSTREAM_ERROR', message: 'x' });
+      expect(panel(container).hasAttribute('data-pulse')).toBe(false);
+
+      await deliver('widget:data', { data: { ...commits }, fetchedAt: secondsAgo(0) });
+      expect(panel(container).hasAttribute('data-pulse')).toBe(true);
+      act(() => void vi.advanceTimersByTime(899));
+      expect(panel(container).hasAttribute('data-pulse')).toBe(true);
+      act(() => void vi.advanceTimersByTime(1));
+      expect(panel(container).hasAttribute('data-pulse')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

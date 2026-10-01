@@ -169,3 +169,63 @@
 .react-grid-item:focus-within > .react-resizable-handle.react-resizable-handle {
   opacity: 1;
 }
+
+/* Live pulse on widget:data (design-reference §5): the panel carries data-pulse for --dur-pulse.
+   The live lamp pings a 0 → 7px ring and a 1px --live line sweeps under the header, then fades. */
+[data-slot='widget-head']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--live);
+  opacity: 0;
+  transform-origin: left center;
+  pointer-events: none;
+}
+[data-pulse] > [data-slot='widget-head']::after {
+  animation: widget-sweep var(--dur-pulse) var(--ease-out);
+}
+[data-pulse] > [data-slot='widget-head'] [data-slot='lamp'][data-state='live'] {
+  animation: widget-ping var(--dur-pulse) var(--ease-out);
+}
+@keyframes widget-sweep {
+  0% {
+    opacity: 1;
+    transform: scaleX(0);
+  }
+  55% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+@keyframes widget-ping {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--live) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 7px color-mix(in oklch, var(--live) 0%, transparent);
+  }
+}
+/* Reduced motion: only the line's opacity fades; nothing scales. */
+@media (prefers-reduced-motion: reduce) {
+  [data-pulse] > [data-slot='widget-head']::after {
+    animation: widget-sweep-still var(--dur-pulse) linear;
+  }
+  [data-pulse] > [data-slot='widget-head'] [data-slot='lamp'][data-state='live'] {
+    animation: none;
+  }
+  @keyframes widget-sweep-still {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
