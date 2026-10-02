@@ -102,6 +102,45 @@ describe('useWidgetData', () => {
     });
   });
 
+  it('on a config change, resubscribes and resets the cache entry to waiting', async () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+    const { rerender } = renderHook(({ config }) => useWidgetData('instance-1', config), {
+      wrapper: Wrapper,
+      initialProps: { config: 'city=Qxzvbnmqq' },
+    });
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { t: 1 }, fetchedAt: '2026-01-01T00:00:00Z' });
+    socket.trigger('widget:error', { instanceId: 'instance-1', code: 'INVALID_PARAMS', message: 'bad city' });
+
+    rerender({ config: 'city=London' });
+
+    const subscribes = socket.emit.mock.calls.filter(([event]) => event === 'widget:subscribe');
+    expect(subscribes).toHaveLength(2);
+    expect(socket.emit).toHaveBeenCalledWith('widget:unsubscribe', { instanceId: 'instance-1' });
+    await waitFor(() => {
+      expect(queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1'])).toEqual({
+        data: null,
+        fetchedAt: null,
+        error: null,
+      });
+    });
+  });
+
+  it('keeps the cached entry and subscription when the config is unchanged', () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+    const { rerender } = renderHook(({ config }) => useWidgetData('instance-1', config), {
+      wrapper: Wrapper,
+      initialProps: { config: 'city=Paris' },
+    });
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { t: 1 }, fetchedAt: '2026-01-01T00:00:00Z' });
+
+    rerender({ config: 'city=Paris' });
+
+    expect(socket.emit.mock.calls.filter(([event]) => event === 'widget:subscribe')).toHaveLength(1);
+    expect(queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1'])?.fetchedAt).toBe('2026-01-01T00:00:00Z');
+  });
+
   it('ignores events for a different instanceId', async () => {
     const socket = fakeSocket();
     const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });

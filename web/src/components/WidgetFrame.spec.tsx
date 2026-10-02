@@ -195,8 +195,11 @@ describe('WidgetFrame push history (design-reference §5)', () => {
     );
     const view = render(tree());
     return {
+      container: view.container,
       push: (data: unknown, fetchedAt: string) => socket.trigger('widget:data', { instanceId: inst.id, data, fetchedAt }),
-      fail: () => socket.trigger('widget:error', { instanceId: inst.id, code: 'UPSTREAM_ERROR', message: 'down' }),
+      fail: (code = 'UPSTREAM_ERROR') => socket.trigger('widget:error', { instanceId: inst.id, code, message: 'down' }),
+      /** Re-renders the mounted frame with the instance as it is after a Configure save. */
+      save: (next: WidgetInstanceEntry) => view.rerender(tree(next)),
       /** Unmounts and mounts again, optionally with the instance as it is after a Configure save. */
       remount: (next = inst) => {
         view.unmount();
@@ -245,6 +248,21 @@ describe('WidgetFrame push history (design-reference §5)', () => {
     expect(await sparkLabel()).toBe('Temperature, last 2 updates, °C');
     await live.push(temp(19.1), at(3));
     expect(await sparkLabel()).toBe('Temperature, last 3 updates, °C');
+  });
+
+  it('current_weather: saving a fixed city clears the INVALID_PARAMS band, waits, then goes live', async () => {
+    const live = mountLive({ ...weather, params: { city: 'Qxzvbnmqq' } });
+    await live.fail('INVALID_PARAMS');
+    expect(await screen.findByText('No results for “Qxzvbnmqq”. Check the city name.')).toBeTruthy();
+
+    live.save({ ...weather, params: { city: 'London' } });
+    expect(await screen.findByText('Waiting for the first update from Weather.')).toBeTruthy();
+    expect(screen.queryByText('City not found')).toBeNull();
+    expect(lamp(live.container).dataset.state).toBe('waiting');
+
+    await live.push({ ...temp(18.9), location: 'London, United Kingdom' }, at(1));
+    expect(await screen.findByText('London, United Kingdom')).toBeTruthy();
+    expect(panel(live.container).dataset.state).toBe('live');
   });
 
   it('pull_requests: the delta since the previous push survives a view remount', async () => {

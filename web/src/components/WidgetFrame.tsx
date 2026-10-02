@@ -140,7 +140,7 @@ interface WidgetFrameProps {
 
 /** Panel around one widget instance: header strip, then the body for its derived state (design-reference §5). */
 export function WidgetFrame({ instance, onConfigure, onDelete, onMove }: WidgetFrameProps) {
-  const { data: entry } = useWidgetData(instance.id);
+  const { data: entry } = useWidgetData(instance.id, JSON.stringify([instance.params, instance.refreshRate]));
   const panelRef = usePulse(entry?.fetchedAt);
   const { connected } = useSocket();
   const now = useNow();
