@@ -99,7 +99,8 @@ const PULSE_MS = 900; // --dur-pulse
  * Live pulse (design-reference §5): on each `widget:data` (a new `fetchedAt` in the cache, even
  * when the values are unchanged), set `data-pulse` on the panel for 900 ms; index.css animates
  * the lamp ping and header sweep. Restarts on back-to-back pushes; never fires for data already
- * cached at mount or for an error.
+ * cached at mount, for an error, or for a reset to waiting (`fetchedAt` back to null), which
+ * also cuts a running pulse short.
  */
 function usePulse(fetchedAt: string | null | undefined) {
   const ref = useRef<HTMLElement>(null);
@@ -109,6 +110,7 @@ function usePulse(fetchedAt: string | null | undefined) {
     if (!panel || fetchedAt === seen.current) return;
     seen.current = fetchedAt;
     panel.removeAttribute('data-pulse');
+    if (!fetchedAt) return;
     void panel.offsetWidth; // restart the animation if a pulse is already running
     panel.setAttribute('data-pulse', '');
     const id = setTimeout(() => panel.removeAttribute('data-pulse'), PULSE_MS);

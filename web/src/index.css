@@ -171,7 +171,8 @@
 }
 
 /* Live pulse on widget:data (design-reference §5): the panel carries data-pulse for --dur-pulse.
-   The live lamp pings a 0 → 7px ring and a 1px --live line sweeps under the header, then fades. */
+   The live lamp pings a 0 → 7px ring and a 1px --live line sweeps under the header, then fades.
+   Only a live panel sweeps: nothing that isn't live turns green (§4). */
 [data-slot='widget-head']::after {
   content: '';
   position: absolute;
@@ -184,7 +185,7 @@
   transform-origin: left center;
   pointer-events: none;
 }
-[data-pulse] > [data-slot='widget-head']::after {
+[data-pulse][data-state='live'] > [data-slot='widget-head']::after {
   animation: widget-sweep var(--dur-pulse) var(--ease-out);
 }
 [data-pulse] > [data-slot='widget-head'] [data-slot='lamp'][data-state='live'] {
@@ -214,7 +215,7 @@
 }
 /* Reduced motion: only the line's opacity fades; nothing scales. */
 @media (prefers-reduced-motion: reduce) {
-  [data-pulse] > [data-slot='widget-head']::after {
+  [data-pulse][data-state='live'] > [data-slot='widget-head']::after {
     animation: widget-sweep-still var(--dur-pulse) linear;
   }
   [data-pulse] > [data-slot='widget-head'] [data-slot='lamp'][data-state='live'] {

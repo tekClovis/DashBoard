@@ -328,4 +328,39 @@ describe('WidgetFrame live pulse (design-reference §5)', () => {
       vi.useRealTimers();
     }
   });
+
+  it('never pulses when the entry resets to waiting (a Configure save), and cuts a running pulse short', async () => {
+    const queryClient = new QueryClient();
+    const key = ['widget', 'i1'];
+    queryClient.setQueryData<WidgetCacheEntry>(key, { data: commits, fetchedAt: secondsAgo(5), error: null });
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <SocketContext.Provider value={socketValue(null, true)}>
+          <MemoryRouter>
+            <WidgetFrame instance={instance} onConfigure={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} />
+          </MemoryRouter>
+        </SocketContext.Provider>
+      </QueryClientProvider>,
+    );
+    const write = (entry: WidgetCacheEntry) =>
+      act(async () => {
+        queryClient.setQueryData<WidgetCacheEntry>(key, entry);
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      await write({ data: null, fetchedAt: null, error: null });
+      expect(panel(container).getAttribute('data-state')).toBe('loading');
+      expect(panel(container).hasAttribute('data-pulse')).toBe(false);
+
+      await write({ data: commits, fetchedAt: secondsAgo(0), error: null });
+      expect(panel(container).hasAttribute('data-pulse')).toBe(true);
+      await write({ data: null, fetchedAt: null, error: null });
+      expect(panel(container).getAttribute('data-state')).toBe('loading');
+      expect(panel(container).hasAttribute('data-pulse')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
