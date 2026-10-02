@@ -59,7 +59,29 @@ describe('useWidgetData', () => {
 
     await waitFor(() => {
       const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
-      expect(cached).toEqual({ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z', error: null });
+      expect(cached).toEqual({
+        data: { count: 3 },
+        fetchedAt: '2026-01-01T00:00:00Z',
+        error: null,
+        history: [{ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z' }],
+      });
+    });
+  });
+
+  it('keeps the last 12 pushes, oldest first, one per fetchedAt', async () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+
+    renderHook(() => useWidgetData('instance-1'), { wrapper: Wrapper });
+
+    const at = (m: number) => `2026-01-01T00:${String(m).padStart(2, '0')}:00Z`;
+    for (let m = 0; m < 14; m++) socket.trigger('widget:data', { instanceId: 'instance-1', data: { m }, fetchedAt: at(m) });
+    // A re-push of the same fetch (e.g. after a resubscribe) replaces its point.
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { m: 13 }, fetchedAt: at(13) });
+
+    await waitFor(() => {
+      const history = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1'])?.history;
+      expect(history?.map((p) => p.fetchedAt)).toEqual(Array.from({ length: 12 }, (_, i) => at(i + 2)));
     });
   });
 
@@ -76,6 +98,7 @@ describe('useWidgetData', () => {
       const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
       expect(cached?.error).toEqual({ code: 'RATE_LIMITED', message: 'slow down', retryAt: undefined });
       expect(cached?.data).toEqual({ count: 3 });
+      expect(cached?.history).toEqual([{ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z' }]);
     });
   });
 

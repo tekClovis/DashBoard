@@ -4,11 +4,18 @@ import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useSocket } from './SocketProvider.js';
 
-export interface WidgetCacheEntry {
+export interface WidgetPush {
   data: unknown;
   fetchedAt: string | null;
-  error: { code: WidgetErrorCode; message: string; retryAt?: string } | null;
 }
+
+export interface WidgetCacheEntry extends WidgetPush {
+  error: { code: WidgetErrorCode; message: string; retryAt?: string } | null;
+  /** The last `PUSH_HISTORY` pushes, oldest first (one per `fetchedAt`), for sparklines and deltas. */
+  history?: WidgetPush[];
+}
+
+const PUSH_HISTORY = 12;
 
 /**
  * Subscribes to one widget instance's realtime updates for the lifetime of the calling
@@ -16,7 +23,7 @@ export interface WidgetCacheEntry {
  * incoming `widget:data`/`widget:error` into the query cache under `['widget', instanceId]` —
  * per docs/Architecture.md §9 and `timer-realtime`'s gateway (`shared/src/socket.ts`'s event
  * contract). Returns that cache entry like any other query so a widget view can render from
- * it directly.
+ * it directly. Recent pushes are kept in that entry too, so trends survive a remount.
  */
 export function useWidgetData(instanceId: string) {
   const { socket } = useSocket();
@@ -29,18 +36,20 @@ export function useWidgetData(instanceId: string) {
 
     function onData(event: WidgetDataPayload) {
       if (event.instanceId !== instanceId) return;
-      queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], {
-        data: event.data,
-        fetchedAt: event.fetchedAt,
-        error: null,
+      const push = { data: event.data, fetchedAt: event.fetchedAt };
+      queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], (prev) => {
+        // A re-push of the same fetch (e.g. on resubscribe) replaces its point instead of adding one.
+        const kept = (prev?.history ?? []).filter((p) => p.fetchedAt !== push.fetchedAt);
+        return { ...push, error: null, history: [...kept, push].slice(-PUSH_HISTORY) };
       });
     }
 
     function onError(event: WidgetErrorPayload) {
       if (event.instanceId !== instanceId) return;
       queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], (prev) => ({
-        data: prev?.data ?? null,
-        fetchedAt: prev?.fetchedAt ?? null,
+        data: null,
+        fetchedAt: null,
+        ...prev,
         error: { code: event.code, message: event.message, retryAt: event.retryAt },
       }));
     }
