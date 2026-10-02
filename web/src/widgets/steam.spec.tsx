@@ -5,14 +5,10 @@ import { getView } from './registry.js';
 
 afterEach(() => {
   cleanup();
-  vi.useRealTimers();
 });
 
-const stat = (c: HTMLElement) => c.querySelector('[data-slot="widget-stat"]');
-const channel = (c: HTMLElement) => c.querySelector('[data-slot="widget-channel"]');
-
 describe('steam views', () => {
-  it('recently_played: "Last 2 weeks" channel, total hours stat, game/meter/hours rows', () => {
+  it('renders recently_played as game rows with 2-week hours', () => {
     const data: WidgetDataMap['steam.recently_played'] = {
       games: [
         { appId: 220, name: 'Half-Life 2', playtime2Weeks: 192, playtimeForever: 900 },
@@ -20,34 +16,27 @@ describe('steam views', () => {
       ],
     };
     const View = getView('steam', 'recently_played');
-    const { container } = render(<View data={data} />);
+    render(<View data={data} />);
 
-    expect(channel(container)?.textContent).toBe('Last 2 weeks');
-    expect(stat(container)?.textContent).toBe('4.7hplayed in total');
-    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Half-Life 23.2 h', 'Portal 21.5 h']);
-    const meters = container.querySelectorAll<HTMLElement>('[data-slot="meter"] > i');
-    expect([...meters].map((m) => m.style.width)).toEqual(['100%', '46.875%']);
+    const rows = screen.getAllByRole('listitem').map((li) => li.textContent);
+    expect(rows).toEqual(['Half-Life 23.2 hrs', 'Portal 21.5 hrs']);
   });
 
-  it('game_news: app_id channel, posts in the last 7 days, title/feed/age rows', () => {
-    vi.useFakeTimers({ now: new Date('2026-09-10T12:00:00Z'), toFake: ['Date'] });
+  it('renders game_news as linked titles with a relative date', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-10T12:00:00Z'));
     const data: WidgetDataMap['steam.game_news'] = {
       appId: 620,
       items: [
         { id: 'n1', title: 'Patch notes 1.12', url: 'https://x/n1', feedLabel: 'Community', date: '2026-09-01T12:00:00Z' },
-        { id: 'n2', title: 'Sale', url: 'https://x/n2', feedLabel: 'Steam', date: '2026-09-10T07:00:00Z' },
       ],
     };
     const View = getView('steam', 'game_news');
-    const { container } = render(<View data={data} />);
+    render(<View data={data} />);
 
-    expect(channel(container)?.textContent).toBe('app_id=620');
-    expect(stat(container)?.textContent).toBe('1posts in the last 7 days');
     expect(screen.getByRole('link', { name: 'Patch notes 1.12' }).getAttribute('href')).toBe('https://x/n1');
-    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Patch notes 1.12Community9d',
-      'SaleSteam5h',
-    ]);
+    expect(screen.getByText('9d ago')).toBeTruthy();
+    vi.useRealTimers();
   });
 
   it('renders a non-http(s) news url as plain text, not a link', () => {

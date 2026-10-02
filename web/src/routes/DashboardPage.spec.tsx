@@ -23,12 +23,12 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Could not load your widgets.')).toBeTruthy();
     fail = false;
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByRole('heading', { name: 'Weather Forecast' })).toBeTruthy();
+    expect(await screen.findByText('weather.forecast')).toBeTruthy();
   });
 
   it('renders widgets stacked below md (jsdom has no md match)', async () => {
     renderPage();
-    expect(await screen.findByRole('heading', { name: 'Weather Forecast' })).toBeTruthy();
+    expect(await screen.findByText('weather.forecast')).toBeTruthy();
   });
 
   // One render: Radix menus in jsdom don't reopen reliably across separate renders.

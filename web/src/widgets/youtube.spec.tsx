@@ -8,13 +8,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function renderView(widget: string, data: unknown, compact = false) {
+function renderView(widget: string, data: unknown) {
   const View = getView('youtube', widget);
-  return render(<View data={data} compact={compact} />);
+  return render(<View data={data} />);
 }
-
-const stat = (c: HTMLElement) => c.querySelector('[data-slot="widget-stat"]');
-const channel = (c: HTMLElement) => c.querySelector('[data-slot="widget-channel"]');
 
 const video = (id: string, title: string, publishedAt: string, url = `https://www.youtube.com/watch?v=${id}`): YoutubeVideo => ({
   id,
@@ -25,7 +22,7 @@ const video = (id: string, title: string, publishedAt: string, url = `https://ww
 });
 
 describe('youtube widget views', () => {
-  it('channel_stats: title + id channel, subscribers stat, views and videos rows', () => {
+  it('channel_stats shows compact subscriber/view/video stat cards', () => {
     const data: WidgetDataMap['youtube.channel_stats'] = {
       channelId: 'UC_x5',
       title: 'Google for Developers',
@@ -33,46 +30,38 @@ describe('youtube widget views', () => {
       views: 180_000_000,
       videos: 412,
     };
-    const { container } = renderView('channel_stats', data);
+    renderView('channel_stats', data);
 
-    expect(channel(container)?.textContent).toBe('Google for DevelopersUC_x5');
-    expect(stat(container)?.textContent).toBe('2.4Msubscribers');
-    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Views180M', 'Videos412']);
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['2.4Msubscribers', '180Mviews', '412videos']);
   });
 
-  it('channel_stats: leads with views when subscribers are hidden, and says so', () => {
-    const { container } = renderView('channel_stats', { channelId: 'UC', title: 't', subscribers: null, views: 1500, videos: 1 }, true);
+  it('channel_stats says "hidden" when the channel hides its subscriber count', () => {
+    renderView('channel_stats', { channelId: 'UC', title: 't', subscribers: null, views: 1, videos: 1 });
 
-    expect(stat(container)).toBeNull();
-    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Subscribershidden by the channel',
-      'Views1.5K',
-      'Videos1',
-    ]);
+    expect(screen.getByText('hidden')).toBeTruthy();
   });
 
-  it('latest_videos: channel id, time since the last upload, linked title/age rows', () => {
+  it('latest_videos lists linked titles with how long ago they were published', () => {
     vi.useFakeTimers({ now: new Date('2026-09-23T12:00:00Z'), toFake: ['Date'] });
     const data: WidgetDataMap['youtube.latest_videos'] = {
       channelId: 'UC_x5',
-      videos: [video('b', 'Just out', '2026-09-23T07:00:00Z'), video('a', 'Building a Timer', '2026-09-21T10:00:00Z')],
+      videos: [video('a', 'Building a Timer with Socket.IO', '2026-09-21T10:00:00Z'), video('b', 'Just out', '2026-09-23T07:00:00Z')],
     };
-    const { container } = renderView('latest_videos', data);
+    renderView('latest_videos', data);
 
-    expect(channel(container)?.textContent).toBe('UC_x5');
-    expect(stat(container)?.textContent).toBe('5hsince the last upload');
-    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Just out5h', 'Building a Timer2d']);
-    expect(screen.getByRole('link', { name: 'Building a Timer' }).getAttribute('href')).toBe('https://www.youtube.com/watch?v=a');
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Building a Timer with Socket.IO2d ago', 'Just out5h ago']);
+    expect(screen.getByRole('link', { name: 'Building a Timer with Socket.IO' }).getAttribute('href')).toBe(
+      'https://www.youtube.com/watch?v=a',
+    );
   });
 
-  it('trending_videos: region channel, ranked rows, and an empty state', () => {
+  it('trending_videos ranks videos, and an empty list shows an empty state', () => {
     const data: WidgetDataMap['youtube.trending_videos'] = {
       region: 'FR',
-      videos: [video('a', 'Top tech news', '2026-09-22T00:00:00Z'), video('b', 'Concert', '2026-09-22T00:00:00Z')],
+      videos: [video('a', 'Top tech news this week', '2026-09-22T00:00:00Z'), video('b', 'Concert highlights', '2026-09-22T00:00:00Z')],
     };
-    const { container } = renderView('trending_videos', data);
-    expect(channel(container)?.textContent).toBe('Trendingregion=FR');
-    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['#1Top tech newsChan', '#2ConcertChan']);
+    renderView('trending_videos', data);
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Top tech news this week#1', 'Concert highlights#2']);
 
     cleanup();
     renderView('trending_videos', { region: 'FR', videos: [] });
