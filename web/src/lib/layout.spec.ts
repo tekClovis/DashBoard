@@ -1,6 +1,6 @@
 import type { WidgetInstanceEntry } from '@dashboard/shared';
 import { describe, expect, it } from 'vitest';
-import { moveEntry, nextSlot, normalize, sortStacked } from './layout.js';
+import { moveEntry, nextSlot, normalize, resizeEntry, sortStacked } from './layout.js';
 
 const item = (over: Partial<WidgetInstanceEntry>): WidgetInstanceEntry => ({
   id: 'w',
@@ -80,6 +80,29 @@ describe('layout helpers', () => {
       for (const p of once)
         for (const q of once)
           if (p.id < q.id) expect(p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.h && q.y < p.y + p.h).toBe(false);
+    });
+  });
+
+  describe('resizeEntry', () => {
+    it('grows and shrinks one step per axis', () => {
+      expect(resizeEntry([item({ y: 0 })], 'w', 'wider')).toEqual([{ id: 'w', x: 4, y: 0, w: 5, h: 3 }]);
+      expect(resizeEntry([item({ y: 0 })], 'w', 'narrower')).toEqual([{ id: 'w', x: 4, y: 0, w: 3, h: 3 }]);
+      expect(resizeEntry([item({ y: 0 })], 'w', 'taller')).toEqual([{ id: 'w', x: 4, y: 0, w: 4, h: 4 }]);
+      expect(resizeEntry([item({ y: 0 })], 'w', 'shorter')).toEqual([{ id: 'w', x: 4, y: 0, w: 4, h: 2 }]);
+    });
+
+    it('clamps to 2×2 and to the right edge of the grid', () => {
+      expect(resizeEntry([item({ y: 0, w: 2, h: 2 })], 'w', 'narrower')).toEqual([]);
+      expect(resizeEntry([item({ y: 0, w: 2, h: 2 })], 'w', 'shorter')).toEqual([]);
+      expect(resizeEntry([item({ y: 0, x: 8 })], 'w', 'wider')).toEqual([]);
+    });
+
+    it('pushes the widgets it now overlaps down', () => {
+      const items = [item({ id: 'a', x: 0, y: 0, w: 4, h: 2 }), item({ id: 'b', x: 4, y: 0, w: 4, h: 2 })];
+      expect(resizeEntry(items, 'a', 'wider')).toEqual([
+        { id: 'a', x: 0, y: 0, w: 5, h: 2 },
+        { id: 'b', x: 4, y: 2, w: 4, h: 2 },
+      ]);
     });
   });
 

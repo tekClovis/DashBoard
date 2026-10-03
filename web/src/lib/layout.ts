@@ -81,3 +81,22 @@ export function moveEntry(items: WidgetInstanceEntry[], id: string, dir: MoveDir
   const moved = items.map((i) => (i.id === id ? { ...i, x, y } : i));
   return changedEntries(items, normalize(moved, id));
 }
+
+export type ResizeDirection = 'wider' | 'narrower' | 'taller' | 'shorter';
+const MIN_SIZE = 2;
+
+/**
+ * Keyboard alternative to drag-resize (WCAG 2.5.7): one column or row per step, clamped to
+ * 2×2 and to the grid's right edge, then normalized. Empty when nothing changes.
+ */
+export function resizeEntry(items: WidgetInstanceEntry[], id: string, dir: ResizeDirection): LayoutUpdateEntry[] {
+  const item = items.find((i) => i.id === id);
+  if (!item) return [];
+  let { w, h } = item;
+  if (dir === 'wider') w = Math.min(w + 1, GRID_COLS - item.x);
+  else if (dir === 'narrower') w = Math.max(w - 1, MIN_SIZE);
+  else if (dir === 'taller') h += 1;
+  else h = Math.max(h - 1, MIN_SIZE);
+  const resized = items.map((i) => (i.id === id ? { ...i, w, h } : i));
+  return changedEntries(items, normalize(resized, id));
+}

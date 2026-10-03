@@ -37,12 +37,18 @@ export function useUpdateWidget(dashboardId: string) {
   });
 }
 
+/** DELETE /api/widgets/{id} — drops it from the cache first, so it doesn't reappear while the request runs. */
 export function useDeleteWidget(dashboardId: string) {
   const queryClient = useQueryClient();
+  const key = ['widgets', dashboardId];
   return useMutation({
     mutationFn: (id: string) => apiFetch<void>(`/widgets/${id}`, { method: 'DELETE' }),
-    // Resync on failure too, so the grid matches the server; the page shows `isError`.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['widgets', dashboardId] }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      queryClient.setQueryData<WidgetsResponse>(key, (prev) => prev && { widgets: prev.widgets.filter((w) => w.id !== id) });
+    },
+    // Resync on failure too (puts the widget back), so the grid matches the server; the page shows `isError`.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
   });
 }
 

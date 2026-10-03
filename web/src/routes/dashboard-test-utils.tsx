@@ -67,6 +67,23 @@ export function setupPage() {
   );
 }
 
+type Match = (url: string, method: string) => boolean;
+
+/** Makes requests matching `match` answer `respond()` until the returned function is called. */
+export function respondWhen(match: Match, respond: () => Response) {
+  const ok = vi.mocked(fetch).getMockImplementation()!;
+  let active = true;
+  vi.mocked(fetch).mockImplementation((url, init) =>
+    active && typeof url === 'string' && match(url, init?.method ?? 'GET') ? Promise.resolve(respond()) : ok(url, init),
+  );
+  return () => {
+    active = false;
+  };
+}
+
+/** Makes requests matching `match` answer 500 until the returned function is called. */
+export const failWhen = (match: Match) => respondWhen(match, () => new Response('{}', { status: 500 }));
+
 export function renderPage() {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -81,6 +98,9 @@ export function renderPage() {
 
 export async function openMenuItem(name: string) {
   const trigger = await screen.findByRole('button', { name: 'Weather Forecast options' });
-  fireEvent(trigger, new MouseEvent('pointerdown', { button: 0, bubbles: true }));
+  // Keyboard open: after a menu item unmounts its own widget (Remove), Radix ignores later
+  // synthetic pointerdowns in jsdom, but Enter on the focused trigger still opens it.
+  trigger.focus();
+  fireEvent.keyDown(trigger, { key: 'Enter' });
   fireEvent.click(await screen.findByRole('menuitem', { name }));
 }
