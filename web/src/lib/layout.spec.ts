@@ -1,6 +1,6 @@
 import type { WidgetInstanceEntry } from '@dashboard/shared';
 import { describe, expect, it } from 'vitest';
-import { cascade, moveEntry, nextSlot, normalize, resizeEntry, sortStacked } from './layout.js';
+import { cascade, moveEntry, moveStacked, nextSlot, normalize, resizeEntry, sortStacked } from './layout.js';
 
 const item = (over: Partial<WidgetInstanceEntry>): WidgetInstanceEntry => ({
   id: 'w',
@@ -113,6 +113,42 @@ describe('layout helpers', () => {
         'w-rp': [7, 5, 5, 6],
         'w-gn': [0, 11, 12, 3],
       });
+    });
+  });
+
+  // Below md the menu moves along the stacked reading order: swap with the neighbour, then normalize (the mock).
+  describe('moveStacked', () => {
+    const MOCK = (
+      [
+        ['w-cw', 0, 0, 3, 5],
+        ['w-cm', 3, 0, 5, 5],
+        ['w-pr', 8, 0, 4, 5],
+        ['w-fc', 0, 5, 3, 5],
+        ['w-sa', 3, 5, 4, 5],
+        ['w-rp', 7, 5, 5, 5],
+        ['w-gn', 0, 10, 12, 3],
+      ] as const
+    ).map(([id, x, y, w, h]) => item({ id, x, y, w, h }));
+    const stackAfter = (entries: { id: string; x: number; y: number }[]) =>
+      sortStacked(MOCK.map((i) => ({ ...i, ...entries.find((e) => e.id === i.id) }))).map((i) => i.id);
+
+    it('Move up on Forecast swaps it with the panel just above it: cw / cm / fc / pr / …', () => {
+      const entries = moveStacked(MOCK, 'w-fc', 'up');
+      expect(stackAfter(entries)).toEqual(['w-cw', 'w-cm', 'w-fc', 'w-pr', 'w-rp', 'w-sa', 'w-gn']);
+      expect(entries).toContainEqual({ id: 'w-fc', x: 8, y: 0, w: 3, h: 5 });
+      expect(entries).toContainEqual({ id: 'w-pr', x: 0, y: 5, w: 4, h: 5 });
+    });
+
+    it('Move down on Forecast takes the place of the panel just below it', () => {
+      const entries = moveStacked(MOCK, 'w-fc', 'down');
+      expect(entries).toContainEqual({ id: 'w-fc', x: 3, y: 5, w: 3, h: 5 });
+      expect(entries).toContainEqual({ id: 'w-sa', x: 0, y: 10, w: 4, h: 5 });
+      expect(stackAfter(entries)).toEqual(['w-cw', 'w-cm', 'w-pr', 'w-fc', 'w-rp', 'w-sa', 'w-gn']);
+    });
+
+    it('is a no-op at either end of the stack', () => {
+      expect(moveStacked(MOCK, 'w-cw', 'up')).toEqual([]);
+      expect(moveStacked(MOCK, 'w-gn', 'down')).toEqual([]);
     });
   });
 

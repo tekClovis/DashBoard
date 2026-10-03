@@ -25,6 +25,7 @@ import {
   changedEntries,
   GRID_COLS,
   moveEntry,
+  moveStacked,
   normalize,
   nextSlot,
   resizeEntry,
@@ -231,7 +232,11 @@ export function DashboardPage() {
         onConfigure={() => setDialog({ open: true, instance: w })}
         onDelete={() => remove(w)}
         onMove={(dir: MoveDirection) => {
-          const at = save(moveEntry(widgets, w.id, dir), w.id);
+          const entries =
+            !isDesktop && (dir === 'up' || dir === 'down')
+              ? moveStacked(widgets, w.id, dir)
+              : moveEntry(widgets, w.id, dir);
+          const at = save(entries, w.id);
           if (at) setAnnouncement(`Moved ${dir}. Now at column ${at.x + 1}, row ${at.y + 1}.`);
         }}
         onResize={

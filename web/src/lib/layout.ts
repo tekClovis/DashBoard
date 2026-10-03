@@ -95,6 +95,22 @@ export function moveEntry(items: WidgetInstanceEntry[], id: string, dir: MoveDir
   return changedEntries(items, normalize(moved, id));
 }
 
+/**
+ * Menu Move up/down below `md`, as the mock does it: swap `id`'s position with its neighbour in
+ * the stacked (y, x) reading order, then normalize with `id` pinned. Empty at either end of the stack.
+ */
+export function moveStacked(items: WidgetInstanceEntry[], id: string, dir: 'up' | 'down'): LayoutUpdateEntry[] {
+  const order = sortStacked(items);
+  const i = order.findIndex((w) => w.id === id);
+  const a = order[i];
+  const b = order[dir === 'up' ? i - 1 : i + 1];
+  if (!a || !b) return [];
+  const swapped = items.map((w) =>
+    w.id === a.id ? { ...w, x: b.x, y: b.y } : w.id === b.id ? { ...w, x: a.x, y: a.y } : w,
+  );
+  return changedEntries(items, normalize(swapped, id));
+}
+
 export type ResizeDirection = 'wider' | 'narrower' | 'taller' | 'shorter';
 const MIN_SIZE = 2;
 
