@@ -1,10 +1,10 @@
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { noCompactor } from 'react-grid-layout';
+import type { Compactor, Layout } from 'react-grid-layout';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { calls, failWhen, openMenuItem, renderPage, setupPage } from './dashboard-test-utils.js';
+import { calls, failWhen, instance, openMenuItem, renderPage, respondWhen, setupPage } from './dashboard-test-utils.js';
 
-type DragCallback = (layout: unknown[], old: unknown, item: unknown, placeholder: unknown) => void;
+type DragCallback = (layout: readonly unknown[], old: unknown, item: unknown, placeholder: unknown) => void;
 const gridProps = vi.hoisted(() => ({ current: undefined as Record<string, unknown> | undefined }));
 
 vi.mock('react-grid-layout', async (importOriginal) => ({
@@ -39,7 +39,10 @@ describe('DashboardPage grid (md+)', () => {
     renderPage();
     await vi.waitFor(() => expect(gridProps.current?.layouts).toBeTruthy());
     expect(gridProps.current).toMatchObject({ rowHeight: 60, margin: [8, 8], containerPadding: [0, 0] });
-    expect(gridProps.current?.compactor).toBe(noCompactor);
+    const compactor = gridProps.current?.compactor as Compactor;
+    expect(compactor).toMatchObject({ type: null, allowOverlap: false });
+    const stored = [{ i: 'i1', x: 4, y: 2, w: 4, h: 3 }];
+    expect(compactor.compact(stored, 12)).toMatchObject(stored);
     expect(screen.queryByText('Couldn’t load your widgets')).toBeNull();
   });
 
@@ -81,5 +84,94 @@ describe('DashboardPage grid (md+)', () => {
     expect(document.querySelector('[data-slot="grid-readout"]')).toBeNull();
     await waitFor(() => expect(announced()).toBe('Moved to column 9, row 1, 4 by 5.'));
     expect(document.querySelector('[data-slot="grid-guides"]')!.hasAttribute('data-active')).toBe(false);
+  });
+
+  // mock.html INITIAL layout and its live normalize (react-grid-layout alone pushes one item and overlaps).
+  describe('live cascade, as the mock does', () => {
+    const MOCK: [string, number, number, number, number][] = [
+      ['w-cw', 0, 0, 3, 5],
+      ['w-cm', 3, 0, 5, 5],
+      ['w-pr', 8, 0, 4, 5],
+      ['w-fc', 0, 5, 3, 5],
+      ['w-sa', 3, 5, 4, 5],
+      ['w-rp', 7, 5, 5, 5],
+      ['w-gn', 0, 10, 12, 3],
+    ];
+    const stored: Layout = MOCK.map(([i, x, y, w, h]) => ({ i, x, y, w, h }));
+    const geometry = (layout: Layout) => Object.fromEntries(layout.map(({ i, x, y, w, h }) => [i, [x, y, w, h]]));
+    const with_ = (layout: Layout, over: Record<string, Partial<Layout[number]>>) =>
+      layout.map((l) => ({ ...l, ...over[l.i] }));
+
+    beforeEach(() => {
+      respondWhen(
+        (url, method) => url.endsWith('/widgets') && method === 'GET',
+        () =>
+          new Response(
+            JSON.stringify({ widgets: MOCK.map(([id, x, y, w, h]) => ({ ...instance, id, x, y, w, h })) }),
+            { status: 200 },
+          ),
+      );
+    });
+
+    async function ready() {
+      renderPage();
+      await vi.waitFor(() => expect((gridProps.current?.layouts as { lg: Layout } | undefined)?.lg).toHaveLength(7));
+      return gridProps.current!.compactor as Compactor;
+    }
+    const readout = () => document.querySelector('[data-slot="grid-readout"]');
+
+    it('drag: Security alerts to x8 y5 cascades Recently played to y10 and Game news to y15, live and on drop', async () => {
+      const compactor = await ready();
+      const sa = { ...stored[4] };
+      act(() => callback('onDragStart')(stored, sa, sa, null));
+      // What react-grid-layout hands the compactor: the dragged item moved, Recently played pushed onto Game news.
+      const raw = with_(stored, { 'w-sa': { x: 8, y: 5, moved: true }, 'w-rp': { y: 10 } });
+      const live = compactor.compact(raw, 12);
+      expect(geometry(live)).toEqual({
+        'w-cw': [0, 0, 3, 5],
+        'w-cm': [3, 0, 5, 5],
+        'w-pr': [8, 0, 4, 5],
+        'w-fc': [0, 5, 3, 5],
+        'w-sa': [8, 5, 4, 5],
+        'w-rp': [7, 10, 5, 5],
+        'w-gn': [0, 15, 12, 3],
+      });
+
+      const moved = raw.find((l) => l.i === 'w-sa')!;
+      act(() => callback('onDrag')(raw, sa, moved, sa));
+      expect(readout()?.textContent).toBe('x8 y54×5');
+
+      act(() => callback('onDragStop')(live, sa, live.find((l) => l.i === 'w-sa'), null));
+      await waitFor(() => expect(layoutCalls()).toHaveLength(1));
+      expect(layoutCalls()[0].body).toEqual([
+        { id: 'w-sa', x: 8, y: 5, w: 4, h: 5 },
+        { id: 'w-rp', x: 7, y: 10, w: 5, h: 5 },
+        { id: 'w-gn', x: 0, y: 15, w: 12, h: 3 },
+      ]);
+      // Once dropped, the compactor is idle again: the stored layout renders as-is.
+      expect(compactor.compact(stored, 12)).toMatchObject(stored);
+    });
+
+    it('resize: Recently played to 5×6 cascades Game news to y11, with the readout above the resizing panel', async () => {
+      const compactor = await ready();
+      const rp = { ...stored[5] };
+      act(() => callback('onResizeStart')(stored, rp, rp, null));
+      const raw = with_(stored, { 'w-rp': { h: 6, moved: true } });
+      const live = compactor.compact(raw, 12);
+      expect(geometry(live)).toMatchObject({ 'w-rp': [7, 5, 5, 6], 'w-gn': [0, 11, 12, 3] });
+
+      const resized = raw.find((l) => l.i === 'w-rp')!;
+      act(() => callback('onResize')(raw, rp, resized, resized));
+      expect(readout()?.textContent).toBe('x7 y55×6');
+      // The resizing grid item sits at z-index 20; the readout must paint over it.
+      expect(readout()?.className).toContain('z-30');
+
+      act(() => callback('onResizeStop')(live, rp, live.find((l) => l.i === 'w-rp'), null));
+      await waitFor(() => expect(layoutCalls()).toHaveLength(1));
+      expect(layoutCalls()[0].body).toEqual([
+        { id: 'w-rp', x: 7, y: 5, w: 5, h: 6 },
+        { id: 'w-gn', x: 0, y: 11, w: 12, h: 3 },
+      ]);
+    });
   });
 });

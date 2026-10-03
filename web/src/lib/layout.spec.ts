@@ -1,6 +1,6 @@
 import type { WidgetInstanceEntry } from '@dashboard/shared';
 import { describe, expect, it } from 'vitest';
-import { moveEntry, nextSlot, normalize, resizeEntry, sortStacked } from './layout.js';
+import { cascade, moveEntry, nextSlot, normalize, resizeEntry, sortStacked } from './layout.js';
 
 const item = (over: Partial<WidgetInstanceEntry>): WidgetInstanceEntry => ({
   id: 'w',
@@ -80,6 +80,39 @@ describe('layout helpers', () => {
       for (const p of once)
         for (const q of once)
           if (p.id < q.id) expect(p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.h && q.y < p.y + p.h).toBe(false);
+    });
+  });
+
+  // mock.html INITIAL layout; expected positions are the mock's live normalize during drag/resize.
+  describe('cascade (live drag/resize preview)', () => {
+    const MOCK = [
+      { id: 'w-cw', x: 0, y: 0, w: 3, h: 5 },
+      { id: 'w-cm', x: 3, y: 0, w: 5, h: 5 },
+      { id: 'w-pr', x: 8, y: 0, w: 4, h: 5 },
+      { id: 'w-fc', x: 0, y: 5, w: 3, h: 5 },
+      { id: 'w-sa', x: 3, y: 5, w: 4, h: 5 },
+      { id: 'w-rp', x: 7, y: 5, w: 5, h: 5 },
+      { id: 'w-gn', x: 0, y: 10, w: 12, h: 3 },
+    ];
+    const at = (items: typeof MOCK) => Object.fromEntries(items.map(({ id, x, y, w, h }) => [id, [x, y, w, h]]));
+
+    it('Security alerts dragged to x8 y5 pushes Recently played to y10 and Game news to y15', () => {
+      expect(at(cascade(MOCK, { id: 'w-sa', x: 8, y: 5, w: 4, h: 5 }))).toEqual({
+        'w-cw': [0, 0, 3, 5],
+        'w-cm': [3, 0, 5, 5],
+        'w-pr': [8, 0, 4, 5],
+        'w-fc': [0, 5, 3, 5],
+        'w-sa': [8, 5, 4, 5],
+        'w-rp': [7, 10, 5, 5],
+        'w-gn': [0, 15, 12, 3],
+      });
+    });
+
+    it('Recently played resized to 5×6 pushes Game news to y11', () => {
+      expect(at(cascade(MOCK, { id: 'w-rp', x: 7, y: 5, w: 5, h: 6 }))).toMatchObject({
+        'w-rp': [7, 5, 5, 6],
+        'w-gn': [0, 11, 12, 3],
+      });
     });
   });
 

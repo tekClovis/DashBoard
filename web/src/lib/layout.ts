@@ -45,6 +45,19 @@ export function normalize<T extends Item>(items: T[], pinnedId?: string): T[] {
   return items.map((i) => result.get(i.id)!);
 }
 
+/**
+ * Live drag/resize layout, as the mock computes it: the stored layout with only `active`'s
+ * geometry replaced, normalized with `active` pinned. Displaced items cascade down (no overlaps),
+ * and the result is also what gets dropped.
+ */
+export function cascade<T extends Item>(stored: T[], active: Item): T[] {
+  const { id, x, y, w, h } = active;
+  return normalize(
+    stored.map((i) => (i.id === id ? { ...i, x, y, w, h } : i)),
+    id,
+  );
+}
+
 /** Entries of `next` whose geometry differs from `prev` (matched by id). */
 export function changedEntries(prev: Item[], next: Item[]): LayoutUpdateEntry[] {
   return next

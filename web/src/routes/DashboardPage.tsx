@@ -1,8 +1,15 @@
 import type { LayoutUpdateEntry, WidgetInstanceEntry } from '@dashboard/shared';
 import { useQueries } from '@tanstack/react-query';
 import { OctagonX, Plus, X } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { noCompactor, ResponsiveGridLayout, useContainerWidth, type Layout, type LayoutItem } from 'react-grid-layout';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  noCompactor,
+  ResponsiveGridLayout,
+  useContainerWidth,
+  type Compactor,
+  type Layout,
+  type LayoutItem,
+} from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { Link, useParams } from 'react-router';
 import { useDeleteWidget, useUpdateLayout, useWidgets } from '@/api/widgets.js';
@@ -14,6 +21,7 @@ import { Button } from '@/components/ui/button.js';
 import { Lamp, type LampState } from '@/components/ui/lamp.js';
 import { useNow, WidgetFrame } from '@/components/WidgetFrame.js';
 import {
+  cascade,
   changedEntries,
   GRID_COLS,
   moveEntry,
@@ -105,6 +113,9 @@ function DashboardCounters({ widgets }: { widgets: WidgetInstanceEntry[] }) {
   );
 }
 
+type Box = { id: string; x: number; y: number; w: number; h: number };
+const toBox = ({ i, x, y, w, h }: LayoutItem): Box => ({ id: i, x, y, w, h });
+
 /** Where react-grid-layout will drop the item being dragged or resized. */
 interface Preview {
   mode: 'drag' | 'resize';
@@ -131,6 +142,28 @@ export function DashboardPage() {
     if (dropped) setDropped(null);
   }, [dropped]);
   const [preview, setPreview] = useState<Preview | null>(null);
+  // The item being dragged/resized and the layout it started from (a copy: the grid mutates its own).
+  const active = useRef<{ id: string; stored: Box[] } | null>(null);
+  // While dragging/resizing, lay out every other item as the mock does: cascade() from the stored
+  // layout, not react-grid-layout's own push (which moves one item and overlaps the next). Idle,
+  // it leaves the stored layout as-is, like noCompactor.
+  const compactor = useMemo<Compactor>(
+    () => ({
+      type: null,
+      allowOverlap: false,
+      compact(layout, cols) {
+        const start = active.current;
+        const item = start && layout.find((l) => l.i === start.id);
+        if (!start || !item) return noCompactor.compact(layout, cols);
+        const placed = new Map(cascade(start.stored, toBox(item)).map((b) => [b.id, b]));
+        return layout.map((l) => {
+          const b = placed.get(l.i);
+          return b ? { ...l, x: b.x, y: b.y, w: b.w, h: b.h } : l;
+        });
+      },
+    }),
+    [],
+  );
   // Screen-reader feedback for menu moves/resizes, drops and Undo (the grid itself is silent).
   const [announcement, setAnnouncement] = useState('');
   const [dialog, setDialog] = useState<{
@@ -215,6 +248,7 @@ export function DashboardPage() {
 
   /** Drag/resize stop: normalize the whole layout and persist every item whose geometry changed. */
   function persist(layout: Layout, _old: unknown, moved: { i: string } | null) {
+    active.current = null;
     setPreview(null);
     const entries = layout.map(({ i, x, y, w, h }) => ({ id: i, x, y, w, h }));
     const next = normalize(entries, moved?.i);
@@ -224,11 +258,17 @@ export function DashboardPage() {
     if (at) setAnnouncement(`Moved to column ${at.x + 1}, row ${at.y + 1}, ${at.w} by ${at.h}.`);
   }
 
-  /** onDrag/onResize: track the placeholder for the guides and the x/y w×h readout. */
+  /** onDragStart/onResizeStart: remember the item and the layout the cascade starts from. */
+  function begin(layout: Layout, item: LayoutItem | null) {
+    active.current = item && { id: item.i, stored: layout.map(toBox) };
+  }
+
+  /** onDrag/onResize: track where the item lands (after the cascade) for the guides and the x/y w×h readout. */
   const track =
-    (mode: Preview['mode']) => (_layout: Layout, _old: unknown, _item: unknown, placeholder: LayoutItem | null) => {
-      if (!placeholder) return;
-      const { x, y, w, h } = placeholder;
+    (mode: Preview['mode']) => (_layout: Layout, _old: unknown, item: LayoutItem | null) => {
+      if (!item) return;
+      const start = active.current;
+      const { x, y, w, h } = (start && cascade(start.stored, toBox(item)).find((b) => b.id === item.i)) ?? item;
       setPreview((p) =>
         p?.mode === mode && p.x === x && p.y === y && p.w === w && p.h === h ? p : { mode, x, y, w, h },
       );
@@ -368,8 +408,10 @@ export function DashboardPage() {
             margin={[GAP, GAP]}
             containerPadding={[0, 0]}
             // normalize() already packs; rendered layout must equal the stored one.
-            compactor={noCompactor}
+            compactor={compactor}
             dragConfig={{ handle: '.widget-drag-handle' }}
+            onDragStart={begin}
+            onResizeStart={begin}
             onDrag={track('drag')}
             onResize={track('resize')}
             onDragStop={persist}
@@ -385,7 +427,8 @@ export function DashboardPage() {
             <div
               aria-hidden="true"
               data-slot="grid-readout"
-              className="pointer-events-none absolute z-2"
+              // Over the resizing panel (z-index 20), whose corner covers the readout.
+              className={cn('pointer-events-none absolute', preview.mode === 'resize' ? 'z-30' : 'z-2')}
               style={{
                 left: preview.x * (col + GAP),
                 top: preview.y * (ROW_HEIGHT + GAP),
