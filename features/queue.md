@@ -1,28 +1,34 @@
-| Feature | Status | Branch | PR |
-| --- | --- | --- | --- |
-| auth-session | done | feature/auth-session | https://github.com/tekClovis/dashBoard/pull/1 |
-| oauth-login | done | feature/oauth-login | https://github.com/tekClovis/dashBoard/pull/2 |
-| connections-api | done | feature/connections-api | https://github.com/tekClovis/dashBoard/pull/3 |
-| catalog-api | building | feature/catalog-api |  |
-| dashboards-api | to do |  |  |
-| timer-realtime | to do |  |  |
-| frontend-shell | to do |  |  |
-| widget-grid-ui | to do |  |  |
-| admin-ui | to do |  |  |
+# Feature queue
+
+Worked by the factory loop below, started with the `/goal` command that `/feature-batch` printed. Merging stays with you.
 
 ## Factory loop
 
-One row at a time, top to bottom. Never two at once.
+One row at a time, top to bottom, never two at once. `<f>` = the row's feature, `<root>` = this repo's root, `<wt>` = the path `git worktree list` shows for branch `feature/<f>`. Each sub-agent replies in one line and leaves the details in files, which keeps this context small.
 
-1. Take the first `to do` row → status `building`, Branch cell = `feature/<name>`.
-2. **Build.** `Agent` tool, `isolation: "worktree"`, branch `feature/<name>`. Give it only: `features/<name>/spec.md`, `features/<name>/mock.html`, and "implement to match both." It commits on the branch (`git checkout -b`, `git commit`). It must NOT merge, NOT push to main, NOT add any AI co-author or "Generated with" line.
-3. **Review.** A SEPARATE `Agent` with fresh context — the builder never verifies its own work. Brief it: *"Assume this branch contains at least one defect. Your job is to find it."* Inputs: the branch diff, `spec.md` (its numbered checklist is the pass/fail contract), `mock.html` (built UI must match its flows and states). It reports each checklist item pass/fail with evidence, capturing screenshots via `chrome-headless-shell` into `features/<name>/verification/`.
-4. **Fail → rebuild.** Fresh build `Agent` on the same branch with the reviewer's findings, then back to step 3. Repeat until it passes.
-5. **Pass → PR.** `git push -u origin feature/<name>` then `gh pr create --title "<feature>" --body "<body>"`. Body = checklist items (pass/fail + evidence), then screenshots, nothing else. No AI co-author trailer, no "Generated with" line. Do NOT merge — that's the user's call.
-6. Row → `done`, PR link in the PR cell. Next `to do` row.
+1. **Claim**: first `to do` row → `building`, Branch = `feature/<f>`. If `<root>/features/<f>/spec.md` has a `Depends on: <g>` line, `<base>` = `feature/<g>`; if `<g>`'s row is `blocked`, set this row `blocked` and claim the next one. A `building` row left by an interrupted run resumes at step 3 if `feature/<f>` exists.
+2. **Build**: `Agent` with `isolation: "worktree"`: "Run `git switch -c feature/<f> <base>` (no `<base>` if none). Implement to match `<root>/features/<f>/spec.md` and `<root>/features/<f>/mock.html`, nothing more, following the `superpowers:test-driven-development` skill when it's available. Run the `simplify` skill on your diff, then commit. Never merge or push. Reply `built`."
+3. **Review**: a separate `Agent`, fresh context, no isolation; the builder never grades its own work. "Work in `<wt>` and don't edit code. Assume branch `feature/<f>` has at least one defect, and find it. The contract is the numbered checklist in `<root>/features/<f>/spec.md` plus every flow and state of `<root>/features/<f>/mock.html`. Only a contract miss is a FAIL; list anything else as notes. Recreate `features/<f>/verification/` empty, launch the app (with the project's run skill if it has one) and capture evidence there: with `agent-browser` when it's installed (`open <url>`, `snapshot -i`, `click @<ref>`, `screenshot <file>`), otherwise `chrome-headless-shell --screenshot=<file> <url>` for each state a URL reaches. Stop what you started. Write `features/<f>/verification/review.md` as the PR body: each checklist item PASS/FAIL with its evidence link, then the screenshots as images from `https://github.com/<owner>/<repo>/blob/feature/<f>/features/<f>/verification/<file>?raw=true`. Nothing else. Reply `PASS` or `FAIL`."
+4. **FAIL**: a fresh `Agent`, no isolation: "In `<wt>`, fix every FAIL in `features/<f>/verification/review.md` (test first when `superpowers:test-driven-development` is available), then commit." Back to step 3. On the third FAIL, run step 5 with `gh pr create --draft` and set the row to `blocked` instead of `done`.
+5. **PASS**: in `<wt>`, run `git add features/<f>/verification`, `git commit -m "<f>: verification evidence"`, `git push -u origin feature/<f>` and `gh pr create --title "<f>" --body-file features/<f>/verification/review.md` (add `--base <base>` when there is one). Row → `done`, PR = the URL. Next row.
 
-**Stop condition:** no row is `to do` or `building`.
+Never merge. No commit or PR gets an AI co-author trailer or "Generated with" line.
+Stop when no row is `to do` or `building`.
 
-## Note on feature order and cross-dependencies
-
-Several specs above declare a dependency on an earlier feature (e.g. `oauth-login` reuses `auth-session`'s cookie-signing helper; `dashboards-api` reads `catalog-api`'s validator; `widget-grid-ui` consumes `frontend-shell`'s hooks). The table order already reflects a dependency-respecting build order from `docs/Architecture.md`'s build-order section. Because each feature builds in an isolated worktree branched off `main`, a builder agent for a later row may not see an earlier row's branch if it hasn't been merged to `main` yet — each spec says to code against the documented contract (the dependency's own spec.md) and flag any mismatch for reconciliation when the PRs are eventually merged, rather than blocking the loop.
+| Feature | Status | Branch | PR |
+| --- | --- | --- | --- |
+| tests-auth-oauth | done | feature/tests-auth-oauth | https://github.com/tekClovis/dashBoard/pull/15 |
+| tests-dashboards | done | feature/tests-dashboards | https://github.com/tekClovis/dashBoard/pull/16 |
+| tests-realtime | done | feature/tests-realtime | https://github.com/tekClovis/dashBoard/pull/17 |
+| tests-service-clients | done | feature/tests-service-clients | https://github.com/tekClovis/dashBoard/pull/18 |
+| tests-connections | blocked | feature/tests-connections | https://github.com/tekClovis/dashBoard/pull/19 |
+| tests-core | done | feature/tests-core | https://github.com/tekClovis/dashBoard/pull/20 |
+| fix-pinned-bugs | done | feature/fix-pinned-bugs | https://github.com/tekClovis/dashBoard/pull/21 |
+| mockui-foundation | done | feature/mockui-foundation | https://github.com/tekClovis/dashBoard/pull/22 |
+| mockui-shell | done | feature/mockui-shell | https://github.com/tekClovis/dashBoard/pull/23 |
+| mockui-auth | done | feature/mockui-auth | https://github.com/tekClovis/dashBoard/pull/24 |
+| mockui-widget-frame | done | feature/mockui-widget-frame | https://github.com/tekClovis/dashBoard/pull/29 |
+| mockui-dashboard | blocked | feature/mockui-dashboard | https://github.com/tekClovis/dashBoard/pull/30 |
+| mockui-add-widget | blocked |  |  |
+| mockui-services-profile | done | feature/mockui-services-profile | https://github.com/tekClovis/dashBoard/pull/26 |
+| mockui-admin | blocked | feature/mockui-admin | https://github.com/tekClovis/dashBoard/pull/27 |
