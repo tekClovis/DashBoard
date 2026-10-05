@@ -2,7 +2,7 @@ import type { ParamSpec } from '@dashboard/shared';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { initialValues, ParamForm, toParams, validateParams } from './ParamForm.js';
+import { initialValues, ParamForm, toParams, validateParam, validateParams } from './ParamForm.js';
 
 // One fake widget definition exercising enum, integer and pattern params.
 const specs: ParamSpec[] = [
@@ -11,15 +11,15 @@ const specs: ParamSpec[] = [
   { name: 'repo', type: 'string', pattern: '^[\\w.-]+/[\\w.-]+$', required: true },
 ];
 
-function Harness() {
-  const [values, setValues] = useState(initialValues(specs));
-  return <ParamForm specs={specs} values={values} onChange={setValues} />;
+function Harness({ showErrors = false, list = specs }: { showErrors?: boolean; list?: ParamSpec[] }) {
+  const [values, setValues] = useState(initialValues(list));
+  return <ParamForm specs={list} values={values} onChange={setValues} showErrors={showErrors} />;
 }
 
 afterEach(cleanup);
 
 describe('ParamForm', () => {
-  it('renders enum as select, integer as bounded number input, pattern as text', () => {
+  it('renders enum as select, integer as bounded number input with a range hint, pattern as text', () => {
     render(<Harness />);
 
     const unit = screen.getByLabelText('unit') as HTMLSelectElement;
@@ -30,17 +30,44 @@ describe('ParamForm', () => {
     expect(days.type).toBe('number');
     expect(days.min).toBe('1');
     expect(days.max).toBe('7');
+    expect(days.getAttribute('aria-describedby')).toBe('param-days-hint');
+    expect(document.getElementById('param-days-hint')?.textContent).toBe('1 to 7');
   });
 
-  it('shows inline validation for an out-of-range integer and a non-matching pattern', () => {
+  it('marks optional params in the label', () => {
+    render(<Harness list={[{ name: 'note', type: 'string', label: 'Note' }]} />);
+    expect(screen.getByLabelText('Note (optional)')).toBeTruthy();
+  });
+
+  it('shows an error only once a field is left, then updates it live', () => {
     render(<Harness />);
+    const days = screen.getByLabelText('days');
 
-    fireEvent.change(screen.getByLabelText('days'), { target: { value: '9' } });
-    expect(screen.getByText('Must be at most 7')).toBeTruthy();
+    fireEvent.change(days, { target: { value: '9' } });
+    expect(screen.queryByText('Enter a number from 1 to 7.')).toBeNull();
+    fireEvent.blur(days);
+    expect(screen.getByText('Enter a number from 1 to 7.')).toBeTruthy();
+    expect(days.getAttribute('aria-invalid')).toBe('true');
+    expect(days.getAttribute('aria-describedby')).toBe('param-days-hint param-days-err');
 
-    fireEvent.change(screen.getByLabelText('repo'), { target: { value: 'nope' } });
-    expect(screen.getByLabelText('repo').getAttribute('aria-invalid')).toBe('true');
-    expect(screen.getByText(/Must match/)).toBeTruthy();
+    fireEvent.change(days, { target: { value: '3' } });
+    expect(screen.queryByText('Enter a number from 1 to 7.')).toBeNull();
+    expect(days.getAttribute('aria-invalid')).toBeNull();
+  });
+
+  it('shows every error when asked, including empty required fields', () => {
+    render(<Harness showErrors />);
+    expect(screen.getAllByText('Required.')).toHaveLength(2);
+  });
+
+  it('uses the mock copy for each failure', () => {
+    const repo = specs[2]!;
+    expect(validateParam(repo, 'acme telemetry')).toBe('Use owner/name, with no spaces.');
+    expect(validateParam({ name: 'region', type: 'string', pattern: '^[A-Z]{2}$' }, 'fr')).toBe(
+      'This value isn’t in the expected format.',
+    );
+    expect(validateParam({ name: 'app_id', type: 'integer', min: 1 }, '0')).toBe('Enter 1 or more.');
+    expect(validateParam(specs[1]!, '2.5')).toBe('Enter a whole number.');
   });
 
   it('validates and converts to typed params', () => {

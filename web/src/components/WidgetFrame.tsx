@@ -69,7 +69,7 @@ function SkeletonRows({ n }: { n: number }) {
     </div>
   );
 }
-function ViewSkeleton({ kind }: { kind: string }) {
+export function ViewSkeleton({ kind }: { kind: string }) {
   if (kind === 'weather.current_weather')
     return (
       <>

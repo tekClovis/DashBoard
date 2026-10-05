@@ -171,6 +171,9 @@ export function DashboardPage() {
     open: boolean;
     instance?: WidgetInstanceEntry;
   }>({ open: false });
+  const addRef = useRef<HTMLButtonElement>(null);
+  // Set by a create, read when the dialog closes: focus goes to Add widget and the new panel scrolls into view.
+  const createdId = useRef<string | null>(null);
 
   // Removed but not yet deleted: hidden until Undo, or deleted when the window closes.
   const [removed, setRemoved] = useState<WidgetInstanceEntry | null>(null);
@@ -315,7 +318,7 @@ export function DashboardPage() {
         sub={empty ? 'No widgets on this dashboard.' : data && <DashboardCounters widgets={widgets} />}
       >
         {!empty && (
-          <Button onClick={openAdd}>
+          <Button ref={addRef} onClick={openAdd}>
             <Plus />
             Add <span className="max-md:hidden">widget</span>
           </Button>
@@ -473,6 +476,23 @@ export function DashboardPage() {
         onOpenChange={(open) => setDialog((d) => ({ ...d, open }))}
         slot={nextSlot(widgets)}
         instance={dialog.instance}
+        onCreated={(w) => {
+          createdId.current = w.id;
+          setAnnouncement(`${getWidgetMeta(w.service, w.widget).label} added. Waiting for the first update.`);
+        }}
+        onCloseAutoFocus={(e) => {
+          const id = createdId.current;
+          if (!id) return;
+          createdId.current = null;
+          e.preventDefault();
+          addRef.current?.focus();
+          const panel = document.querySelector(`[data-widget-id="${id}"]`);
+          if (panel)
+            window.scrollTo({
+              top: panel.getBoundingClientRect().top + window.scrollY - 80,
+              behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+            });
+        }}
       />
     </>
   );

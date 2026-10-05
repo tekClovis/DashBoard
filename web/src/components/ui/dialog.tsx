@@ -3,6 +3,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils.js';
 
 const Dialog = DialogPrimitive.Root;
+const DialogClose = DialogPrimitive.Close;
 const DialogTitle = DialogPrimitive.Title;
 const DialogDescription = DialogPrimitive.Description;
 
@@ -35,4 +36,4 @@ function DialogContent({ className, children, ...props }: React.ComponentProps<t
   );
 }
 
-export { Dialog, DialogContent, DialogDescription, DialogOverlay, DialogTitle };
+export { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogTitle };
