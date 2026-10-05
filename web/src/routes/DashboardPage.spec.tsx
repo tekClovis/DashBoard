@@ -63,10 +63,12 @@ describe('DashboardPage', () => {
     await openMenuItem('Configure');
     const city = (await screen.findByLabelText('city')) as HTMLInputElement;
     expect(city.value).toBe('Paris');
+    expect(screen.getByText('Step 2 of 4: Settings')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect((screen.getByLabelText('Refresh rate (seconds)') as HTMLInputElement).value).toBe('120');
+    expect((screen.getByLabelText('Refresh every') as HTMLInputElement).value).toBe('120');
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(calls.some((c) => c.method === 'PATCH' && c.url === '/api/widgets/i1')).toBe(true));
     expect(calls.find((c) => c.url === '/api/widgets/i1' && c.method === 'PATCH')).toMatchObject({

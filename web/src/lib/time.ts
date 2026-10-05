@@ -18,6 +18,15 @@ export function every(sec: number): string {
   return `${sec}s`;
 }
 
+/** Refresh interval in words: 60 → "every minute", 90 → "every 1 min 30 s"; "" when not a positive number. */
+export function humanRefresh(sec: number): string {
+  if (!Number.isFinite(sec) || sec <= 0) return '';
+  if (sec < 60) return `every ${sec} seconds`;
+  if (sec % 3600 === 0) return sec === 3600 ? 'every hour' : `every ${sec / 3600} hours`;
+  if (sec % 60 === 0) return sec === 60 ? 'every minute' : `every ${sec / 60} minutes`;
+  return `every ${Math.floor(sec / 60)} min ${sec % 60} s`;
+}
+
 /** Local 24h "HH:MM". */
 export function hhmm(date: Date | number | string): string {
   const d = new Date(date);
