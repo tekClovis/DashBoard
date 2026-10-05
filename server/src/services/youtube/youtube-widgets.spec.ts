@@ -37,7 +37,12 @@ const CHANNEL = {
   contentDetails: { relatedPlaylists: { uploads: 'UUuploads' } },
 };
 
-const snippet = (title: string, publishedAt: string) => ({ title, channelTitle: 'Chan', publishedAt });
+const thumbnails = {
+  default: { url: 'https://i.ytimg.com/vi/x/default.jpg' },
+  medium: { url: 'https://i.ytimg.com/vi/x/mqdefault.jpg' },
+  high: { url: 'https://i.ytimg.com/vi/x/hqdefault.jpg' },
+};
+const snippet = (title: string, publishedAt: string) => ({ title, channelTitle: 'Chan', publishedAt, thumbnails });
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -127,10 +132,25 @@ describe('youtube widgets fetch()', () => {
     expect(data).toEqual({
       channelId: 'UC_x5',
       videos: [
-        { id: 'v2', title: 'Newer', channel: 'Chan', publishedAt: '2026-09-20T00:00:00Z', url: 'https://www.youtube.com/watch?v=v2' },
-        { id: 'v1', title: 'Older', channel: 'Chan', publishedAt: '2026-09-10T00:00:00Z', url: 'https://www.youtube.com/watch?v=v1' },
+        { id: 'v2', title: 'Newer', channel: 'Chan', publishedAt: '2026-09-20T00:00:00Z', url: 'https://www.youtube.com/watch?v=v2', imageUrl: thumbnails.medium.url },
+        { id: 'v1', title: 'Older', channel: 'Chan', publishedAt: '2026-09-10T00:00:00Z', url: 'https://www.youtube.com/watch?v=v1', imageUrl: thumbnails.medium.url },
       ],
     });
+  });
+
+  it('maps the best available snippet.thumbnails size to imageUrl, null when there are none', async () => {
+    stubFetch(() =>
+      Response.json({
+        items: [
+          { id: 'a', snippet: { ...snippet('a', '2026-01-01T00:00:00Z'), thumbnails: { default: thumbnails.default, high: thumbnails.high } } },
+          { id: 'b', snippet: { ...snippet('b', '2026-01-01T00:00:00Z'), thumbnails: undefined } },
+        ],
+      }),
+    );
+
+    const data = await widget('trending_videos').fetch({ region: 'FR', number: 2 }, ctx);
+
+    expect(data).toMatchObject({ videos: [{ imageUrl: thumbnails.high.url }, { imageUrl: null }] });
   });
 
   it('trending_videos asks for the mostPopular chart of the region', async () => {

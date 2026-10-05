@@ -1,5 +1,5 @@
 import type { WidgetDataMap, YoutubeVideo } from '@dashboard/shared';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getView } from './registry.js';
 
@@ -22,6 +22,7 @@ const video = (id: string, title: string, publishedAt: string, url = `https://ww
   channel: 'Chan',
   publishedAt,
   url,
+  imageUrl: `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
 });
 
 describe('youtube widget views', () => {
@@ -84,5 +85,27 @@ describe('youtube widget views', () => {
 
     expect(screen.queryByRole('link')).toBeNull();
     expect(screen.getByText('Sneaky')).toBeTruthy();
+  });
+
+  it('latest_videos and trending_videos: every row shows its thumbnail', () => {
+    const videos = [video('a', 'A', '2026-09-21T10:00:00Z'), video('b', 'B', '2026-09-20T10:00:00Z')];
+    for (const [widget, data] of [
+      ['latest_videos', { channelId: 'UC', videos }],
+      ['trending_videos', { region: 'FR', videos }],
+    ] as const) {
+      const { container, unmount } = renderView(widget, data);
+      expect([...container.querySelectorAll('li img')].map((i) => i.getAttribute('src'))).toEqual(videos.map((v) => v.imageUrl));
+      unmount();
+    }
+  });
+
+  it('a thumbnail that fails to load or is missing leaves the row text', () => {
+    const videos = [video('a', 'Broken', '2026-09-21T10:00:00Z'), { ...video('b', 'None', '2026-09-20T10:00:00Z'), imageUrl: null }];
+    const { container } = renderView('latest_videos', { channelId: 'UC', videos });
+    expect(container.querySelectorAll('li img')).toHaveLength(1);
+    fireEvent.error(container.querySelector('li img')!);
+    expect(container.querySelectorAll('li img')).toHaveLength(0);
+    expect(screen.getByText('Broken')).toBeTruthy();
+    expect(screen.getByText('None')).toBeTruthy();
   });
 });

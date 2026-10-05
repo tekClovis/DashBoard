@@ -10,6 +10,8 @@ export interface SteamRecentGame {
   playtime2Weeks: number;
   /** Minutes played in total. */
   playtimeForever: number;
+  /** Built server-side from the app id: the store header image. */
+  imageUrl: string;
 }
 
 export interface SteamNewsItem {
@@ -19,6 +21,8 @@ export interface SteamNewsItem {
   feedLabel: string;
   /** ISO-8601 publication date. */
   date: string;
+  /** Built server-side from the app id: the store header image. */
+  imageUrl: string;
 }
 
 export interface WidgetDataMap {
@@ -101,4 +105,6 @@ export interface YoutubeVideo {
   publishedAt: string;
   /** Built server-side as https://www.youtube.com/watch?v={id}. */
   url: string;
+  /** From snippet.thumbnails (medium, else high, else default); null when YouTube sent none. */
+  imageUrl: string | null;
 }

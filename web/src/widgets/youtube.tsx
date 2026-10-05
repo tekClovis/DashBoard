@@ -1,6 +1,6 @@
 import type { WidgetDataMap } from '@dashboard/shared';
 import { ago } from '@/lib/time.js';
-import { Channel, Empty, Row, RowId, RowMeta, Rows, RowTitle, Stat } from './parts.js';
+import { Channel, Empty, Row, RowId, RowMeta, Rows, RowTitle, Stat, Thumb } from './parts.js';
 import type { WidgetViewProps } from './registry.js';
 
 const COMPACT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
@@ -56,6 +56,7 @@ export function LatestVideosView({ data, compact }: WidgetViewProps) {
         <Rows>
           {videos.map((v) => (
             <Row key={v.id}>
+              <Thumb src={v.imageUrl} width={80} height={45} />
               <RowTitle href={v.url}>{v.title}</RowTitle>
               <RowMeta mono>
                 <time dateTime={v.publishedAt}>{ago(now - Date.parse(v.publishedAt))}</time>
@@ -83,6 +84,7 @@ export function TrendingVideosView({ data }: WidgetViewProps) {
           {videos.map((v, i) => (
             <Row key={v.id}>
               <RowId>#{i + 1}</RowId>
+              <Thumb src={v.imageUrl} width={80} height={45} />
               <RowTitle href={v.url}>{v.title}</RowTitle>
               <RowMeta>{v.channel}</RowMeta>
             </Row>

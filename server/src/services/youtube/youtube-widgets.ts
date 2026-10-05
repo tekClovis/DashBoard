@@ -22,6 +22,7 @@ interface RawVideoSnippet {
   title: string;
   channelTitle: string;
   publishedAt: string;
+  thumbnails?: Partial<Record<'default' | 'medium' | 'high', { url: string }>>;
 }
 
 interface RawPlaylistItem {
@@ -52,6 +53,7 @@ function toVideo(id: string, snippet: RawVideoSnippet): YoutubeVideo {
     channel: snippet.channelTitle,
     publishedAt: snippet.publishedAt,
     url: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+    imageUrl: (snippet.thumbnails?.medium ?? snippet.thumbnails?.high ?? snippet.thumbnails?.default)?.url ?? null,
   };
 }
 

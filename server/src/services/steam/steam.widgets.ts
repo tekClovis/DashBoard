@@ -11,6 +11,7 @@ import { FetchError } from '../../timer/fetch-error.js';
 
 const STEAM_API = 'https://api.steampowered.com';
 const FETCH_TIMEOUT_MS = 10_000;
+const headerImage = (appId: number) => `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
 const NUMBER_PARAM: ParamSpec = { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Number' };
 
 interface RecentlyPlayedResponse {
@@ -53,6 +54,7 @@ export function createSteamWidgets(
               name: game.name,
               playtime2Weeks: game.playtime_2weeks ?? 0,
               playtimeForever: game.playtime_forever,
+              imageUrl: headerImage(game.appid),
             }),
           ),
         };
@@ -87,6 +89,7 @@ export function createSteamWidgets(
               url: item.url,
               feedLabel: item.feedlabel,
               date: new Date(item.date * 1000).toISOString(),
+              imageUrl: headerImage(appId),
             }),
           ),
         };

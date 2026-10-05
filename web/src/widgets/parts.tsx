@@ -74,6 +74,35 @@ export function RowTitle({ href, children, prefix }: { href?: string; children: 
   );
 }
 
+/** Fixed-size image slot: the box is kept when the src is missing, unsafe or fails to load. */
+export function Thumb({ src, width, height }: { src?: string | null; width: number; height: number }) {
+  const [failed, setFailed] = useState(false);
+  const show = !!src && isHttpUrl(src) && !failed;
+  return (
+    <span
+      data-slot="thumb"
+      data-state={show ? undefined : 'failed'}
+      aria-hidden="true"
+      style={{ width, height }}
+      className="bg-muted relative inline-block flex-none self-center overflow-hidden rounded-sm after:absolute after:inset-0 after:rounded-sm after:shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--foreground)_12%,transparent)]"
+    >
+      {show && (
+        <img
+          src={src}
+          alt=""
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className="block size-full object-cover"
+        />
+      )}
+    </span>
+  );
+}
+
 /** Left-hand mono ID (sha, #number, rank). */
 export function RowId({ children }: { children: ReactNode }) {
   return <span className="text-muted-foreground min-w-[5.5ch] flex-none font-mono">{children}</span>;
