@@ -45,6 +45,19 @@ export function normalize<T extends Item>(items: T[], pinnedId?: string): T[] {
   return items.map((i) => result.get(i.id)!);
 }
 
+/**
+ * Live drag/resize layout, as the mock computes it: the stored layout with only `active`'s
+ * geometry replaced, normalized with `active` pinned. Displaced items cascade down (no overlaps),
+ * and the result is also what gets dropped.
+ */
+export function cascade<T extends Item>(stored: T[], active: Item): T[] {
+  const { id, x, y, w, h } = active;
+  return normalize(
+    stored.map((i) => (i.id === id ? { ...i, x, y, w, h } : i)),
+    id,
+  );
+}
+
 /** Entries of `next` whose geometry differs from `prev` (matched by id). */
 export function changedEntries(prev: Item[], next: Item[]): LayoutUpdateEntry[] {
   return next
@@ -80,4 +93,39 @@ export function moveEntry(items: WidgetInstanceEntry[], id: string, dir: MoveDir
   }
   const moved = items.map((i) => (i.id === id ? { ...i, x, y } : i));
   return changedEntries(items, normalize(moved, id));
+}
+
+/**
+ * Menu Move up/down below `md`, as the mock does it: swap `id`'s position with its neighbour in
+ * the stacked (y, x) reading order, then normalize with `id` pinned. Empty at either end of the stack.
+ */
+export function moveStacked(items: WidgetInstanceEntry[], id: string, dir: 'up' | 'down'): LayoutUpdateEntry[] {
+  const order = sortStacked(items);
+  const i = order.findIndex((w) => w.id === id);
+  const a = order[i];
+  const b = order[dir === 'up' ? i - 1 : i + 1];
+  if (!a || !b) return [];
+  const swapped = items.map((w) =>
+    w.id === a.id ? { ...w, x: b.x, y: b.y } : w.id === b.id ? { ...w, x: a.x, y: a.y } : w,
+  );
+  return changedEntries(items, normalize(swapped, id));
+}
+
+export type ResizeDirection = 'wider' | 'narrower' | 'taller' | 'shorter';
+const MIN_SIZE = 2;
+
+/**
+ * Keyboard alternative to drag-resize (WCAG 2.5.7): one column or row per step, clamped to
+ * 2×2 and to the grid's right edge, then normalized. Empty when nothing changes.
+ */
+export function resizeEntry(items: WidgetInstanceEntry[], id: string, dir: ResizeDirection): LayoutUpdateEntry[] {
+  const item = items.find((i) => i.id === id);
+  if (!item) return [];
+  let { w, h } = item;
+  if (dir === 'wider') w = Math.min(w + 1, GRID_COLS - item.x);
+  else if (dir === 'narrower') w = Math.max(w - 1, MIN_SIZE);
+  else if (dir === 'taller') h += 1;
+  else h = Math.max(h - 1, MIN_SIZE);
+  const resized = items.map((i) => (i.id === id ? { ...i, w, h } : i));
+  return changedEntries(items, normalize(resized, id));
 }

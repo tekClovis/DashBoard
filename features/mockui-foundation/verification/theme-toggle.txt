@@ -1,0 +1,26 @@
+# Item 5: theme toggle on /login (OS = light, no stored choice)
+
+## initial (pre-mount script, OS light): html.dark=False localStorage.theme=None color-scheme=light body bg=oklch(0.975 0.003 160)
+## after clicking 'Toggle theme' (lib/theme.ts applyTheme): html.dark=True localStorage.theme=dark color-scheme=dark body bg=oklch(0.165 0.006 160)
+## after reload (pre-mount script reads stored choice): html.dark=True localStorage.theme=dark color-scheme=dark body bg=oklch(0.165 0.006 160)
+
+| token | light | dark (after toggle) | changed |
+|---|---|---|---|
+| `--background` | `oklch(0.975 0.003 160)` | `oklch(0.165 0.006 160)` | yes |
+| `--foreground` | `oklch(0.2 0.01 160)` | `oklch(0.95 0.006 160)` | yes |
+| `--card` | `oklch(1 0 0)` | `oklch(0.195 0.007 160)` | yes |
+| `--popover` | `oklch(1 0 0)` | `oklch(0.22 0.008 160)` | yes |
+| `--primary` | `oklch(0.22 0.01 160)` | `oklch(0.95 0.006 160)` | yes |
+| `--muted-foreground` | `oklch(0.49 0.014 160)` | `oklch(0.72 0.012 160)` | yes |
+| `--destructive` | `oklch(0.52 0.2 27)` | `oklch(0.7 0.19 25)` | yes |
+| `--destructive-foreground` | `oklch(0.985 0.003 160)` | `oklch(0.18 0.006 160)` | yes |
+| `--success` | `oklch(0.5 0.14 148)` | `oklch(0.87 0.21 145)` | yes |
+| `--success-foreground` | `oklch(0.985 0.003 160)` | `oklch(0.18 0.006 160)` | yes |
+| `--warning` | `oklch(0.52 0.12 62)` | `oklch(0.83 0.145 78)` | yes |
+| `--warning-foreground` | `oklch(0.985 0.003 160)` | `oklch(0.18 0.006 160)` | yes |
+| `--live` | `oklch(0.62 0.18 148)` | `oklch(0.87 0.21 145)` | yes |
+| `--border` | `oklch(0.9 0.006 160)` | `oklch(0.3 0.009 160)` | yes |
+| `--input` | `oklch(0.64 0.012 160)` | `oklch(0.52 0.012 160)` | yes |
+| `--ring` | `oklch(0.3 0.01 160)` | `oklch(0.86 0.01 160)` | yes |
+
+## OS = dark, no stored choice (agent-browser set media dark): "{\"dark\":true,\"stored\":null,\"live\":\"oklch(0.87 0.21 145)\",\"success\":\"oklch(0.87 0.21 145)\"}"
