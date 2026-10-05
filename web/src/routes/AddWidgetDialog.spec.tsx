@@ -1,6 +1,6 @@
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { calls, openMenuItem, renderPage, setupPage } from './dashboard-test-utils.js';
+import { calls, instance, openMenuItem, renderPage, respondWhen, setupPage } from './dashboard-test-utils.js';
 
 beforeEach(setupPage);
 
@@ -106,5 +106,41 @@ describe('Add widget dialog', () => {
       url: '/api/dashboards/dash-1/widgets',
       body: { service: 'weather', widget: 'forecast', params: { city: 'Lyon' }, refreshRate: 90, x: 0, y: 5 },
     });
+  });
+  it('after Add widget, announces the new widget, returns focus to Add widget and scrolls the new panel into view', async () => {
+    const added = { ...instance, id: 'i2', params: { city: 'Lyon' }, refreshRate: 60, x: 0, y: 5 };
+    // Before the POST the dashboard lists `instance`; the POST returns `added`, and the refetch lists both.
+    let method = 'GET';
+    let posted = false;
+    respondWhen(
+      (url, m) => url === '/api/dashboards/dash-1/widgets' && ((method = m), true),
+      () => {
+        if (method === 'POST') posted = true;
+        const body = method === 'POST' ? added : { widgets: posted ? [instance, added] : [instance] };
+        return new Response(JSON.stringify(body), { status: 200 });
+      },
+    );
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+    renderPage();
+    const add = await screen.findByRole('button', { name: 'Add widget' });
+    fireEvent.click(add);
+    fireEvent.click(await screen.findByRole('radio', { name: /Forecast/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.change(screen.getByLabelText('city'), { target: { value: 'Lyon' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="announcer"]')?.textContent).toBe(
+        'Forecast added. Waiting for the first update.',
+      ),
+    );
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add widget' })));
+    // jsdom lays out nothing: the panel's top is 0, so the mock's `top + scrollY - 80` is -80.
+    expect(document.querySelector('[data-widget-id="i2"]')).toBeTruthy();
+    expect(scrollTo).toHaveBeenCalledWith({ top: -80, behavior: 'smooth' });
   });
 });

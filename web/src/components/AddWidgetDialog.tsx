@@ -36,6 +36,10 @@ interface AddWidgetDialogProps {
   slot: { x: number; y: number };
   /** When set, the dialog reconfigures this instance and starts at the params step. */
   instance?: WidgetInstanceEntry;
+  /** Called with the new instance once it is created, before the dialog closes. */
+  onCreated?: (instance: WidgetInstanceEntry) => void;
+  /** Where focus goes when the dialog closes; preventDefault() to move it yourself. */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function AddWidgetDialog(props: AddWidgetDialogProps) {
@@ -48,6 +52,7 @@ export function AddWidgetDialog(props: AddWidgetDialogProps) {
           e.preventDefault();
           focusFirstField(e.currentTarget as HTMLElement);
         }}
+        onCloseAutoFocus={props.onCloseAutoFocus}
         className="flex flex-col gap-0 overflow-hidden p-0 max-md:h-dvh max-md:max-h-dvh max-md:w-screen max-md:rounded-none max-md:border-0"
       >
         {/* Keyed so each open starts from fresh state. */}
@@ -57,7 +62,7 @@ export function AddWidgetDialog(props: AddWidgetDialogProps) {
   );
 }
 
-function DialogBody({ dashboardId, onOpenChange, slot, instance }: AddWidgetDialogProps) {
+function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: AddWidgetDialogProps) {
   const { data: catalog, isError: catalogError } = useCatalog();
   const create = useCreateWidget(dashboardId);
   const update = useUpdateWidget(dashboardId);
@@ -111,12 +116,17 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance }: AddWidgetDial
   function confirm() {
     if (!spec) return;
     const params = toParams(spec.params, values);
-    const done = { onSuccess: () => onOpenChange(false) };
-    if (instance) update.mutate({ id: instance.id, params, refreshRate: refreshNum }, done);
+    const close = () => onOpenChange(false);
+    if (instance) update.mutate({ id: instance.id, params, refreshRate: refreshNum }, { onSuccess: close });
     else
       create.mutate(
         { service: spec.service, widget: spec.name, params, refreshRate: refreshNum, ...slot, ...DEFAULT_SIZE },
-        done,
+        {
+          onSuccess: (created) => {
+            onCreated?.(created);
+            close();
+          },
+        },
       );
   }
 
