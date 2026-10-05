@@ -42,8 +42,12 @@ export function AddWidgetDialog(props: AddWidgetDialogProps) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent
-        // The body focuses each step's first field itself.
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        // Focus the opening step's first field once the focus trap is live, so the trap pulls
+        // focus back when a closing widget menu returns it to its trigger.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          focusFirstField(e.currentTarget as HTMLElement);
+        }}
         className="flex flex-col gap-0 overflow-hidden p-0 max-md:h-dvh max-md:max-h-dvh max-md:w-screen max-md:rounded-none max-md:border-0"
       >
         {/* Keyed so each open starts from fresh state. */}
@@ -86,14 +90,14 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance }: AddWidgetDial
   }, [specKey]);
 
   // Each step opens on its first field (the picked card on step 1), the last on its primary action.
+  // What is rendered on mount is focused by the dialog's open auto-focus instead.
   const ready = step === 1 ? !!catalog : !!spec;
+  const focused = useRef({ step, ready });
   useEffect(() => {
+    if (focused.current.step === step && focused.current.ready === ready) return;
+    focused.current = { step, ready };
     if (step === 4) nextRef.current?.focus();
-    else
-      (
-        bodyRef.current?.querySelector<HTMLElement>('input:checked') ??
-        bodyRef.current?.querySelector<HTMLElement>('input:not(:disabled), select')
-      )?.focus();
+    else if (bodyRef.current) focusFirstField(bodyRef.current);
   }, [step, ready]);
 
   const refreshNum = Number(refresh);
@@ -356,6 +360,11 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance }: AddWidgetDial
       </div>
     </>
   );
+}
+
+/** Focuses a step's first field: the picked card on step 1, else the first enabled input or select. */
+function focusFirstField(root: HTMLElement) {
+  (root.querySelector<HTMLElement>('input:checked') ?? root.querySelector<HTMLElement>('input:not(:disabled), select'))?.focus();
 }
 
 type CatalogService = CatalogResponse['services'][number];

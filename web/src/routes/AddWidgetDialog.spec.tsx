@@ -25,6 +25,21 @@ describe('Add widget dialog', () => {
     expect(((await screen.findByLabelText('city')) as HTMLInputElement).value).toBe('Paris');
   });
 
+  it('opens Configure from the widget menu with focus on the first field, inside the dialog', async () => {
+    renderPage();
+    // Load the catalog first, so the dialog's fields exist the moment it mounts.
+    fireEvent.click(await screen.findByRole('button', { name: 'Add widget' }));
+    await screen.findByRole('radio', { name: /Forecast/ });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await openMenuItem('Configure');
+    const city = await screen.findByLabelText('city');
+    await waitFor(() => expect(document.activeElement).toBe(city));
+    // The menu returns focus to its trigger on a later tick; the dialog must keep it.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(document.activeElement).toBe(city);
+  });
+
   it('walks all 4 steps, keeping values across Back, and creates the widget with the chosen settings', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'Add widget' }));
