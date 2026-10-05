@@ -1,11 +1,12 @@
 import type { WidgetDataMap, WidgetInstanceEntry } from '@dashboard/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SocketContext, type SocketContextValue } from '@/realtime/SocketProvider.js';
 import * as widgetData from '@/realtime/useWidgetData.js';
 import type { WidgetCacheEntry } from '@/realtime/useWidgetData.js';
+import type { ResizeDirection } from '@/lib/layout.js';
 import { WidgetFrame } from './WidgetFrame.js';
 
 const instance: WidgetInstanceEntry = {
@@ -35,20 +36,42 @@ const socketValue = (socket: unknown, connected: boolean): SocketContextValue =>
 
 const secondsAgo = (s: number) => new Date(Date.now() - s * 1000).toISOString();
 
+interface FrameOptions {
+  connected?: boolean;
+  onConfigure?: () => void;
+  onResize?: (dir: ResizeDirection) => void;
+}
+
 function renderFrame(
   entry: WidgetCacheEntry | undefined,
-  { connected = true, inst = instance, onConfigure = vi.fn() } = {},
+  { inst = instance, ...opts }: FrameOptions & { inst?: WidgetInstanceEntry } = {},
 ) {
   vi.spyOn(widgetData, 'useWidgetData').mockReturnValue({ data: entry } as ReturnType<
     typeof widgetData.useWidgetData
   >);
-  return render(
+  return render(frameTree(inst, opts));
+}
+
+function frameTree(inst: WidgetInstanceEntry, { connected = true, onConfigure = vi.fn(), onResize }: FrameOptions = {}) {
+  return (
     <SocketContext.Provider value={socketValue(null, connected)}>
       <MemoryRouter>
-        <WidgetFrame instance={inst} onConfigure={onConfigure} onDelete={vi.fn()} onMove={vi.fn()} />
+        <WidgetFrame
+          instance={inst}
+          onConfigure={onConfigure}
+          onDelete={vi.fn()}
+          onMove={vi.fn()}
+          onResize={onResize}
+        />
       </MemoryRouter>
-    </SocketContext.Provider>,
+    </SocketContext.Provider>
   );
+}
+
+async function openMenu() {
+  const trigger = screen.getByRole('button', { name: 'GitHub Recent commits options' });
+  fireEvent(trigger, new MouseEvent('pointerdown', { button: 0, bubbles: true }));
+  return (await screen.findAllByRole('menuitem')).map((i) => i.textContent);
 }
 
 const panel = (c: HTMLElement) => c.querySelector('article') as HTMLElement;
@@ -71,6 +94,34 @@ describe('WidgetFrame header', () => {
   it('falls back to the raw service and widget names for an unknown widget', () => {
     renderFrame(undefined, { inst: { ...instance, service: 'fake', widget: 'echo' } });
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('fake echo');
+  });
+});
+
+describe('WidgetFrame menu', () => {
+  // One render: Radix menus in jsdom don't reopen reliably across separate renders.
+  it('lists Move left/right and the Size items only on the grid (with onResize)', async () => {
+    const onResize = vi.fn();
+    const { rerender } = renderFrame(undefined, { onResize });
+
+    expect(await openMenu()).toEqual([
+      'Configure',
+      'Move up',
+      'Move down',
+      'Move left',
+      'Move right',
+      'Wider',
+      'Narrower',
+      'Taller',
+      'Shorter',
+      'Remove from dashboard',
+    ]);
+    expect(screen.getByText(/^Size/).textContent).toBe('Size 4×3');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Wider' }));
+    expect(onResize).toHaveBeenCalledWith('wider');
+
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+    rerender(frameTree(instance));
+    expect(await openMenu()).toEqual(['Configure', 'Move up', 'Move down', 'Remove from dashboard']);
   });
 });
 

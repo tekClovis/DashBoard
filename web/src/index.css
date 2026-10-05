@@ -170,6 +170,28 @@
   opacity: 1;
 }
 
+/* Drop placeholder: hatched, dashed cell where the widget will land; the dragged panel lifts. */
+.react-grid-item.react-grid-placeholder.react-grid-placeholder {
+  z-index: 1;
+  opacity: 1;
+  border: 1px dashed color-mix(in oklch, var(--foreground) 55%, transparent);
+  border-radius: var(--radius-lg);
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--foreground) 7%, transparent) 0 1px,
+    transparent 1px 7px
+  );
+  transition-duration: 90ms;
+}
+.react-grid-item.react-draggable-dragging,
+.react-grid-item.resizing {
+  z-index: 20;
+}
+.react-grid-item:is(.react-draggable-dragging, .resizing) > article {
+  border-color: color-mix(in oklch, var(--foreground) 45%, transparent);
+  box-shadow: 0 18px 40px -16px oklch(0 0 0 / 55%);
+}
+
 /* Live pulse on widget:data (design-reference §5): the panel carries data-pulse for --dur-pulse.
    The live lamp pings a 0 → 7px ring and a 1px --live line sweeps under the header, then fades.
    Only a live panel sweeps: nothing that isn't live turns green (§4). */

@@ -1,6 +1,6 @@
 import type { WidgetDataPayload, WidgetErrorCode, WidgetErrorPayload } from '@dashboard/shared';
 import { SOCKET_EVENTS } from '@dashboard/shared';
-import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { useSocket } from './SocketProvider.js';
 
@@ -16,6 +16,10 @@ export interface WidgetCacheEntry extends WidgetPush {
 }
 
 const PUSH_HISTORY = 12;
+
+/** Read-only view of one instance's cache entry (filled by `useWidgetData`'s socket handlers). */
+export const widgetDataQuery = (instanceId: string) =>
+  queryOptions<WidgetCacheEntry | undefined>({ queryKey: ['widget', instanceId], queryFn: skipToken });
 
 /**
  * Subscribes to one widget instance's realtime updates for the lifetime of the calling
@@ -73,8 +77,5 @@ export function useWidgetData(instanceId: string, config?: string) {
     };
   }, [socket, instanceId, config, queryClient]);
 
-  return useQuery<WidgetCacheEntry | undefined>({
-    queryKey: ['widget', instanceId],
-    queryFn: skipToken,
-  });
+  return useQuery(widgetDataQuery(instanceId));
 }

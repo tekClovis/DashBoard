@@ -8,11 +8,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.js';
 import { Lamp, type LampState } from '@/components/ui/lamp.js';
 import { Skeleton } from '@/components/ui/skeleton.js';
-import type { MoveDirection } from '@/lib/layout.js';
+import type { MoveDirection, ResizeDirection } from '@/lib/layout.js';
 import { ago, every, hhmm } from '@/lib/time.js';
 import { cn } from '@/lib/utils.js';
 import { useSocket } from '@/realtime/SocketProvider.js';
@@ -25,6 +27,13 @@ const MOVES: { dir: MoveDirection; label: string }[] = [
   { dir: 'down', label: 'Move down' },
   { dir: 'left', label: 'Move left' },
   { dir: 'right', label: 'Move right' },
+];
+
+const SIZES: { dir: ResizeDirection; label: string }[] = [
+  { dir: 'wider', label: 'Wider' },
+  { dir: 'narrower', label: 'Narrower' },
+  { dir: 'taller', label: 'Taller' },
+  { dir: 'shorter', label: 'Shorter' },
 ];
 
 const LAMP_LABELS: Record<FrameState, string> = {
@@ -84,7 +93,7 @@ function ViewSkeleton({ kind }: { kind: string }) {
 }
 
 /** Re-renders every `ms` so "updated 9s ago" and the stale check keep moving. */
-function useNow(ms = 1000): number {
+export function useNow(ms = 1000): number {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), ms);
@@ -138,10 +147,12 @@ interface WidgetFrameProps {
   onConfigure: () => void;
   onDelete: () => void;
   onMove: (dir: MoveDirection) => void;
+  /** Grid layout only (md+): enables Move left/right and the Size items. Omit for the stacked column. */
+  onResize?: (dir: ResizeDirection) => void;
 }
 
 /** Panel around one widget instance: header strip, then the body for its derived state (design-reference §5). */
-export function WidgetFrame({ instance, onConfigure, onDelete, onMove }: WidgetFrameProps) {
+export function WidgetFrame({ instance, onConfigure, onDelete, onMove, onResize }: WidgetFrameProps) {
   const { data: entry } = useWidgetData(instance.id, JSON.stringify([instance.params, instance.refreshRate]));
   const panelRef = usePulse(entry?.fetchedAt);
   const { connected } = useSocket();
@@ -274,13 +285,34 @@ export function WidgetFrame({ instance, onConfigure, onDelete, onMove }: WidgetF
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onSelect={onConfigure}>Configure</DropdownMenuItem>
-            {MOVES.map(({ dir, label: moveLabel }) => (
+            <DropdownMenuItem onSelect={onConfigure}>
+              <SlidersHorizontal />
+              Configure
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Move</DropdownMenuLabel>
+            {MOVES.filter(({ dir }) => onResize || dir === 'up' || dir === 'down').map(({ dir, label: moveLabel }) => (
               <DropdownMenuItem key={dir} onSelect={() => onMove(dir)}>
                 {moveLabel}
               </DropdownMenuItem>
             ))}
-            <DropdownMenuItem onSelect={onDelete}>Delete</DropdownMenuItem>
+            {onResize && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>
+                  Size <span className="font-mono">{`${instance.w}×${instance.h}`}</span>
+                </DropdownMenuLabel>
+                {SIZES.map(({ dir, label: sizeLabel }) => (
+                  <DropdownMenuItem key={dir} onSelect={() => onResize(dir)}>
+                    {sizeLabel}
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive">
+              Remove from dashboard
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
