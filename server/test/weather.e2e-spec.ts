@@ -12,7 +12,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import type { Redis } from 'ioredis';
 import { io as ioClient, type Socket as ClientSocket } from 'socket.io-client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CurrentWeatherData, ForecastData, WidgetDataPayload, WidgetErrorPayload } from '@dashboard/shared';
+import type { CitySearchResponse, CurrentWeatherData, ForecastData, WidgetDataPayload, WidgetErrorPayload } from '@dashboard/shared';
 import { AppModule } from '../src/app.module.js';
 import { JwtService } from '../src/auth/jwt.service.js';
 import { PrismaService } from '../src/core/prisma/prisma.service.js';
@@ -160,6 +160,60 @@ describe('Weather widgets (e2e)', () => {
     expect(widgetKeys).toHaveLength(2);
     for (const key of widgetKeys) expect(key).not.toContain(':conn:');
   }, 30_000);
+
+  // features/big-weather-search/spec.md checklist.
+  describe('city search', () => {
+    const search = (cookie: string | undefined, q: string) =>
+      fetch(`${baseUrl}/api/weather/search?q=${encodeURIComponent(q)}`, { headers: cookie ? { Cookie: cookie } : {} });
+
+    it('1. returns several candidates for "Paris", each with name, country and coordinates', async () => {
+      const { cookie } = await createUserWithCookie('s1@example.com');
+
+      const res = await search(cookie, 'Paris');
+      const { results } = (await res.json()) as CitySearchResponse;
+
+      expect(res.status).toBe(200);
+      expect(results.length).toBeGreaterThan(1);
+      for (const c of results)
+        expect(c).toMatchObject({ name: expect.any(String), country: expect.any(String), latitude: expect.any(Number), longitude: expect.any(Number) });
+      expect(results.some((c) => c.country === 'France')).toBe(true);
+      expect(results.some((c) => c.country === 'United States')).toBe(true);
+    }, 30_000);
+
+    it('5. an empty query or an unknown city answers 200 with no results', async () => {
+      const { cookie } = await createUserWithCookie('s2@example.com');
+
+      for (const q of ['', 'zzzznotacity']) {
+        const res = await search(cookie, q);
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({ results: [] });
+      }
+    }, 30_000);
+
+    it('requires a session', async () => {
+      expect((await search(undefined, 'Paris')).status).toBe(401);
+    });
+
+    it('3/4. a widget saved with a picked candidate shows that place and never re-geocodes the name', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      const { userId, cookie } = await createUserWithCookie('s3@example.com');
+      const instanceId = await createInstance(userId, 'current_weather', {
+        city: 'Paris',
+        region: 'Texas',
+        country: 'United States',
+        latitude: '33.66094',
+        longitude: '-95.55551',
+        units: 'metric',
+      });
+
+      const { data } = await subscribeAndWait<WidgetDataPayload>(await connect(cookie), instanceId, 'widget:data');
+
+      expect((data as CurrentWeatherData).location).toBe('Paris, United States');
+      expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes('geocoding-api'))).toHaveLength(0);
+      const forecastCall = fetchSpy.mock.calls.map(([input]) => String(input)).find((u) => u.includes('api.open-meteo.com'));
+      expect(new URL(forecastCall ?? '').searchParams.get('latitude')).toBe('33.66094');
+    }, 30_000);
+  });
 
   it('7. an unresolvable city emits widget:error INVALID_PARAMS', async () => {
     const { userId, cookie } = await createUserWithCookie('w4@example.com');

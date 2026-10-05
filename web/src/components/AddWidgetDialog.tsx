@@ -315,9 +315,11 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
               <dt className="text-muted-foreground">Settings</dt>
               <dd>
                 {spec.params.length > 0 ? (
-                  spec.params.map((p) => (
-                    <span key={p.name} className="block font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
-                  ))
+                  spec.params
+                    .filter((p) => !p.hidden)
+                    .map((p) => (
+                      <span key={p.name} className="block font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
+                    ))
                 ) : (
                   <span className="text-muted-foreground">None</span>
                 )}

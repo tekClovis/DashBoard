@@ -167,3 +167,16 @@ export interface LayoutUpdateEntry {
   w: number;
   h: number;
 }
+
+/** One geocoding match from GET /api/weather/search?q= */
+export interface CityCandidate {
+  name: string;
+  region?: string;
+  country?: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface CitySearchResponse {
+  results: CityCandidate[];
+}
