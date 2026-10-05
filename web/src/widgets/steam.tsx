@@ -1,48 +1,66 @@
 import type { WidgetDataMap } from '@dashboard/shared';
+import { ago, WEEK_MS } from '@/lib/time.js';
+import { Channel, Empty, Meter, Row, RowMeta, Rows, RowTitle, Stat } from './parts.js';
 import type { WidgetViewProps } from './registry.js';
 
-const ROW = 'flex justify-between gap-3 border-t py-2 first:border-t-0';
-const META = 'text-muted-foreground shrink-0 text-xs';
+const hours = (minutes: number) => (minutes / 60).toFixed(1);
 
-export function RecentlyPlayedView({ data }: WidgetViewProps) {
+export function RecentlyPlayedView({ data, compact }: WidgetViewProps) {
   const { games } = data as WidgetDataMap['steam.recently_played'];
-  if (games.length === 0) return <p className="text-muted-foreground">No games played in the last 2 weeks.</p>;
+  const total = games.reduce((sum, g) => sum + g.playtime2Weeks, 0);
+  const top = Math.max(...games.map((g) => g.playtime2Weeks));
   return (
-    <ul>
-      {games.map((game) => (
-        <li key={game.appId} className={ROW}>
-          <span>{game.name}</span>
-          <span className={META}>{(game.playtime2Weeks / 60).toFixed(1)} hrs</span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <Channel>
+        <span>Last 2 weeks</span>
+      </Channel>
+      {games.length === 0 ? (
+        <Empty>No games played in the last 2 weeks.</Empty>
+      ) : (
+        <>
+          {!compact && <Stat value={hours(total)} unit="h" label="played in total" />}
+          <Rows>
+            {games.map((g) => (
+              <Row key={g.appId}>
+                <RowTitle>{g.name}</RowTitle>
+                <Meter share={top > 0 ? g.playtime2Weeks / top : 0} className="w-14" />
+                <RowMeta mono className="min-w-[6ch] text-right">
+                  {hours(g.playtime2Weeks)} h
+                </RowMeta>
+              </Row>
+            ))}
+          </Rows>
+        </>
+      )}
+    </>
   );
 }
 
-export function GameNewsView({ data }: WidgetViewProps) {
-  const { items } = data as WidgetDataMap['steam.game_news'];
-  if (items.length === 0) return <p className="text-muted-foreground">No news for this game.</p>;
+export function GameNewsView({ data, compact }: WidgetViewProps) {
+  const { appId, items } = data as WidgetDataMap['steam.game_news'];
+  const now = Date.now();
+  const week = items.filter((i) => now - Date.parse(i.date) < WEEK_MS).length;
   return (
-    <ul>
-      {items.map((item) => (
-        <li key={item.id} className={ROW}>
-          {/^https?:\/\//i.test(item.url) ? (
-            <a href={item.url} target="_blank" rel="noreferrer" className="hover:underline">
-              {item.title}
-            </a>
-          ) : (
-            <span>{item.title}</span>
-          )}
-          <time dateTime={item.date} className={META}>
-            {timeAgo(item.date)}
-          </time>
-        </li>
-      ))}
-    </ul>
+    <>
+      <Channel>
+        <span className="font-mono">app_id={appId}</span>
+      </Channel>
+      {!compact && <Stat value={week} label="posts in the last 7 days" />}
+      {items.length === 0 ? (
+        <Empty>No news for this game.</Empty>
+      ) : (
+        <Rows>
+          {items.map((item) => (
+            <Row key={item.id}>
+              <RowTitle href={item.url}>{item.title}</RowTitle>
+              <RowMeta className="@max-[420px]:hidden">{item.feedLabel}</RowMeta>
+              <RowMeta mono>
+                <time dateTime={item.date}>{ago(now - Date.parse(item.date))}</time>
+              </RowMeta>
+            </Row>
+          ))}
+        </Rows>
+      )}
+    </>
   );
-}
-
-function timeAgo(iso: string): string {
-  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
-  return hours < 24 ? `${Math.max(hours, 0)}h ago` : `${Math.floor(hours / 24)}d ago`;
 }

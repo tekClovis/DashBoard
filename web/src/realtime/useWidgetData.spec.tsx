@@ -59,7 +59,29 @@ describe('useWidgetData', () => {
 
     await waitFor(() => {
       const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
-      expect(cached).toEqual({ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z', error: null });
+      expect(cached).toEqual({
+        data: { count: 3 },
+        fetchedAt: '2026-01-01T00:00:00Z',
+        error: null,
+        history: [{ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z' }],
+      });
+    });
+  });
+
+  it('keeps the last 12 pushes, oldest first, one per fetchedAt', async () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+
+    renderHook(() => useWidgetData('instance-1'), { wrapper: Wrapper });
+
+    const at = (m: number) => `2026-01-01T00:${String(m).padStart(2, '0')}:00Z`;
+    for (let m = 0; m < 14; m++) socket.trigger('widget:data', { instanceId: 'instance-1', data: { m }, fetchedAt: at(m) });
+    // A re-push of the same fetch (e.g. after a resubscribe) replaces its point.
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { m: 13 }, fetchedAt: at(13) });
+
+    await waitFor(() => {
+      const history = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1'])?.history;
+      expect(history?.map((p) => p.fetchedAt)).toEqual(Array.from({ length: 12 }, (_, i) => at(i + 2)));
     });
   });
 
@@ -76,7 +98,47 @@ describe('useWidgetData', () => {
       const cached = queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1']);
       expect(cached?.error).toEqual({ code: 'RATE_LIMITED', message: 'slow down', retryAt: undefined });
       expect(cached?.data).toEqual({ count: 3 });
+      expect(cached?.history).toEqual([{ data: { count: 3 }, fetchedAt: '2026-01-01T00:00:00Z' }]);
     });
+  });
+
+  it('on a config change, resubscribes and resets the cache entry to waiting', async () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+    const { rerender } = renderHook(({ config }) => useWidgetData('instance-1', config), {
+      wrapper: Wrapper,
+      initialProps: { config: 'city=Qxzvbnmqq' },
+    });
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { t: 1 }, fetchedAt: '2026-01-01T00:00:00Z' });
+    socket.trigger('widget:error', { instanceId: 'instance-1', code: 'INVALID_PARAMS', message: 'bad city' });
+
+    rerender({ config: 'city=London' });
+
+    const subscribes = socket.emit.mock.calls.filter(([event]) => event === 'widget:subscribe');
+    expect(subscribes).toHaveLength(2);
+    expect(socket.emit).toHaveBeenCalledWith('widget:unsubscribe', { instanceId: 'instance-1' });
+    await waitFor(() => {
+      expect(queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1'])).toEqual({
+        data: null,
+        fetchedAt: null,
+        error: null,
+      });
+    });
+  });
+
+  it('keeps the cached entry and subscription when the config is unchanged', () => {
+    const socket = fakeSocket();
+    const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
+    const { rerender } = renderHook(({ config }) => useWidgetData('instance-1', config), {
+      wrapper: Wrapper,
+      initialProps: { config: 'city=Paris' },
+    });
+    socket.trigger('widget:data', { instanceId: 'instance-1', data: { t: 1 }, fetchedAt: '2026-01-01T00:00:00Z' });
+
+    rerender({ config: 'city=Paris' });
+
+    expect(socket.emit.mock.calls.filter(([event]) => event === 'widget:subscribe')).toHaveLength(1);
+    expect(queryClient.getQueryData<WidgetCacheEntry>(['widget', 'instance-1'])?.fetchedAt).toBe('2026-01-01T00:00:00Z');
   });
 
   it('ignores events for a different instanceId', async () => {
