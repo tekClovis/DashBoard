@@ -69,7 +69,46 @@ function SkeletonRows({ n }: { n: number }) {
     </div>
   );
 }
+/** Image slot placeholder, same size as the `Thumb` it stands in for. */
+function SlotSkeleton({ width, height, round }: { width: number; height: number; round?: boolean }) {
+  return <Skeleton style={{ width, height }} className={cn('flex-none', round && 'rounded-full')} />;
+}
+function ImageRows({ n, width, height }: { n: number; width: number; height: number }) {
+  return (
+    <div className="grid gap-2.5">
+      {ROW_WIDTHS.slice(0, n).map((w) => (
+        <div key={w} className="flex items-center gap-2.5">
+          <SlotSkeleton width={width} height={height} />
+          <Skeleton className={cn('h-2.5', w)} />
+        </div>
+      ))}
+    </div>
+  );
+}
 export function ViewSkeleton({ kind }: { kind: string }) {
+  if (kind === 'steam.recently_played') return <>{STAT_SKELETON}<ImageRows n={4} width={64} height={30} /></>;
+  if (kind === 'youtube.latest_videos' || kind === 'youtube.trending_videos')
+    return <>{STAT_SKELETON}<ImageRows n={4} width={80} height={45} /></>;
+  if (kind === 'steam.game_news')
+    return (
+      <>
+        <div className="flex items-end gap-3">
+          <SlotSkeleton width={128} height={60} />
+          {STAT_SKELETON}
+        </div>
+        <SkeletonRows n={3} />
+      </>
+    );
+  if (kind === 'youtube.channel_stats')
+    return (
+      <>
+        <div className="flex items-center gap-3">
+          <SlotSkeleton width={40} height={40} round />
+          <Skeleton className="h-3 w-40" />
+        </div>
+        {STAT_SKELETON}
+      </>
+    );
   if (kind === 'weather.current_weather')
     return (
       <>
@@ -77,17 +116,17 @@ export function ViewSkeleton({ kind }: { kind: string }) {
         <Skeleton className="h-9 w-full" />
       </>
     );
-  if (kind === 'weather.forecast' || kind === 'youtube.trending_videos')
+  if (kind === 'weather.forecast')
     return (
       <>
         <Skeleton className="h-2 w-[45%]" />
-        <SkeletonRows n={kind === 'weather.forecast' ? 5 : 4} />
+        <SkeletonRows n={5} />
       </>
     );
   return (
     <>
       {STAT_SKELETON}
-      <SkeletonRows n={kind === 'steam.game_news' ? 3 : 4} />
+      <SkeletonRows n={4} />
     </>
   );
 }
@@ -225,7 +264,7 @@ export function WidgetFrame({ instance, onConfigure, onDelete, onMove, onResize 
           </AlertContent>
         </Alert>
         {entry?.fetchedAt && (
-          <div className="grid content-start gap-2.5 border-t border-dashed pt-2.5 @min-[720px]:border-t-0 @min-[720px]:border-l @min-[720px]:pt-0 @min-[720px]:pl-6">
+          <div data-previous className="grid content-start gap-2.5 border-t border-dashed pt-2.5 @min-[720px]:border-t-0 @min-[720px]:border-l @min-[720px]:pt-0 @min-[720px]:pl-6">
             <p className="text-muted-foreground font-mono text-[0.6875rem]">Last data from {hhmm(entry.fetchedAt)}</p>
             <View data={entry?.data} fetchedAt={entry?.fetchedAt} history={entry?.history} compact />
           </div>

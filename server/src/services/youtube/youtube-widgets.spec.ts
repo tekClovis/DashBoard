@@ -32,12 +32,17 @@ function call(fetchMock: ReturnType<typeof stubFetch>, i: number): { url: URL; a
 }
 
 const CHANNEL = {
-  snippet: { title: 'Google for Developers' },
+  snippet: { title: 'Google for Developers', thumbnails: { default: { url: 'https://yt3.ggpht.com/avatar=s88' } } },
   statistics: { subscriberCount: '2400000', hiddenSubscriberCount: false, viewCount: '180000000', videoCount: '412' },
   contentDetails: { relatedPlaylists: { uploads: 'UUuploads' } },
 };
 
-const snippet = (title: string, publishedAt: string) => ({ title, channelTitle: 'Chan', publishedAt });
+const thumbnails = {
+  default: { url: 'https://i.ytimg.com/vi/x/default.jpg' },
+  medium: { url: 'https://i.ytimg.com/vi/x/mqdefault.jpg' },
+  high: { url: 'https://i.ytimg.com/vi/x/hqdefault.jpg' },
+};
+const snippet = (title: string, publishedAt: string) => ({ title, channelTitle: 'Chan', publishedAt, thumbnails });
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -83,7 +88,7 @@ describe('youtube widgets fetch()', () => {
     expect(url.origin + url.pathname).toBe('https://www.googleapis.com/youtube/v3/channels');
     expect(url.searchParams.get('id')).toBe('UC_x5');
     expect(auth).toBe('Bearer tok');
-    expect(data).toEqual({ channelId: 'UC_x5', title: 'Google for Developers', subscribers: 2400000, views: 180000000, videos: 412 });
+    expect(data).toEqual({ channelId: 'UC_x5', title: 'Google for Developers', subscribers: 2400000, views: 180000000, videos: 412, imageUrl: 'https://yt3.ggpht.com/avatar=s88' });
   });
 
   it('channel_stats reports a missing subscriber count as null, not NaN', async () => {
@@ -98,6 +103,13 @@ describe('youtube widgets fetch()', () => {
     stubFetch(() => Response.json({ items: [hidden] }));
 
     await expect(widget('channel_stats').fetch({ channel_id: 'UC_x5' }, ctx)).resolves.toMatchObject({ subscribers: null });
+  });
+
+  it('channel_stats reports a missing avatar as a null imageUrl', async () => {
+    const bare = { ...CHANNEL, snippet: { title: 'Google for Developers' } };
+    stubFetch(() => Response.json({ items: [bare] }));
+
+    await expect(widget('channel_stats').fetch({ channel_id: 'UC_x5' }, ctx)).resolves.toMatchObject({ imageUrl: null });
   });
 
   it('an unknown channel_id is INVALID_PARAMS', async () => {
@@ -127,10 +139,25 @@ describe('youtube widgets fetch()', () => {
     expect(data).toEqual({
       channelId: 'UC_x5',
       videos: [
-        { id: 'v2', title: 'Newer', channel: 'Chan', publishedAt: '2026-09-20T00:00:00Z', url: 'https://www.youtube.com/watch?v=v2' },
-        { id: 'v1', title: 'Older', channel: 'Chan', publishedAt: '2026-09-10T00:00:00Z', url: 'https://www.youtube.com/watch?v=v1' },
+        { id: 'v2', title: 'Newer', channel: 'Chan', publishedAt: '2026-09-20T00:00:00Z', url: 'https://www.youtube.com/watch?v=v2', imageUrl: thumbnails.medium.url },
+        { id: 'v1', title: 'Older', channel: 'Chan', publishedAt: '2026-09-10T00:00:00Z', url: 'https://www.youtube.com/watch?v=v1', imageUrl: thumbnails.medium.url },
       ],
     });
+  });
+
+  it('maps the best available snippet.thumbnails size to imageUrl, null when there are none', async () => {
+    stubFetch(() =>
+      Response.json({
+        items: [
+          { id: 'a', snippet: { ...snippet('a', '2026-01-01T00:00:00Z'), thumbnails: { default: thumbnails.default, high: thumbnails.high } } },
+          { id: 'b', snippet: { ...snippet('b', '2026-01-01T00:00:00Z'), thumbnails: undefined } },
+        ],
+      }),
+    );
+
+    const data = await widget('trending_videos').fetch({ region: 'FR', number: 2 }, ctx);
+
+    expect(data).toMatchObject({ videos: [{ imageUrl: thumbnails.high.url }, { imageUrl: null }] });
   });
 
   it('trending_videos asks for the mostPopular chart of the region', async () => {

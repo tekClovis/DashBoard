@@ -1,0 +1,6 @@
+== shared
+exit 0
+== server
+exit 0
+== web
+exit 0

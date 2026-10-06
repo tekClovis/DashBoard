@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FetchContext } from '../../catalog/widget-definition.js';
 import { createSteamWidgets } from './steam.widgets.js';
 
+const header = (appId: number) => `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
 const ctx: FetchContext = { userId: 'user-1', externalAccountId: '76561198000000001' };
 
 function stubSteam(status: number, body: unknown): ReturnType<typeof vi.fn> {
@@ -55,8 +56,8 @@ describe('steam widgets', () => {
       expect(url.searchParams.get('count')).toBe('2');
       expect(data).toEqual({
         games: [
-          { appId: 220, name: 'Half-Life 2', playtime2Weeks: 192, playtimeForever: 900 },
-          { appId: 620, name: 'Portal 2', playtime2Weeks: 90, playtimeForever: 300 },
+          { appId: 220, name: 'Half-Life 2', playtime2Weeks: 192, playtimeForever: 900, imageUrl: header(220) },
+          { appId: 620, name: 'Portal 2', playtime2Weeks: 90, playtimeForever: 300, imageUrl: header(620) },
         ],
       });
     });
@@ -118,6 +119,7 @@ describe('steam widgets', () => {
             url: 'https://x/1',
             feedLabel: 'Community Announcements',
             date: new Date(1_700_000_000 * 1000).toISOString(),
+            imageUrl: header(620),
           },
         ],
       });

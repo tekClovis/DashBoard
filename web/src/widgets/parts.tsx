@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { ImageOff } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { hhmm } from '@/lib/time.js';
 import { cn } from '@/lib/utils.js';
 import type { WidgetPush } from '@/realtime/useWidgetData.js';
@@ -70,6 +71,43 @@ export function RowTitle({ href, children, prefix }: { href?: string; children: 
     <span title={children} className={className}>
       {prefix}
       {children}
+    </span>
+  );
+}
+
+/** Fixed-size image slot: pulses while loading; the box is kept, hatched with an icon, when the src is missing, unsafe or fails. */
+export function Thumb({ src, width, height, round, className }: { src?: string | null; width: number; height: number; round?: boolean; className?: string }) {
+  const [state, setState] = useState<'loading' | 'loaded' | 'failed'>('loading');
+  useEffect(() => setState('loading'), [src]);
+  const show = !!src && isHttpUrl(src) && state !== 'failed';
+  const current = show ? state : 'failed';
+  return (
+    <span
+      data-slot="thumb"
+      data-state={current === 'loaded' ? undefined : current}
+      aria-hidden="true"
+      style={{ width, height }}
+      className={cn(
+        'bg-muted text-muted-foreground relative inline-grid flex-none cursor-default place-items-center self-center overflow-hidden after:absolute after:inset-0 after:shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--foreground)_12%,transparent)] data-[state=failed]:bg-[repeating-linear-gradient(135deg,color-mix(in_oklch,var(--foreground)_6%,transparent)_0_1px,transparent_1px_6px)] data-[state=loading]:animate-pulse',
+        round ? 'rounded-full after:rounded-full' : 'rounded-sm after:rounded-sm',
+        className,
+      )}
+    >
+      {show && (
+        <img
+          src={src}
+          alt=""
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onLoad={() => setState('loaded')}
+          onError={() => setState('failed')}
+          className="block size-full object-cover [[data-previous]_&]:opacity-55 [[data-previous]_&]:grayscale"
+        />
+      )}
+      {!show && <ImageOff className="size-3.5" />}
     </span>
   );
 }
