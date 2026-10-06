@@ -14,6 +14,17 @@ afterEach(() => {
 const deletes = () => calls.filter((c) => c.method === 'DELETE');
 
 describe('DashboardPage', () => {
+  it('shows "Dashboard not found" with a link to the first dashboard when the id is unknown', async () => {
+    respondWhen(
+      (url) => url === '/api/dashboards',
+      () => new Response(JSON.stringify({ dashboards: [{ id: 'other', name: 'Home', position: 0 }] }), { status: 200 }),
+    );
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'Dashboard not found' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Go to Home' }).getAttribute('href')).toBe('/d/other');
+    expect(screen.queryByRole('button', { name: 'Add widget' })).toBeNull();
+  });
+
   it('shows an error with a working retry when the widgets fail to load', async () => {
     const recover = failWhen((url) => url.endsWith('/widgets'));
     renderPage();

@@ -12,8 +12,10 @@ import {
 } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { Link, useParams } from 'react-router';
+import { useDashboards } from '@/api/dashboards.js';
 import { useDeleteWidget, useUpdateLayout, useWidgets } from '@/api/widgets.js';
 import { AddWidgetDialog } from '@/components/AddWidgetDialog.js';
+import { ShareButton } from '@/components/DashboardShare.js';
 import { frameState, type FrameState } from '@/components/frame-state.js';
 import { PageHead } from '@/components/page-head.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
@@ -129,6 +131,31 @@ interface Preview {
 /** Dashboard grid — docs/Architecture.md §9. Drag/resize on md+, single stacked column below. */
 export function DashboardPage() {
   const { dashboardId = '' } = useParams();
+  const { data: list } = useDashboards();
+  const known = list?.dashboards;
+  if (Array.isArray(known) && !known.some((d) => d.id === dashboardId)) {
+    return <DashboardNotFound path={`/d/${dashboardId}`} firstId={known[0]?.id} firstName={known[0]?.name} />;
+  }
+  return <DashboardView dashboardId={dashboardId} />;
+}
+
+function DashboardNotFound({ path, firstId, firstName }: { path: string; firstId?: string; firstName?: string }) {
+  return (
+    <div className="grid justify-items-center gap-2 py-16 text-center">
+      <h1 className="text-lg font-semibold">Dashboard not found</h1>
+      <p className="text-muted-foreground text-[0.8125rem]">
+        There’s no dashboard at <span className="font-mono text-[0.6875rem]">{path}</span>. It may have been deleted.
+      </p>
+      {firstId && (
+        <Button asChild>
+          <Link to={`/d/${firstId}`}>Go to {firstName}</Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function DashboardView({ dashboardId }: { dashboardId: string }) {
   const { data, isError, refetch } = useWidgets(dashboardId);
   const updateLayout = useUpdateLayout(dashboardId);
   const deleteWidget = useDeleteWidget(dashboardId);
@@ -317,12 +344,15 @@ export function DashboardPage() {
         className="items-center"
         sub={empty ? 'No widgets on this dashboard.' : data && <DashboardCounters widgets={widgets} />}
       >
-        {!empty && (
-          <Button ref={addRef} onClick={openAdd}>
-            <Plus />
-            Add <span className="max-md:hidden">widget</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ShareButton dashboardId={dashboardId} />
+          {!empty && (
+            <Button ref={addRef} onClick={openAdd}>
+              <Plus />
+              Add <span className="max-md:hidden">widget</span>
+            </Button>
+          )}
+        </div>
       </PageHead>
 
       {saveError && (

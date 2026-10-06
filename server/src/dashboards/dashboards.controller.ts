@@ -2,20 +2,25 @@
 // features/dashboards-api/spec.md and docs/Architecture.md §8.
 
 import { Body, Controller, Delete, Get, Param, ParseArrayPipe, Patch, Post, UseGuards } from '@nestjs/common';
-import type { DashboardEntry, DashboardsResponse, WidgetInstanceEntry, WidgetsResponse } from '@dashboard/shared';
+import type { DashboardEntry, DashboardsResponse, SentSharesResponse, WidgetInstanceEntry, WidgetsResponse } from '@dashboard/shared';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtGuard } from '../auth/jwt.guard.js';
 import type { RequestUser } from '../auth/types.js';
 import { CreateDashboardDto } from './dto/create-dashboard.dto.js';
 import { CreateWidgetInstanceDto } from './dto/create-widget-instance.dto.js';
+import { ShareDashboardDto } from './dto/share-dashboard.dto.js';
 import { LayoutUpdateDto } from './dto/layout-update.dto.js';
 import { UpdateDashboardDto } from './dto/update-dashboard.dto.js';
+import { DashboardShareService } from './dashboard-shares.service.js';
 import { DashboardsService } from './dashboards.service.js';
 
 @Controller('dashboards')
 @UseGuards(JwtGuard)
 export class DashboardsController {
-  constructor(private readonly dashboards: DashboardsService) {}
+  constructor(
+    private readonly dashboards: DashboardsService,
+    private readonly shares: DashboardShareService,
+  ) {}
 
   @Get()
   async list(@CurrentUser() user: RequestUser): Promise<DashboardsResponse> {
@@ -40,6 +45,21 @@ export class DashboardsController {
   async remove(@Param('id') id: string, @CurrentUser() user: RequestUser): Promise<{ ok: true }> {
     await this.dashboards.remove(user.id, id);
     return { ok: true };
+  }
+
+  @Post(':id/share')
+  async share(
+    @Param('id') id: string,
+    @Body() dto: ShareDashboardDto,
+    @CurrentUser() user: RequestUser,
+  ): Promise<{ ok: true }> {
+    await this.shares.share(user.id, id, dto.email);
+    return { ok: true };
+  }
+
+  @Get(':id/shares')
+  async sentShares(@Param('id') id: string, @CurrentUser() user: RequestUser): Promise<SentSharesResponse> {
+    return { shares: await this.shares.listSent(user.id, id) };
   }
 
   @Get(':id/widgets')

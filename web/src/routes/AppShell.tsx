@@ -4,6 +4,8 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout, useMe } from '@/api/auth.js';
 import { useDashboards } from '@/api/dashboards.js';
 import { ThemeToggle } from '@/components/theme-toggle.js';
+import { InboxButton } from '@/components/DashboardShare.js';
+import { DashboardSwitcher } from '@/components/DashboardSwitcher.js';
 import { Alert } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -256,9 +258,10 @@ function ShellHeader() {
   return (
     <header className="bg-background/92 sticky top-0 z-30 flex h-12 items-center gap-2 border-b pr-2 pl-4 backdrop-blur-sm md:gap-5 md:px-6">
       <MobileMenu {...shellNav} />
-      <Link to={nav[0].to} className={brandClass}>
+      <Link to={nav[0].to} className={cn(brandClass, 'max-md:hidden')}>
         <Brand />
       </Link>
+      <DashboardSwitcher />
       <nav aria-label="Main" className="hidden h-12 items-stretch gap-0.5 md:flex">
         {nav.map((item) => (
           <Link
@@ -272,6 +275,7 @@ function ShellHeader() {
         ))}
       </nav>
       <div className="ml-auto flex items-center gap-2">
+        <InboxButton />
         <ConnectionChip />
         <ThemeToggle />
         {me && <AccountMenu email={me.email} />}
