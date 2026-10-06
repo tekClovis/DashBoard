@@ -49,6 +49,17 @@ describe('useWidgetData', () => {
     expect(socket.emit).toHaveBeenCalledWith('widget:unsubscribe', { instanceId: 'instance-1' });
   });
 
+  it('re-emits widget:subscribe when the socket reconnects', () => {
+    const socket = fakeSocket();
+    const { Wrapper } = wrapper({ socket: socket as never, connected: true });
+
+    renderHook(() => useWidgetData('instance-1'), { wrapper: Wrapper });
+    socket.emit.mockClear();
+    socket.trigger('connect', undefined);
+
+    expect(socket.emit).toHaveBeenCalledWith('widget:subscribe', { instanceId: 'instance-1' });
+  });
+
   it('writes an incoming widget:data event into the ["widget", instanceId] cache entry', async () => {
     const socket = fakeSocket();
     const { Wrapper, queryClient } = wrapper({ socket: socket as never, connected: true });
