@@ -1,0 +1,5 @@
+ service |    widget     |                 params                  | refreshRate 
+---------+---------------+-----------------------------------------+-------------
+ youtube | latest_videos | {"number": 5, "channel_id": "UC_tele2"} |         600
+(1 row)
+

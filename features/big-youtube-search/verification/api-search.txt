@@ -1,0 +1,19 @@
+### GET /api/youtube/channels/search?q=tele
+{"results":[{"id":"UC_tele1","title":"Telemetry Talks","thumbnail":"data:image/svg+xml;… (avatar)"},{"id":"UC_tele2","title":"Telemetry Daily","thumbnail":"data:image/svg+xml;… (avatar)"},{"id":"UC_tele3","title":"Telecom Explained","thumbnail":"data:image/svg+xml;… (avatar)"}]}
+HTTP 200
+
+### GET /api/youtube/channels/search?q=zzqxv
+{"results":[]}
+HTTP 200
+
+### GET /api/youtube/channels/search?q=t
+{"error":"INVALID_QUERY"}
+HTTP 400
+
+### GET /api/youtube/channels/search?q=err
+{"error":"UPSTREAM_ERROR"}
+HTTP 502
+
+### no session, q=tele
+{"message":"Unauthorized","statusCode":401}
+HTTP 401
