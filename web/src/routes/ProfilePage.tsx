@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { oauthStartUrl, useLogout, useLogoutAll, useMe, useUnlinkIdentity, type OAuthProvider } from '@/api/auth.js';
+import { oauthStartUrl, useDeleteAccount, useLogout, useLogoutAll, useMe, useUnlinkIdentity, type OAuthProvider } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
 import { PageHead } from '@/components/page-head.js';
+import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog.js';
+import { Input } from '@/components/ui/input.js';
+import { Label } from '@/components/ui/label.js';
 
 /**
  * Matches features/oauth-login/mock.html's "Profile — linked accounts" card plus the
@@ -90,7 +94,100 @@ export function ProfilePage() {
           Log out of all devices
         </Button>
       </div>
+
+      <DangerZone email={me.email} />
     </div>
+  );
+}
+
+function DangerZone({ email }: { email: string }) {
+  const del = useDeleteAccount();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  function onOpenChange(next: boolean) {
+    if (del.isPending) return;
+    setOpen(next);
+    setTyped('');
+    setError(null);
+  }
+
+  function onConfirm() {
+    setError(null);
+    del.mutate(undefined, {
+      onSuccess: () => navigate('/login'),
+      onError: (err) =>
+        setError(
+          err instanceof ApiError && err.code === 'LAST_ADMIN'
+            ? 'You’re the only admin. Promote another user to admin from the Admin page before deleting this account.'
+            : 'Could not delete your account. Try again.',
+        ),
+    });
+  }
+
+  return (
+    <section className="border-destructive/40 bg-card flex items-center justify-between gap-4 rounded-lg border p-6">
+      <div>
+        <h2 className="text-destructive text-sm font-semibold">Danger zone</h2>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          Permanently removes your account, dashboards, widgets, shares and service connections. This can’t be undone.
+        </p>
+      </div>
+      <Button variant="destructive" onClick={() => onOpenChange(true)}>
+        Delete account
+      </Button>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[min(420px,calc(100vw-2rem))]">
+          <div>
+            <DialogTitle className="text-base font-semibold">Delete your account?</DialogTitle>
+            <DialogDescription className="text-muted-foreground mt-0.5 text-[0.8125rem]">
+              This permanently deletes your account, dashboards, widgets, shares and service connections. Dashboards you
+              shared that someone already accepted stay with them. This can’t be undone.
+            </DialogDescription>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="delete-email">
+              Type <b className="font-mono">{email}</b> to confirm
+            </Label>
+            <Input
+              id="delete-email"
+              className="font-mono"
+              autoComplete="off"
+              spellCheck={false}
+              value={typed}
+              disabled={del.isPending}
+              aria-invalid={error ? true : undefined}
+              onChange={(e) => setTyped(e.target.value)}
+            />
+          </div>
+          {error && (
+            <Alert tone="destructive">
+              <AlertContent>
+                <AlertTitle>Account not deleted</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </AlertContent>
+            </Alert>
+          )}
+          <div className="flex justify-end gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={del.isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive-solid"
+              disabled={typed !== email || del.isPending}
+              onClick={onConfirm}
+            >
+              {del.isPending ? 'Deleting…' : 'Delete account'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </section>
   );
 }
 

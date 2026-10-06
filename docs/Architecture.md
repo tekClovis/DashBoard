@@ -323,6 +323,7 @@ All routes are under `/api` and require the JWT cookie unless marked public. Bod
 | GET | `/shares/incoming` | Pending shares sent to me `{ shares: [{ id, dashboardName, fromEmail, widgetCount, createdAt }] }` |
 | POST / DELETE | `/shares/{id}/accept`, `/shares/{id}` | Add a personal copy (returns the new dashboard) / decline. Only the recipient; anyone else gets 404 |
 | PATCH / DELETE | `/widgets/{id}` | Reconfigure (`params`, `refreshRate`) / delete |
+| DELETE | `/users/me` | Delete my own account (cascades to everything I own, clears the session cookie, drops my sockets); 204. The only admin gets 409 `LAST_ADMIN` |
 | GET / PATCH / DELETE | `/admin/users`, `/admin/users/{id}` | Admin |
 
 Every `{id}` lookup is scoped by `userId` in the query itself, so an instance owned by someone else is a 404, not a 403.
