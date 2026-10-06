@@ -16,7 +16,7 @@ import { JwtService } from '../jwt.service.js';
 import { setSessionCookie } from '../session-cookie.js';
 import { OAUTH_STATE_COOKIE } from './oauth-state.js';
 import { GithubOAuthGuard, GoogleOAuthGuard, SteamOAuthGuard, type OAuthCallbackRequest } from './oauth.guard.js';
-import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService } from './oauth-login.service.js';
+import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService, OAuthNoAccountError } from './oauth-login.service.js';
 import type { NormalizedOAuthProfile } from './normalized-profile.js';
 
 const CONNECT_PROVIDER_TO_SERVICE = { github: 'github', google: 'youtube', steam: 'steam' } as const;
@@ -130,6 +130,10 @@ export class OAuthController {
     } catch (err) {
       if (err instanceof OAuthLinkRefusedError) {
         res.redirect(`${appUrl}/login?error=EMAIL_LINK_REQUIRED`);
+        return;
+      }
+      if (err instanceof OAuthNoAccountError) {
+        res.redirect(`${appUrl}/login?error=OAUTH_NO_ACCOUNT`);
         return;
       }
       throw err;

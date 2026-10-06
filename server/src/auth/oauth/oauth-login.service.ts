@@ -2,11 +2,10 @@
 //   1. AuthIdentity(provider, providerUserId) match → log that user in.
 //   2. Else a User with the same email exists → auto-link only if the provider's email is
 //      verified AND the local user is confirmed; otherwise refuse.
-//   3. Else create a new verified User + AuthIdentity, then log in.
+//   3. Else refuse: OAuth never creates an account — register with email + password first.
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service.js';
-import { DEFAULT_DASHBOARD_NAME, DEFAULT_DASHBOARD_POSITION } from '../../dashboards/dashboards.service.js';
 import type { User } from '../../generated/prisma/client.js';
 import type { NormalizedOAuthProfile } from './normalized-profile.js';
 
@@ -14,6 +13,13 @@ import type { NormalizedOAuthProfile } from './normalized-profile.js';
 export class OAuthLinkRefusedError extends Error {
   constructor() {
     super('An account with this email already exists. Log in with your password, then link from Profile.');
+  }
+}
+
+/** Thrown for account-linking rule 3: no identity and no local account match. Never mutates anything. */
+export class OAuthNoAccountError extends Error {
+  constructor() {
+    super('No account matches this provider. Register with your email first, then link from Profile.');
   }
 }
 
@@ -54,24 +60,7 @@ export class OAuthLoginService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email: profile.email ?? `${profile.provider.toLowerCase()}-${profile.providerUserId}@users.invalid`,
-          emailVerifiedAt: new Date(),
-        },
-      });
-      await tx.authIdentity.create({
-        data: { userId: user.id, provider: profile.provider, providerUserId: profile.providerUserId },
-      });
-      // Same default Dashboard as AuthController.register's local registration, created here
-      // directly (not via DashboardsService.createDefault) so it's atomic with the User row in
-      // this transaction — see docs/Architecture.md §4 ("The first one is created on signup").
-      await tx.dashboard.create({
-        data: { userId: user.id, name: DEFAULT_DASHBOARD_NAME, position: DEFAULT_DASHBOARD_POSITION },
-      });
-      return user;
-    });
+    throw new OAuthNoAccountError();
   }
 
   /**
