@@ -2,11 +2,12 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
 
  RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a75673746614637fe/server
 
-[33m[Nest] 309528  - [39m10/06/2026, 5:36:53 PM [33m   WARN[39m [38;5;3m[AdminSeedService] [39m[33mADMIN_EMAIL admin@b.com matches an existing user; refusing to overwrite it. Skipping admin boot-seed.[39m
-[32m[Nest] 309528  - [39m10/06/2026, 5:36:53 PM [32m    LOG[39m [38;5;3m[AdminSeedService] [39m[32mSeeded admin user admin@b.com[39m
+[33m[Nest] 985108  - [39m10/06/2026, 10:31:42 PM [33m   WARN[39m [38;5;3m[AdminSeedService] [39m[33mADMIN_EMAIL admin@b.com matches an existing user; refusing to overwrite it. Skipping admin boot-seed.[39m
+[32m[Nest] 985108  - [39m10/06/2026, 10:31:43 PM [32m    LOG[39m [38;5;3m[AdminSeedService] [39m[32mSeeded admin user admin@b.com[39m
 
- Test Files  59 passed (59)
-      Tests  662 passed (662)
-   Start at  17:36:52
-   Duration  4.04s (transform 4.23s, setup 0ms, import 24.72s, tests 3.39s, environment 11ms)
+ Test Files  64 passed (64)
+      Tests  706 passed (706)
+   Start at  22:31:39
+   Duration  14.54s (transform 21.02s, setup 0ms, import 93.14s, tests 9.21s, environment 32ms)
 
+exit=0

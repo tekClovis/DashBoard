@@ -2,65 +2,7 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
 
  RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a75673746614637fe/server
 
- ✓ src/services/youtube/youtube-api.spec.ts > fixedMessage > rethrows a FetchError as is 2ms
- ✓ src/services/youtube/youtube-api.spec.ts > fixedMessage > replaces any other error with UPSTREAM_ERROR and the fixed text only 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > GETs the v3 path with the query stringified and Bearer auth 24ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > returns the parsed body of a 2xx response as is, optional fields included 2ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > refreshes for the context user when there is no access token, before any request 1ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > with an expiry already passed, sends the expected token 2ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > with an expiry exactly 60 s ahead, sends the expected token 1ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > with an expiry just over 60 s ahead, sends the expected token 1ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > on a 401, refreshes once and retries the same request with the new token 1ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > is REAUTH_REQUIRED when the retried request is rejected too 1ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > does not retry a 401 on a token it refreshed up front 1ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > keeps the refreshed token for later requests of the same client, and never refreshes twice 1ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > token refresh > propagates a failed refresh unchanged, without retrying the request 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 429 {} to RATE_LIMITED, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"quotaExceeded"}]}} to RATE_LIMITED, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"rateLimitExceeded"}]}} to RATE_LIMITED, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"userRateLimitExceeded"}]}} to RATE_LIMITED, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"dailyLimitExceeded"}]}} to RATE_LIMITED, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"forbidden"}]}} to UPSTREAM_ERROR, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube"}]}} to UPSTREAM_ERROR, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{"errors":[]}} to UPSTREAM_ERROR, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 {"error":{}} to UPSTREAM_ERROR, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 403 null to UPSTREAM_ERROR, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 500 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"quotaExceeded"}]}} to UPSTREAM_ERROR, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 400 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"invalidRegionCode"}]}} to INVALID_PARAMS, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 404 {"error":{"message":"Invalid credentials ya29.SECRETtoken","errors":[{"domain":"youtube","reason":"playlistNotFound"}]}} to INVALID_PARAMS, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps HTTP 503 {} to UPSTREAM_ERROR, with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps an error response with a non-JSON body by its status alone 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps a 2xx body that is not JSON to UPSTREAM_ERROR with a fixed message 0ms
- ✓ src/services/youtube/youtube-api.spec.ts > youtubeClient > error mapping > maps a network failure to UPSTREAM_ERROR, keeping the access token out of the message 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > exchanges the decrypted refresh token and persists the new access token encrypted, with its expiry 23ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > stores a rotated refresh token when Google returns one 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 400 from the token endpoint (revoked grant) is REAUTH_REQUIRED and marks the unchanged row REAUTH 2ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 401 from the token endpoint (revoked grant) is REAUTH_REQUIRED and marks the unchanged row REAUTH 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a disconnect during a granted refresh is NOT_CONNECTED, not a raw database error 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a disconnect during a refused refresh is NOT_CONNECTED, not a raw database error 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a reconnect during a granted refresh keeps the new connection and uses its access token 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a reconnect during a refused refresh keeps the new connection and uses its access token 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 5xx from the token endpoint is UPSTREAM_ERROR 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with no expires_in is UPSTREAM_ERROR with a fixed message, and nothing is written 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with no access_token is UPSTREAM_ERROR with a fixed message, and nothing is written 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with an empty access_token is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a non-positive expires_in is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a string expires_in is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a non-string refresh_token is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a newline in access_token is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a NUL in access_token is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a space in access_token is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a newline in refresh_token is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with a non-JSON body is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with expires_in 9e12 is UPSTREAM_ERROR with a fixed message, and nothing is written 3ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with expires_in 1e13 is UPSTREAM_ERROR with a fixed message, and nothing is written 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with expires_in 1e300 is UPSTREAM_ERROR with a fixed message, and nothing is written 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a 200 with an infinite expires_in is UPSTREAM_ERROR with a fixed message, and nothing is written 0ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > an unexpected error (e.g. the DB write failing) is UPSTREAM_ERROR with a fixed message, never its own text 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > a failing token request or refresh-token decrypt is UPSTREAM_ERROR with a fixed message, never its own text 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > shares one in-flight refresh between concurrent callers for the same user 1ms
- ✓ src/services/youtube/google-token-refresher.spec.ts > GoogleTokenRefresher > without a stored refresh token it is REAUTH_REQUIRED, without calling Google 1ms
- ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > searches type=channel and returns each channel id, title and thumbnail 19ms
+ ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > searches type=channel and returns each channel id, title and thumbnail 17ms
  ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > returns an empty list when nothing matches 1ms
  ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > rejects the query undefined with INVALID_QUERY 1ms
  ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > rejects the query "" with INVALID_QUERY 0ms
@@ -69,51 +11,14 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > rejects the query "ab" with INVALID_QUERY 0ms
  ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > answers 409 NOT_CONNECTED without a youtube connection 0ms
  ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > maps a YouTube HTTP 429 to RATE_LIMITED / 429 1ms
- ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > maps a YouTube HTTP 500 to UPSTREAM_ERROR / 502 1ms
+ ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > maps a YouTube HTTP 500 to UPSTREAM_ERROR / 502 0ms
  ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > maps a YouTube HTTP 400 to INVALID_PARAMS / 502 0ms
- ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > answers 502 UPSTREAM_ERROR on a malformed body, without leaking its text 0ms
- ✓ src/services/youtube/youtube-search.spec.ts > channel param > is a search param pointing at the channel search endpoint, not a raw id field 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > YoutubeModule > registers the youtube oauth service with its three connection-scoped widgets 3ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > accepts region FR 1ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > accepts region US 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region fr 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region FRA 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region F 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region 1A 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region FR&x=1 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects number 0 outside 1–10 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects number 11 outside 1–10 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats requests the channel with Bearer auth and returns its counts 2ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats reports a missing subscriber count as null, not NaN 1ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats reports a hidden subscriber count as null 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > an unknown channel_id is INVALID_PARAMS 1ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > latest_videos reads `number` items of the uploads playlist, most recent first, with built watch URLs 2ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > trending_videos asks for the mostPopular chart of the region 1ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > on a 401, refreshes the token once and retries the request with it 1ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > keeps the refreshed token for later requests of the same run, and refreshes only once 1ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > a 401 after a successful refresh is REAUTH_REQUIRED 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > propagates a failed refresh unchanged, without retrying the request 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > refreshes up front when the connection has no access token 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > refreshes up front when the stored expiry has passed, without a doomed request 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > uses the stored token while its expiry is still ahead 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 403 { error: { errors: [ { reason: 'quotaExceeded' } ] } } to RATE_LIMITED 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 403 { error: { errors: [ { reason: 'rateLimitExceeded' } ] } } to RATE_LIMITED 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 429 {} to RATE_LIMITED 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 400 { error: { errors: [ { reason: 'invalidRegionCode' } ] } } to INVALID_PARAMS 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 404 { error: { errors: [ { reason: 'playlistNotFound' } ] } } to INVALID_PARAMS 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 403 { error: { errors: [ { reason: 'forbidden' } ] } } to UPSTREAM_ERROR 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 500 {} to UPSTREAM_ERROR 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > trending_videos maps a 200 with { region: 'FR', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats maps a 200 with { channel_id: 'UC_x5', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats maps a 200 with { channel_id: 'UC_x5', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > trending_videos maps a 200 with { region: 'FR', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > latest_videos maps a 200 with { channel_id: 'UC_x5', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > latest_videos maps a channel without contentDetails to UPSTREAM_ERROR, without requesting a playlist 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps a network failure to UPSTREAM_ERROR 0ms
- ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > never puts a fetch error's text (which can quote the Authorization header) in the client message 1ms
+ ✓ src/services/youtube/youtube-search.spec.ts > YoutubeSearchController > answers 502 UPSTREAM_ERROR on a malformed body, without leaking its text 1ms
+ ✓ src/services/youtube/youtube-search.spec.ts > channel param > is a youtube.channel search param with hidden title and image companions, not a raw id field 0ms
 
- Test Files  4 passed (4)
-      Tests  109 passed (109)
-   Start at  17:37:09
-   Duration  793ms (transform 530ms, setup 0ms, import 1.47s, tests 137ms, environment 0ms)
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  22:32:13
+   Duration  491ms (transform 158ms, setup 0ms, import 363ms, tests 24ms, environment 0ms)
 
+exit=0
