@@ -130,10 +130,33 @@ describe('OAuth login (e2e)', () => {
         .set('Cookie', cookie)
         .expect(302);
 
-      expect(res.headers['location']).toContain('/d/placeholder');
+      const first = await prisma.dashboard.findFirstOrThrow({ where: { userId: user.id }, orderBy: { position: 'asc' } });
+      expect(res.headers['location']).toContain(`/d/${first.id}`);
       expect(extractCookie(res, 'session')).toBeTruthy();
       expect(await prisma.user.count()).toBe(1);
       expect(await prisma.authIdentity.count()).toBe(1);
+    });
+
+    it('lands on the same dashboard when logging in again', async () => {
+      const user = await prisma.user.create({ data: { email: `again-${provider}@example.com`, emailVerifiedAt: new Date() } });
+      await prisma.authIdentity.create({
+        data: { userId: user.id, provider: dbProvider as never, providerUserId: `${provider}-150` },
+      });
+      stubStrategyProfile(getStrategy(), makeProfile(`${provider}-150`, 'unused@example.com', true));
+
+      const locations: string[] = [];
+      for (let i = 0; i < 2; i++) {
+        const { cookie, state } = await startAndGetState(provider);
+        const res = await request(app.getHttpServer())
+          .get(`/api/oauth/${provider}/callback?code=fake&state=${encodeURIComponent(state)}`)
+          .set('Cookie', cookie)
+          .expect(302);
+        locations.push(res.headers['location'] as string);
+      }
+
+      expect(locations[0]).toBe(locations[1]);
+      expect(locations[0]).not.toContain('placeholder');
+      expect(await prisma.dashboard.count({ where: { userId: user.id } })).toBe(1);
     });
 
     it('auto-links when the provider email is verified and the local user is confirmed', async () => {
@@ -146,7 +169,8 @@ describe('OAuth login (e2e)', () => {
         .set('Cookie', cookie)
         .expect(302);
 
-      expect(res.headers['location']).toContain('/d/placeholder');
+      const first = await prisma.dashboard.findFirstOrThrow({ where: { userId: user.id }, orderBy: { position: 'asc' } });
+      expect(res.headers['location']).toContain(`/d/${first.id}`);
       expect(extractCookie(res, 'session')).toBeTruthy();
       expect(await prisma.user.count()).toBe(1);
       const identity = await prisma.authIdentity.findFirst({ where: { userId: user.id } });
@@ -178,7 +202,9 @@ describe('OAuth login (e2e)', () => {
         .set('Cookie', cookie)
         .expect(302);
 
-      expect(res.headers['location']).toContain('/d/placeholder');
+      const created = await prisma.user.findUniqueOrThrow({ where: { email: `brand-new-${provider}@example.com` } });
+      const first = await prisma.dashboard.findFirstOrThrow({ where: { userId: created.id }, orderBy: { position: 'asc' } });
+      expect(res.headers['location']).toContain(`/d/${first.id}`);
       expect(extractCookie(res, 'session')).toBeTruthy();
       const user = await prisma.user.findUnique({ where: { email: `brand-new-${provider}@example.com` } });
       expect(user?.emailVerifiedAt).not.toBeNull();

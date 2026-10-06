@@ -49,10 +49,10 @@ function useShellNav() {
   const { data: me } = useMe();
   const { data: dashboards } = useDashboards();
   const { pathname } = useLocation();
-  const homeId = dashboards?.dashboards[0]?.id ?? 'placeholder';
+  const homeId = dashboards?.dashboards[0]?.id;
 
   const items: NavItem[] = [
-    { to: `/d/${homeId}`, match: '/d/', label: 'Dashboard', icon: LayoutGrid },
+    { to: homeId ? `/d/${homeId}` : '/', match: '/d/', label: 'Dashboard', icon: LayoutGrid },
     { to: '/services', match: '/services', label: 'Services', icon: Plug },
   ];
   const admin: NavItem = { to: '/admin', match: '/admin', label: 'Admin', icon: Users };

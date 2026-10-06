@@ -1,0 +1,2 @@
+server tsc 0
+web tsc 0

@@ -24,7 +24,7 @@ function makeDeps() {
     upsertOAuthConnection: vi.fn().mockResolvedValue(undefined),
     upsertSteamConnection: vi.fn().mockResolvedValue(undefined),
   };
-  const dashboards = { list: vi.fn().mockResolvedValue([{ id: 'd1' }, { id: 'd2' }]) };
+  const dashboards = { list: vi.fn().mockResolvedValue([{ id: 'd1' }, { id: 'd2' }]), createDefault: vi.fn().mockResolvedValue({ id: 'new1' }) };
   const controller = new OAuthController(oauthLogin as never, connections as never, dashboards as never, config as never, jwt);
   return { controller, oauthLogin, connections, dashboards, jwt };
 }
@@ -61,7 +61,18 @@ describe('OAuthController', () => {
       expect(name).toBe('session');
       expect(options).toMatchObject({ httpOnly: true, sameSite: 'lax', path: '/', secure: false });
       expect(jwt.verify(token)).toMatchObject({ sub: 'u1', role: 'USER', tv: 3 });
-      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/placeholder`);
+      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/d1`);
+    });
+
+    it('creates a default dashboard and lands on it when the user has none', async () => {
+      const { controller, dashboards } = makeDeps();
+      dashboards.list.mockResolvedValue([]);
+      const { res, asResponse } = makeRes();
+
+      await controller.githubCallback(makeReq(LOGIN_STATE), asResponse);
+
+      expect(dashboards.createDefault).toHaveBeenCalledWith('u1');
+      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/new1`);
     });
 
     it('refuses a banned user without issuing a session', async () => {

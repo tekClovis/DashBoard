@@ -1,0 +1,47 @@
+
+> dashboard@0.0.1 test:e2e
+> npm run test:e2e -w server
+
+
+> server@0.0.1 test:e2e
+> vitest run --config ./vitest.config.e2e.ts
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-reconnect-redirect/server
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32860"
+
+1 migration found in prisma/migrations
+
+Applying migration `20260914000000_init`
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 7.10.0 -> 8.0.0-rc.20                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260914000000_init/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+[31m[Nest] 676255  - [39m10/06/2026, 7:25:57 PM [31m  ERROR[39m [38;5;3m[MailService] [39m[31mFailed to send confirmation email to signup-8b2fe43b-0df1-494f-9b35-91d23ac676e4@example.com[39m
+Error: getaddrinfo EAI_AGAIN mailpit
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)
+
+ Test Files  12 passed (12)
+      Tests  116 passed (116)
+   Start at  19:24:56
+   Duration  68.23s (transform 609ms, setup 0ms, import 6.49s, tests 56.76s, environment 1ms)
+

@@ -49,4 +49,29 @@ describe('RootRedirect', () => {
 
     expect(await screen.findByText('dashboard page')).toBeTruthy();
   });
+
+  it('creates a default dashboard for a user with none and lands on it', async () => {
+    vi.spyOn(authApi, 'useMe').mockReturnValue({
+      data: { id: '1', email: 'user@example.com', role: 'USER', emailVerifiedAt: null, hasPassword: true, identities: [] },
+      isPending: false,
+    } as unknown as ReturnType<typeof authApi.useMe>);
+    vi.spyOn(dashboardsApi, 'useDashboards').mockReturnValue({
+      data: { dashboards: [] },
+      isPending: false,
+    } as unknown as ReturnType<typeof dashboardsApi.useDashboards>);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'new-1', name: 'My Dashboard', position: 0 }), {
+        status: 201,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderRoot();
+
+    expect(await screen.findByText('dashboard page')).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('/dashboards');
+    vi.unstubAllGlobals();
+  });
 });

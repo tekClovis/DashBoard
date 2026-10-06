@@ -1,0 +1,20 @@
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-reconnect-redirect/web
+
+ ✓ src/routes/RootRedirect.spec.tsx > RootRedirect > sends an unauthenticated visitor to /login 35ms
+ ✓ src/routes/RootRedirect.spec.tsx > RootRedirect > sends an authenticated visitor to their first dashboard 5ms
+ ✓ src/routes/RootRedirect.spec.tsx > RootRedirect > creates a default dashboard for a user with none and lands on it 15ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > renders the branded panel with labelled fields and OAuth links 141ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > navigates home after a successful login 48ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > shows wrong credentials as an alert linked to both fields 42ms
+ ✓ src/routes/logout-flow.spec.tsx > logout flow > lands on /login and stays there (no redirect loop) after logout 361ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > shows the error alert without calling the API when the input is invalid 20ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > offers a new confirmation link when the email is not confirmed 46ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > prefills the email carried over from register 5ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > explains the account-linking refusal from the OAuth callback 9ms
+
+ Test Files  3 passed (3)
+      Tests  11 passed (11)
+   Start at  19:27:06
+   Duration  1.29s (environment 54%, tests 23%, import 14%, transform 8%, setup 1%, worker 1%)
+
