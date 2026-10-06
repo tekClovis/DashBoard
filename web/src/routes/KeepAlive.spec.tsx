@@ -260,4 +260,19 @@ describe('dashboard keep-alive', () => {
     fireEvent.click(screen.getByRole('button', { name: /Renamed/ }));
     expect(await screen.findByText('Shared')).toBeTruthy();
   });
+
+  it('applies a widget reconfigured while hidden: reset to waiting and resubscribed', async () => {
+    await openDashboard();
+    push(forecast);
+    fireEvent.click(nav().getByRole('link', { name: 'Services' }));
+    await screen.findByText('services page');
+
+    widgets = [{ ...instance, params: { city: 'Lyon' } }];
+    await queryClient.invalidateQueries({ queryKey: ['widgets', 'dash-1'] });
+    fireEvent.click(nav().getByRole('link', { name: 'Dashboard' }));
+
+    await waitFor(() => expect(emitted(SOCKET_EVENTS.subscribe)).toHaveLength(2));
+    expect(emitted(SOCKET_EVENTS.unsubscribe)).toHaveLength(1);
+    expect(queryClient.getQueryData<{ data: unknown }>(['widget', instance.id])?.data).toBeNull();
+  });
 });

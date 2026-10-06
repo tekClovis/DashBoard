@@ -135,9 +135,9 @@ describe('AppShell connection state', () => {
 describe('AppShell account menu', () => {
   it('shows the email, Profile and Log out, and Log out calls the logout API', async () => {
     mockMe('USER');
-    const fetchMock = vi.fn((_url: string, _init?: RequestInit) =>
+    const fetchMock = vi.fn((url: string, _init?: RequestInit) =>
       Promise.resolve(
-        new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
+        new Response(JSON.stringify(url.includes('/shares') ? { shares: [] } : { ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
       ),
     );
     vi.stubGlobal('fetch', fetchMock);
