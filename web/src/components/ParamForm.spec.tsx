@@ -18,6 +18,26 @@ function Harness({ showErrors = false, list = specs }: { showErrors?: boolean; l
 
 afterEach(cleanup);
 
+describe('search params', () => {
+  const city: ParamSpec = { name: 'city', type: 'string', required: true, label: 'City', search: 'weather.city' };
+
+  it('asks for a pick, not free text, when a required search param is empty', () => {
+    expect(validateParam(city, '')).toBe('Pick a city from the results.');
+    expect(validateParam(city, 'Paris')).toBeNull();
+  });
+
+  it('renders no field for hidden companion params', () => {
+    const list: ParamSpec[] = [
+      { name: 'latitude', type: 'string', hidden: true },
+      { name: 'note', type: 'string', label: 'Note' },
+    ];
+    render(<Harness list={list} />);
+
+    expect(screen.queryByLabelText(/latitude/)).toBeNull();
+    expect(screen.getByLabelText('Note (optional)')).toBeTruthy();
+  });
+});
+
 describe('ParamForm', () => {
   it('renders enum as select, integer as bounded number input with a range hint, pattern as text', () => {
     render(<Harness />);

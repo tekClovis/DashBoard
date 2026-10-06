@@ -1,6 +1,8 @@
-import type { ParamSpec } from '@dashboard/shared';
+import type { CityCandidate, ParamSpec } from '@dashboard/shared';
 import { CircleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { searchCities } from '@/api/weather.js';
+import { SearchPicker, type PickerOption } from '@/components/SearchPicker.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import { cn } from '@/lib/utils.js';
@@ -9,6 +11,7 @@ export type ParamValues = Record<string, string>;
 
 /** Returns an error message for one param's raw string value, or null when it is valid. */
 export function validateParam(spec: ParamSpec, raw: string): string | null {
+  if (raw === '' && spec.search && spec.required) return `Pick a ${(spec.label ?? spec.name).toLowerCase()} from the results.`;
   if (raw === '') return spec.required ? 'Required.' : null;
   if (spec.enum) return spec.enum.includes(raw) ? null : 'Pick one of the listed values.';
   if (spec.type === 'integer') {
@@ -62,6 +65,50 @@ const PARAM_UI: Record<string, { hint?: string; mono?: true }> = {
   region: { mono: true },
 };
 
+/** A search-backed param: how its candidates look and which values (the param's own plus hidden companions) a pick sets. */
+interface Picker<T> {
+  queryKey: string;
+  nouns: [string, string];
+  placeholder: string;
+  search: (query: string) => Promise<T[]>;
+  toOption: (item: T) => PickerOption;
+  /** Every param a pick sets, cleared again by Change. */
+  keys: string[];
+  /** The values a pick sets. */
+  toValues: (item: T) => ParamValues;
+  /** The saved choice, or null when the param is empty. */
+  fromValues: (values: ParamValues) => PickerOption | null;
+}
+
+const coordinates = (lat: number | string, lon: number | string) => `${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`;
+const place = (region?: string, country?: string) => [region, country].filter(Boolean).join(', ');
+
+const PICKERS: Record<string, Picker<CityCandidate>> = {
+  'weather.city': {
+    queryKey: 'weather.city',
+    nouns: ['city', 'cities'],
+    placeholder: 'Search a city, for example Paris',
+    search: searchCities,
+    toOption: (c) => ({ title: c.name, subtitle: place(c.region, c.country), meta: coordinates(c.latitude, c.longitude) }),
+    keys: ['city', 'region', 'country', 'latitude', 'longitude'],
+    toValues: (c) => ({
+      city: c.name,
+      region: c.region ?? '',
+      country: c.country ?? '',
+      latitude: String(c.latitude),
+      longitude: String(c.longitude),
+    }),
+    fromValues: (v) =>
+      v['city']
+        ? {
+            title: v['city'],
+            subtitle: place(v['region'], v['country']),
+            meta: v['latitude'] && v['longitude'] ? coordinates(v['latitude'], v['longitude']) : undefined,
+          }
+        : null,
+  },
+};
+
 interface ParamFormProps {
   specs: ParamSpec[];
   values: ParamValues;
@@ -78,7 +125,8 @@ export function ParamForm({ specs, values, onChange, showErrors = false }: Param
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   if (specs.length === 0) return <p className="text-muted-foreground">This widget has no settings.</p>;
 
-  return specs.map((spec) => {
+  return specs.filter((spec) => !spec.hidden).map((spec) => {
+    const picker = spec.search ? PICKERS[spec.search] : undefined;
     const id = `param-${spec.name}`;
     const value = values[spec.name] ?? '';
     const error = showErrors || touched[spec.name] ? validateParam(spec, value) : null;
@@ -97,7 +145,21 @@ export function ParamForm({ specs, values, onChange, showErrors = false }: Param
             {hint}
           </span>
         )}
-        {spec.enum ? (
+        {picker ? (
+          <SearchPicker
+            id={id}
+            queryKey={picker.queryKey}
+            nouns={picker.nouns}
+            placeholder={picker.placeholder}
+            search={picker.search}
+            toOption={picker.toOption}
+            picked={picker.fromValues(values)}
+            onPick={(item) => onChange({ ...values, ...picker.toValues(item) })}
+            onClear={() => onChange({ ...values, ...Object.fromEntries(picker.keys.map((k) => [k, ''])) })}
+            describedBy={describedBy}
+            invalid={!!error}
+          />
+        ) : spec.enum ? (
           <select
             id={id}
             value={value}

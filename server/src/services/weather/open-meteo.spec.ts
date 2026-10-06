@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Redis } from 'ioredis';
 import { makeFakeRedis } from '../../timer/test-helpers.js';
-import { conditionFor, Geocoder, geoCacheKey, getForecast, type CurrentResponse, type GeoLocation } from './open-meteo.js';
+import { conditionFor, Geocoder, geoCacheKey, getForecast, searchCities, type CurrentResponse, type GeoLocation } from './open-meteo.js';
 
 const PARIS: GeoLocation = { name: 'Paris, France', latitude: 48.85341, longitude: 2.3488 };
 
@@ -198,5 +198,48 @@ describe('Geocoder', () => {
 
     await expect(geocoder.resolve('Paris')).rejects.toMatchObject({ name: 'FetchError', code: 'UPSTREAM_ERROR' });
     expect(redis.set).not.toHaveBeenCalled();
+  });
+});
+
+describe('searchCities', () => {
+  const PARIS_HITS = {
+    results: [
+      { name: 'Paris', admin1: 'Île-de-France', country: 'France', latitude: 48.85341, longitude: 2.3488 },
+      { name: 'Paris', admin1: 'Texas', country: 'United States', latitude: 33.66094, longitude: -95.55551 },
+      { name: 'Paris', country: 'Nowhere', latitude: 1, longitude: 2 },
+    ],
+  };
+
+  it('asks Open-Meteo for several candidates and maps name, region, country and coordinates', async () => {
+    const fetchMock = stubFetch(() => Response.json(PARIS_HITS));
+
+    await expect(searchCities('  Paris ')).resolves.toEqual([
+      { name: 'Paris', region: 'Île-de-France', country: 'France', latitude: 48.85341, longitude: 2.3488 },
+      { name: 'Paris', region: 'Texas', country: 'United States', latitude: 33.66094, longitude: -95.55551 },
+      { name: 'Paris', country: 'Nowhere', latitude: 1, longitude: 2 },
+    ]);
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.searchParams.get('name')).toBe('Paris');
+    expect(Number(url.searchParams.get('count'))).toBeGreaterThan(1);
+  });
+
+  it('returns no candidates, without calling upstream, for an empty or one-character query', async () => {
+    const fetchMock = stubFetch(() => Response.json(PARIS_HITS));
+
+    await expect(searchCities('   ')).resolves.toEqual([]);
+    await expect(searchCities('p')).resolves.toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns an empty list when Open-Meteo has no results', async () => {
+    stubFetch(() => Response.json({ generationtime_ms: 0.3 }));
+
+    await expect(searchCities('zzzznotacity')).resolves.toEqual([]);
+  });
+
+  it('propagates upstream failures as FetchError', async () => {
+    stubFetch(() => Response.json({}, { status: 503 }));
+
+    await expect(searchCities('Paris')).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
   });
 });
