@@ -132,12 +132,12 @@ const youtubeChannel: Picker<ChannelCandidate> = {
   nouns: ['channel', 'channels'],
   placeholder: 'Search a channel, for example Fireship',
   search: searchChannels,
-  toOption: (c) => ({ title: c.title, meta: c.id, image: c.thumbnail }),
+  toOption: (c) => ({ title: c.title, meta: c.id, image: c.thumbnail, imageShape: 'avatar' }),
   keys: ['channel_id', 'channel_title', 'channel_image'],
   toValues: (c) => ({ channel_id: c.id, channel_title: c.title, channel_image: c.thumbnail ?? '' }),
   fromValues: (v) =>
     v['channel_id']
-      ? { title: v['channel_title'] || v['channel_id'], meta: v['channel_id'], image: v['channel_image'] || undefined }
+      ? { title: v['channel_title'] || v['channel_id'], meta: v['channel_id'], image: v['channel_image'] || undefined, imageShape: 'avatar' }
       : null,
 };
 
