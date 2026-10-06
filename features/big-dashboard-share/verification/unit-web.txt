@@ -1,0 +1,15 @@
+$ npm test -w web
+
+> web@0.0.1 test
+> vitest run
+
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-dashboard-share/web
+
+
+ Test Files  37 passed (37)
+      Tests  235 passed (235)
+   Start at  18:54:54
+   Duration  9.52s (transform 4.11s, setup 664ms, import 17.60s, tests 28.61s, environment 42.76s)
+
+exit 0

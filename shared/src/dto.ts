@@ -122,6 +122,39 @@ export interface UpdateDashboardRequest {
   position?: number;
 }
 
+/** POST /api/dashboards/{id}/share */
+export interface ShareDashboardRequest {
+  email: string;
+}
+
+/** One pending share in GET /api/shares/incoming. */
+export interface IncomingShareEntry {
+  id: string;
+  dashboardName: string;
+  fromEmail: string;
+  widgetCount: number;
+  createdAt: string;
+}
+
+export type ShareStatus = 'PENDING' | 'ADDED' | 'DECLINED';
+
+/** One row of GET /api/dashboards/{id}/shares: who a dashboard was sent to and their answer. */
+export interface SentShareEntry {
+  id: string;
+  toEmail: string;
+  status: ShareStatus;
+}
+
+/** GET /api/dashboards/{id}/shares */
+export interface SentSharesResponse {
+  shares: SentShareEntry[];
+}
+
+/** GET /api/shares/incoming */
+export interface IncomingSharesResponse {
+  shares: IncomingShareEntry[];
+}
+
 /** One WidgetInstance, as returned by dashboards-api's widget-instance endpoints. */
 export interface WidgetInstanceEntry {
   id: string;

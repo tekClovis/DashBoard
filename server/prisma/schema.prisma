@@ -20,6 +20,12 @@ enum AuthProvider {
   GOOGLE
 }
 
+enum ShareStatus {
+  PENDING
+  ADDED
+  DECLINED
+}
+
 enum ConnectionStatus {
   OK
   REAUTH
@@ -41,6 +47,8 @@ model User {
   authIdentities     AuthIdentity[]
   serviceConnections ServiceConnection[]
   dashboards         Dashboard[]
+  sharesSent         DashboardShare[]    @relation("ShareSender")
+  sharesReceived     DashboardShare[]    @relation("ShareRecipient")
 }
 
 /// Email confirmation token. Stores SHA-256 of a random 32-byte token, never the raw value. 24 h, single use.
@@ -96,6 +104,7 @@ model Dashboard {
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   widgets WidgetInstance[]
+  shares  DashboardShare[]
 
   @@index([userId, position])
 }
@@ -121,4 +130,22 @@ model WidgetInstance {
   dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
 
   @@index([dashboardId])
+}
+
+/// An offer of a copy of `dashboard` to `toUser`. Accept or decline keeps the row with its new
+/// status so the sender can see the answer. No live link: accepting clones the dashboard.
+model DashboardShare {
+  id          String      @id @default(uuid()) @db.Uuid
+  dashboardId String      @db.Uuid
+  fromUserId  String      @db.Uuid
+  toUserId    String      @db.Uuid
+  status      ShareStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  fromUser  User      @relation("ShareSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser    User      @relation("ShareRecipient", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([dashboardId, toUserId])
+  @@index([toUserId])
 }
