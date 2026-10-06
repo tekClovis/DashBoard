@@ -1,0 +1,14 @@
+
+> web@0.0.1 test
+> vitest run
+
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a73aad6eeb06f8a32/web
+
+
+ Test Files  37 passed (37)
+      Tests  232 passed (232)
+   Start at  18:07:54
+   Duration  10.87s (transform 5.42s, setup 726ms, import 20.41s, tests 32.24s, environment 49.03s)
+
+exit 0

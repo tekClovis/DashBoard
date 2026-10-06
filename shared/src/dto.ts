@@ -168,6 +168,17 @@ export interface LayoutUpdateEntry {
   h: number;
 }
 
+/** One Steam store match from GET /api/steam/search?q= */
+export interface GameCandidate {
+  appId: number;
+  name: string;
+  image: string;
+}
+
+export interface GameSearchResponse {
+  results: GameCandidate[];
+}
+
 /** One geocoding match from GET /api/weather/search?q= */
 export interface CityCandidate {
   name: string;

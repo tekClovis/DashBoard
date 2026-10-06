@@ -1,6 +1,7 @@
-import type { CityCandidate, ParamSpec } from '@dashboard/shared';
+import type { CityCandidate, GameCandidate, ParamSpec } from '@dashboard/shared';
 import { CircleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { searchGames } from '@/api/steam.js';
 import { searchCities } from '@/api/weather.js';
 import { SearchPicker, type PickerOption } from '@/components/SearchPicker.js';
 import { Input } from '@/components/ui/input.js';
@@ -60,7 +61,6 @@ export function FieldError({ id, children }: { id: string; children: string }) {
 /** Display-only extras the catalog doesn't carry: a usage hint and monospace for identifier-like values. */
 const PARAM_UI: Record<string, { hint?: string; mono?: true }> = {
   repo: { hint: 'owner/name, for example acme/telemetry', mono: true },
-  app_id: { hint: 'The number in the game’s store URL, for example 730', mono: true },
   channel_id: { mono: true },
   region: { mono: true },
 };
@@ -83,30 +83,53 @@ interface Picker<T> {
 const coordinates = (lat: number | string, lon: number | string) => `${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`;
 const place = (region?: string, country?: string) => [region, country].filter(Boolean).join(', ');
 
-const PICKERS: Record<string, Picker<CityCandidate>> = {
-  'weather.city': {
-    queryKey: 'weather.city',
-    nouns: ['city', 'cities'],
-    placeholder: 'Search a city, for example Paris',
-    search: searchCities,
-    toOption: (c) => ({ title: c.name, subtitle: place(c.region, c.country), meta: coordinates(c.latitude, c.longitude) }),
-    keys: ['city', 'region', 'country', 'latitude', 'longitude'],
-    toValues: (c) => ({
-      city: c.name,
-      region: c.region ?? '',
-      country: c.country ?? '',
-      latitude: String(c.latitude),
-      longitude: String(c.longitude),
-    }),
-    fromValues: (v) =>
-      v['city']
-        ? {
-            title: v['city'],
-            subtitle: place(v['region'], v['country']),
-            meta: v['latitude'] && v['longitude'] ? coordinates(v['latitude'], v['longitude']) : undefined,
-          }
-        : null,
-  },
+const steamGame: Picker<GameCandidate> = {
+  queryKey: 'steam.game',
+  nouns: ['game', 'games'],
+  placeholder: 'Search a game, for example Portal',
+  search: searchGames,
+  toOption: (g) => ({ title: g.name, meta: `App ${g.appId}`, image: g.image }),
+  keys: ['app_id', 'game_name', 'game_image'],
+  toValues: (g) => ({ app_id: String(g.appId), game_name: g.name, game_image: g.image }),
+  fromValues: (v) =>
+    v['app_id']
+      ? {
+          title: v['game_name'] || `App ${v['app_id']}`,
+          meta: `App ${v['app_id']}`,
+          // Widgets saved before the picker only hold app_id: fall back to the store capsule.
+          image: v['game_image'] || `https://cdn.cloudflare.steamstatic.com/steam/apps/${v['app_id']}/capsule_184x69.jpg`,
+        }
+      : null,
+};
+
+const weatherCity: Picker<CityCandidate> = {
+  queryKey: 'weather.city',
+  nouns: ['city', 'cities'],
+  placeholder: 'Search a city, for example Paris',
+  search: searchCities,
+  toOption: (c) => ({ title: c.name, subtitle: place(c.region, c.country), meta: coordinates(c.latitude, c.longitude) }),
+  keys: ['city', 'region', 'country', 'latitude', 'longitude'],
+  toValues: (c) => ({
+    city: c.name,
+    region: c.region ?? '',
+    country: c.country ?? '',
+    latitude: String(c.latitude),
+    longitude: String(c.longitude),
+  }),
+  fromValues: (v) =>
+    v['city']
+      ? {
+          title: v['city'],
+          subtitle: place(v['region'], v['country']),
+          meta: v['latitude'] && v['longitude'] ? coordinates(v['latitude'], v['longitude']) : undefined,
+        }
+      : null,
+};
+
+/** Picker registry; each entry hands its picker to a generic callback so the candidate type stays checked. */
+const PICKERS: Record<string, <R>(use: <T>(picker: Picker<T>) => R) => R> = {
+  'steam.game': (use) => use(steamGame),
+  'weather.city': (use) => use(weatherCity),
 };
 
 interface ParamFormProps {
@@ -126,7 +149,7 @@ export function ParamForm({ specs, values, onChange, showErrors = false }: Param
   if (specs.length === 0) return <p className="text-muted-foreground">This widget has no settings.</p>;
 
   return specs.filter((spec) => !spec.hidden).map((spec) => {
-    const picker = spec.search ? PICKERS[spec.search] : undefined;
+    const withPicker = spec.search ? PICKERS[spec.search] : undefined;
     const id = `param-${spec.name}`;
     const value = values[spec.name] ?? '';
     const error = showErrors || touched[spec.name] ? validateParam(spec, value) : null;
@@ -145,7 +168,8 @@ export function ParamForm({ specs, values, onChange, showErrors = false }: Param
             {hint}
           </span>
         )}
-        {picker ? (
+        {withPicker ? (
+          withPicker((picker) => (
           <SearchPicker
             id={id}
             queryKey={picker.queryKey}
@@ -159,6 +183,7 @@ export function ParamForm({ specs, values, onChange, showErrors = false }: Param
             describedBy={describedBy}
             invalid={!!error}
           />
+          ))
         ) : spec.enum ? (
           <select
             id={id}

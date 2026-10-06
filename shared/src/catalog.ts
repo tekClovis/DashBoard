@@ -15,7 +15,7 @@ export interface ParamSpec {
   /** String regex, e.g. owner/repo. */
   pattern?: string;
   label?: string;
-  /** Key of a client search picker rendered instead of a text input (e.g. 'weather.city'). */
+  /** Key of a client search picker rendered instead of a plain input (e.g. 'weather.city', 'steam.game'). */
   search?: string;
   /** Set by the search picker alongside the visible param; never rendered as a field. */
   hidden?: boolean;

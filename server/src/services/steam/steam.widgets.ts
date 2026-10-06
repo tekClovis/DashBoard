@@ -5,11 +5,12 @@
 // the Web API key is server-side STEAM_API_KEY. A missing key still registers the widgets
 // (Architecture §11: "still listed") but every fetch() fails fast.
 
-import type { ParamSpec, SteamNewsItem, SteamRecentGame } from '@dashboard/shared';
+import type { GameCandidate, ParamSpec, SteamNewsItem, SteamRecentGame } from '@dashboard/shared';
 import type { FetchContext, WidgetDefinition } from '../../catalog/widget-definition.js';
 import { FetchError } from '../../timer/fetch-error.js';
 
 const STEAM_API = 'https://api.steampowered.com';
+const STEAM_STORE_SEARCH = 'https://store.steampowered.com/api/storesearch/';
 const FETCH_TIMEOUT_MS = 10_000;
 const headerImage = (appId: number) => `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
 const NUMBER_PARAM: ParamSpec = { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Number' };
@@ -64,7 +65,12 @@ export function createSteamWidgets(
       service: 'steam',
       name: 'game_news',
       description: 'Latest news for a Steam game.',
-      params: [{ name: 'app_id', type: 'integer', required: true, min: 1, label: 'App ID' }, NUMBER_PARAM],
+      params: [
+        { name: 'app_id', type: 'integer', required: true, min: 1, label: 'Game', search: 'steam.game' },
+        { name: 'game_name', type: 'string', hidden: true },
+        { name: 'game_image', type: 'string', hidden: true, pattern: '^https://' },
+        NUMBER_PARAM,
+      ],
       minRefreshSec: 900,
       auth: 'connection',
       fetch: async (params) => {
@@ -96,6 +102,31 @@ export function createSteamWidgets(
       },
     },
   ];
+}
+
+const SEARCH_COUNT = 10;
+const MIN_QUERY_LENGTH = 2;
+
+interface StoreSearchResponse {
+  items?: { id: number; name: string; tiny_image?: string }[];
+}
+
+/** Games matching a free-text query, from the Steam store search. Queries under 2 characters match nothing. */
+export async function searchGames(query: string): Promise<GameCandidate[]> {
+  const term = query.trim();
+  if (term.length < MIN_QUERY_LENGTH) return [];
+  const url = `${STEAM_STORE_SEARCH}?${new URLSearchParams({ term, cc: 'us', l: 'english' })}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  if (!res.ok) throw new FetchError('UPSTREAM_ERROR', `Steam store responded ${res.status}.`);
+  const body = (await res.json().catch(() => {
+    throw malformed();
+  })) as StoreSearchResponse;
+  if (!Array.isArray(body.items)) throw malformed();
+  return body.items.slice(0, SEARCH_COUNT).map((item) => ({
+    appId: item.id,
+    name: item.name,
+    image: item.tiny_image ?? `https://cdn.cloudflare.steamstatic.com/steam/apps/${item.id}/capsule_184x69.jpg`,
+  }));
 }
 
 function steamId(ctx: FetchContext): string {
