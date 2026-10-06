@@ -38,6 +38,10 @@ describe('Password reset (e2e)', () => {
   });
 
   afterAll(async () => {
+    // The per-IP login bucket lives in the Redis shared by every e2e file: hand it back empty.
+    const redis = app.get<Redis>(REDIS);
+    const keys = await redis.keys('login:*');
+    if (keys.length > 0) await redis.del(...keys);
     await app.close();
   });
 
