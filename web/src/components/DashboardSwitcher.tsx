@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton.js';
 
 const MAX_NAME = 100;
 
-type Dialogs = { kind: 'create' } | { kind: 'rename'; dashboard: DashboardEntry } | { kind: 'delete'; dashboard: DashboardEntry };
+type Dialogs = { kind: 'create' } | { kind: 'rename'; dashboard: DashboardEntry } | { kind: 'delete'; dashboard: DashboardEntry } | { kind: 'only'; dashboard: DashboardEntry };
 
 function NameDialog({
   dialog,
@@ -240,9 +240,9 @@ export function DashboardSwitcher() {
                     variant="ghost"
                     size="icon-sm"
                     aria-label={`Delete ${d.name}`}
-                    disabled={dashboards.length === 1}
+                    aria-disabled={dashboards.length === 1 || undefined}
                     title={dashboards.length === 1 ? 'This is your only dashboard' : undefined}
-                    onClick={() => openDialog({ kind: 'delete', dashboard: d })}
+                    onClick={() => openDialog({ kind: dashboards.length === 1 ? 'only' : 'delete', dashboard: d })}
                   >
                     <Trash2 className="size-3.5" strokeWidth={1.75} />
                   </Button>
@@ -265,7 +265,23 @@ export function DashboardSwitcher() {
       )}
       <Dialog open={dialog !== null} onOpenChange={(o) => !o && setDialog(null)}>
         <DialogContent className="w-[min(420px,calc(100vw-2rem))]">
-          {dialog?.kind === 'delete' ? (
+          {dialog?.kind === 'only' ? (
+            <div className="grid gap-4">
+              <div>
+                <DialogTitle className="text-base font-semibold">This is your only dashboard</DialogTitle>
+                <DialogDescription className="text-muted-foreground mt-0.5 text-[0.8125rem]">
+                  You need at least one dashboard, so it can’t be deleted. Rename it or create another one first.
+                </DialogDescription>
+              </div>
+              <div className="flex justify-end">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Close
+                  </Button>
+                </DialogClose>
+              </div>
+            </div>
+          ) : dialog?.kind === 'delete' ? (
             <DeleteDialog
               dashboard={dialog.dashboard}
               dashboards={dashboards}

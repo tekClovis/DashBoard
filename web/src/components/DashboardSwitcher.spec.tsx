@@ -164,6 +164,10 @@ describe('DashboardSwitcher', () => {
     db = [{ id: 'a', name: 'Home', position: 0 }];
     renderSwitcher();
     const menu = await openMenu();
-    expect((menu.getByRole('button', { name: 'Delete Home' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(menu.getByRole('button', { name: 'Delete Home' }));
+    expect(await screen.findByText('This is your only dashboard', { selector: 'h2' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Delete dashboard' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false);
   });
 });
