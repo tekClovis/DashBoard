@@ -214,8 +214,9 @@ describe('Add widget dialog, city search', () => {
     fireEvent.click((await screen.findAllByRole('option'))[1]);
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByText('city=Paris')).toBeTruthy();
-    expect(screen.queryByText(/latitude=/)).toBeNull();
+    expect(screen.getByText('city=Paris, Texas, United States')).toBeTruthy();
+    expect(screen.getByText('latitude=33.6609')).toBeTruthy();
+    expect(screen.getByText('longitude=-95.5555')).toBeTruthy();
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
 
     await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));

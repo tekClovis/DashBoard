@@ -52,6 +52,17 @@ describe('SearchPicker', () => {
     expect(screen.getByText(/2 cities/)).toBeTruthy();
   });
 
+  it('shows skeleton rows and "Searching…" immediately, even while the debounce is pending', () => {
+    const search = vi.fn(() => new Promise<Item[]>(() => {}));
+    render(<Harness search={search} />);
+
+    type('Berlin');
+
+    expect(screen.getByText('Searching…')).toBeTruthy();
+    expect(screen.queryByText('Type a city name to see matches.')).toBeNull();
+    expect(screen.getByLabelText('Searching cities').getAttribute('aria-busy')).toBe('true');
+  });
+
   it('asks for more characters instead of searching on a one-character query', () => {
     const search = vi.fn(async () => PARIS);
     render(<Harness search={search} />);

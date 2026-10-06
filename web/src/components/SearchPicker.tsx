@@ -98,7 +98,7 @@ export function SearchPicker<T>({
   }
 
   const results = enabled && settled === query && !isFetching && data ? data : [];
-  const loading = enabled && (settled !== query || isFetching) && !isError;
+  const loading = query.length >= MIN_QUERY_LENGTH && (settled !== query || isFetching) && !isError;
   const showError = enabled && settled === query && !isFetching && isError;
   const showEmpty = enabled && settled === query && !isFetching && !isError && data?.length === 0;
   const helpId = `${id}-help`;
@@ -153,6 +153,17 @@ export function SearchPicker<T>({
           onKeyDown={onKeyDown}
         />
       </div>
+
+      {loading && (
+        <ul aria-busy="true" aria-label={`Searching ${plural}`} className="bg-popover rounded-md border">
+          {[0, 1, 2].map((i) => (
+            <li key={i} className="grid gap-1.5 border-t px-2.5 py-2 first:border-t-0">
+              <span className="bg-muted h-3 w-[90px] animate-pulse rounded-sm" />
+              <span className="bg-muted h-2.5 w-[150px] animate-pulse rounded-sm" />
+            </li>
+          ))}
+        </ul>
+      )}
 
       {results.length > 0 && (
         <ul

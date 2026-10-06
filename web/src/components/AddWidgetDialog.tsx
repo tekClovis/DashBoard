@@ -316,10 +316,13 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
               <dd>
                 {spec.params.length > 0 ? (
                   spec.params
-                    .filter((p) => !p.hidden)
-                    .map((p) => (
-                      <span key={p.name} className="block font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
-                    ))
+                    .filter((p) => !p.hidden || (values[p.name] && p.name !== 'region' && p.name !== 'country'))
+                    .map((p) => {
+                      const place = p.name === 'city' ? [values.region, values.country].filter(Boolean) : [];
+                      return (
+                        <span key={p.name} className="block font-mono text-xs">{`${p.name}=${[values[p.name] ?? '', ...place].join(', ')}`}</span>
+                      );
+                    })
                 ) : (
                   <span className="text-muted-foreground">None</span>
                 )}
