@@ -1,4 +1,4 @@
-import type { CatalogResponse, WidgetInstanceEntry, WidgetSpec } from '@dashboard/shared';
+import type { CatalogResponse, SearchResult, WidgetInstanceEntry, WidgetSpec } from '@dashboard/shared';
 import { Ellipsis, RefreshCw, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
@@ -72,7 +72,7 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
   const [picked, setPicked] = useState<WidgetSpec | undefined>();
   const [values, setValues] = useState<ParamValues>({});
   // Titles of picked search results by param name: the confirm step shows them beside the saved id.
-  const [titles, setTitles] = useState<Record<string, string>>({});
+  const [picks, setPicks] = useState<Record<string, SearchResult>>({});
   const [refresh, setRefresh] = useState(instance ? String(instance.refreshRate) : '');
   // Errors show after a blocked Next (params) or once the field is left (refresh).
   const [showParamErrors, setShowParamErrors] = useState(false);
@@ -258,8 +258,13 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
               values={values}
               onChange={setValues}
               showErrors={showParamErrors}
-              titles={titles}
-              onTitleChange={(name, title) => setTitles((t) => ({ ...t, [name]: title ?? '' }))}
+              picks={picks}
+              onPickChange={(name, r) =>
+                setPicks((p) => {
+                  const { [name]: _, ...rest } = p;
+                  return r ? { ...rest, [name]: r } : rest;
+                })
+              }
             />
           </>
         )}
@@ -326,7 +331,7 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
                 {spec.params.length > 0 ? (
                   spec.params.map((p) => (
                     <span key={p.name} className="block">
-                      {p.search && titles[p.name] && <span className="mr-1.5 text-[0.8125rem]">{titles[p.name]}</span>}
+                      {p.search && picks[p.name] && <span className="mr-1.5 text-[0.8125rem]">{picks[p.name]?.title}</span>}
                       <span className="font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
                     </span>
                   ))

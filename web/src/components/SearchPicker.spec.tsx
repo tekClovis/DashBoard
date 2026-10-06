@@ -14,12 +14,12 @@ function Harness({
   initial = '',
   onValue,
   onPick,
-  savedTitle,
+  saved,
 }: {
   initial?: string;
   onValue?: (v: string) => void;
   onPick?: (r: SearchResult | null) => void;
-  savedTitle?: string;
+  saved?: SearchResult;
 }) {
   const [value, setValue] = useState(initial);
   return (
@@ -28,7 +28,7 @@ function Harness({
         id="param-channel_id"
         endpoint="/youtube/channels/search"
         noun="channel"
-        savedTitle={savedTitle}
+        saved={saved}
         onPick={onPick}
         value={value}
         onChange={(v) => {
@@ -104,8 +104,15 @@ describe('SearchPicker', () => {
   });
 
   it('shows the remembered title of a saved id', () => {
-    render(<Harness initial="UCsaved" savedTitle="Telemetry Labs" />);
+    render(<Harness initial="UCsaved" saved={{ id: 'UCsaved', title: 'Telemetry Labs' }} />);
     expect(screen.getByText('Telemetry Labs')).toBeTruthy();
+  });
+
+  it('keeps the avatar of a remembered pick, so the card matches the one shown right after picking', () => {
+    const { container } = render(
+      <Harness initial="UCsaved" saved={{ id: 'UCsaved', title: 'Telemetry Labs', thumbnail: 'https://img/1.jpg' }} />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('https://img/1.jpg');
   });
 
   it('says so when nothing matches', async () => {
