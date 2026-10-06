@@ -37,7 +37,7 @@ function makeExchange(query: Record<string, string>, cookies: Record<string, str
     .map(([name, value]) => `${name}=${encodeURIComponent(value)}`)
     .join('; ');
   const req = { query, headers: { cookie } } as unknown as OAuthCallbackRequest;
-  const res = { cookie: vi.fn() };
+  const res = { cookie: vi.fn(), redirect: vi.fn() };
   const context = {
     switchToHttp: () => ({ getRequest: () => req, getResponse: () => res }),
   } as unknown as ExecutionContext;
@@ -265,21 +265,37 @@ describe('GithubOAuthGuard', () => {
       expect(authenticate).toHaveBeenCalledWith('github-connect', { session: false }, expect.any(Function));
     });
 
-    it('surfaces a provider denial (error, no code) instead of restarting the authorize flow', async () => {
-      const authenticate = stubPassport({ user: false, info: { message: 'access_denied' } });
-      const { guard } = makeGuard();
-      const state = signConnectState({ provider: 'github', userId: 'u1', csrfToken: 'csrf-token' }, SECRET);
-      const { context, setCookie } = makeExchange(
-        { error: 'access_denied', state },
-        { [OAUTH_CSRF_COOKIE]: 'csrf-token' },
-      );
+    describe('provider denial (error, no code)', () => {
+      async function deny(query: Record<string, string>, cookies: Record<string, string>) {
+        const authenticate = stubPassport();
+        const { guard } = makeGuard();
+        const { context, res, setCookie } = makeExchange({ error: 'access_denied', ...query }, cookies);
+        const result = await guard.canActivate(context);
+        expect(authenticate).not.toHaveBeenCalled();
+        expect(setCookie(OAUTH_STATE_COOKIE)).toBeUndefined();
+        return { result, redirect: res.redirect };
+      }
 
-      await expect(guard.canActivate(context)).rejects.toMatchObject({
-        status: 401,
-        response: { message: 'access_denied' },
+      it('sends a denied connect back to /connections with an error', async () => {
+        const state = signConnectState({ provider: 'github', userId: 'u1', csrfToken: 'csrf-token' }, SECRET);
+        const { result, redirect } = await deny({ state }, { [OAUTH_CSRF_COOKIE]: 'csrf-token' });
+        expect(result).toBe(false);
+        expect(redirect).toHaveBeenCalledExactlyOnceWith('http://localhost:8080/connections?error=OAUTH_DENIED');
       });
-      expect(authenticate).toHaveBeenCalledExactlyOnceWith('github-connect', { session: false }, expect.any(Function));
-      expect(setCookie(OAUTH_STATE_COOKIE)).toBeUndefined();
+
+      it('sends a denied link back to /profile with an error', async () => {
+        const state = signOAuthState({ intent: 'link', provider: 'github', userId: 'u1' }, SECRET);
+        const { result, redirect } = await deny({ state }, { [OAUTH_STATE_COOKIE]: state });
+        expect(result).toBe(false);
+        expect(redirect).toHaveBeenCalledExactlyOnceWith('http://localhost:8080/profile?error=OAUTH_DENIED');
+      });
+
+      it('sends a denied login back to /login with an error', async () => {
+        const state = signOAuthState({ intent: 'login', provider: 'github' }, SECRET);
+        const { result, redirect } = await deny({ state }, { [OAUTH_STATE_COOKIE]: state });
+        expect(result).toBe(false);
+        expect(redirect).toHaveBeenCalledExactlyOnceWith('http://localhost:8080/login?error=OAUTH_DENIED');
+      });
     });
 
     it('rejects a denial callback whose state does not verify', async () => {
