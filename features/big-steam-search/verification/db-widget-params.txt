@@ -1,0 +1,5 @@
+ service |  widget   |                                                                                                         params                                                                                                         
+---------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ steam   | game_news | {"app_id": 620, "number": 5, "game_name": "Portal 2", "game_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/620/bd23943dcd0280aa2cdc066e2f86d2185cfd4cce/capsule_231x87.jpg?t=1790187113"}
+(1 row)
+
