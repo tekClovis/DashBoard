@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConnectionsModule } from '../../connections/connections.module.js';
+import { DashboardsModule } from '../../dashboards/dashboards.module.js';
 import { AuthModule } from '../auth.module.js';
 import { OAuthController } from './oauth.controller.js';
 import { GithubOAuthGuard, GoogleOAuthGuard, SteamOAuthGuard } from './oauth.guard.js';
@@ -10,7 +11,7 @@ import { GithubOAuthGuard, GoogleOAuthGuard, SteamOAuthGuard } from './oauth.gua
 // from AuthModule, ConnectionsService from ConnectionsModule) and neither of those two
 // modules needs the other.
 @Module({
-  imports: [AuthModule, ConnectionsModule],
+  imports: [AuthModule, ConnectionsModule, DashboardsModule],
   controllers: [OAuthController],
   providers: [GithubOAuthGuard, GoogleOAuthGuard, SteamOAuthGuard],
 })

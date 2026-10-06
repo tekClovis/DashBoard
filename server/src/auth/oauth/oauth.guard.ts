@@ -94,6 +94,12 @@ function runPassport(
   });
 }
 
+/** Sends a user who denied the provider consent screen back into the app with an error; never lets the handler run. */
+function redirectDenied(res: Response, appUrl: string, page: 'connections' | 'profile' | 'login'): boolean {
+  res.redirect(`${appUrl}/${page}?error=OAUTH_DENIED`);
+  return false;
+}
+
 interface ProviderGuardConfig {
   provider: 'github' | 'google';
   connectStrategy: 'github-connect' | 'google-connect';
@@ -113,7 +119,10 @@ class BaseProviderOAuthGuard implements CanActivate {
     const jwtSecret = this.config.getOrThrow<string>('JWT_SECRET');
     const appUrl = this.config.getOrThrow<string>('APP_URL');
 
-    if (req.query['code']) {
+    // A provider denial (`?error=access_denied`, no `code`) is still a callback leg: restarting
+    // auth would silently bounce the user back to the provider instead of surfacing the error.
+    const denied = !req.query['code'] && Boolean(req.query['error']);
+    if (req.query['code'] || denied) {
       const queryState = req.query['state'] as string | undefined;
       const cookieState = readCookie(req.headers.cookie, OAUTH_STATE_COOKIE) ?? undefined;
       let loginState: OAuthStatePayload | undefined;
@@ -125,6 +134,7 @@ class BaseProviderOAuthGuard implements CanActivate {
       // A login/link state signed for another provider falls through too, so it ends as INVALID_STATE.
       if (loginState?.provider === this.cfg.provider) {
         req.oauthState = loginState;
+        if (denied) return redirectDenied(res, appUrl, loginState.intent === 'link' ? 'profile' : 'login');
         return runPassport(req, res, this.cfg.provider, { session: false });
       }
 
@@ -134,6 +144,7 @@ class BaseProviderOAuthGuard implements CanActivate {
       } catch {
         throw new UnauthorizedException({ error: 'INVALID_STATE' });
       }
+      if (denied) return redirectDenied(res, appUrl, 'connections');
       return runPassport(req, res, this.cfg.connectStrategy, { session: false });
     }
 
