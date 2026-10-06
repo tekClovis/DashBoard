@@ -1,6 +1,6 @@
 // The Timer — see docs/Architecture.md §6.
 
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import type { WidgetErrorCode } from '@dashboard/shared';
 import type { Server } from 'socket.io';
 import type { Params, WidgetDefinition } from '../catalog/widget-definition.js';
@@ -36,6 +36,7 @@ interface TimerEntry {
 
 @Injectable()
 export class TimerService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(TimerService.name);
   private readonly active = new Map<string, TimerEntry>();
   private server?: Server;
   private tickHandle?: NodeJS.Timeout;
@@ -135,10 +136,14 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
     // NOT_CONNECTED / REAUTH_REQUIRED / INVALID_PARAMS: no retry until re-subscribed/reconfigured.
     this.active.delete(instanceId);
     if (code === 'REAUTH_REQUIRED') {
-      await this.prisma.serviceConnection.updateMany({
-        where: { userId: entry.userId, service: entry.def.service },
-        data: { status: 'REAUTH' },
-      });
+      try {
+        await this.prisma.serviceConnection.updateMany({
+          where: { userId: entry.userId, service: entry.def.service },
+          data: { status: 'REAUTH' },
+        });
+      } catch (dbErr) {
+        this.logger.error(`Failed to mark connection REAUTH: ${dbErr instanceof Error ? dbErr.message : dbErr}`);
+      }
     }
     this.emitError(instanceId, code, message);
   }

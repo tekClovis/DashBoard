@@ -120,6 +120,21 @@ describe('TimerService', () => {
     timer.onModuleDestroy();
   });
 
+  it('on REAUTH_REQUIRED, still emits widget:error when the status update fails', async () => {
+    const def = makeDef();
+    const fetchService = {
+      get: vi.fn(async () => {
+        throw new FetchError('REAUTH_REQUIRED', 'expired');
+      }),
+    } as unknown as FetchService;
+    vi.mocked(prisma.serviceConnection.updateMany).mockRejectedValue(new Error('db down'));
+    const { timer, emit } = activateWith(fetchService, def);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(emit).toHaveBeenCalledWith('widget:error', expect.objectContaining({ instanceId: 'w1', code: 'REAUTH_REQUIRED' }));
+    timer.onModuleDestroy();
+  });
+
   it('deactivate() stops further ticks for that instance', async () => {
     const def = makeDef();
     const fetchService = { get: vi.fn(async () => ({ ok: true })) } as unknown as FetchService;
