@@ -287,7 +287,8 @@ describe('Timer realtime (e2e)', () => {
     expect(first).toMatchObject({ instanceId, code: 'RATE_LIMITED' });
     expect(first.retryAt).toBeTruthy();
 
-    await new Promise((r) => setTimeout(r, 2500));
+    // Second failure is due after a 2s backoff, plus up to one 1s timer tick of granularity.
+    await waitForEvent<WidgetErrorPayload>(socket, 'widget:error', 6000);
     expect(errors.length).toBeGreaterThanOrEqual(2);
     const gapMs = new Date(errors[1].retryAt!).getTime() - new Date(errors[0].retryAt!).getTime();
     expect(gapMs).toBeGreaterThan(0);
