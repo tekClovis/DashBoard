@@ -68,6 +68,43 @@ describe('DashboardPage grid (md+)', () => {
     for (const el of observed) expect(el.isConnected).toBe(true);
   });
 
+  // Covers adding the first widget, deleting all then adding one again: the grid appears after an empty state.
+  it('gives the grid the measured container width once widgets appear after an empty dashboard', async () => {
+    // Like a browser: the observed node reports its width once laid out, and 0 if it was removed.
+    const observed = new Set<Element>();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private cb: (entries: unknown[]) => void) {}
+        observe = (el: Element) => {
+          observed.add(el);
+          setTimeout(() => this.cb([{ contentRect: { width: el.isConnected ? 1200 : 0 } }]), 0);
+        };
+        disconnect = () => undefined;
+        unobserve = () => undefined;
+      },
+    );
+    gridProps.current = undefined;
+    let empty = true;
+    respondWhen(
+      (url, method) => url.endsWith('/widgets') && method === 'GET',
+      () =>
+        new Response(JSON.stringify({ widgets: empty ? [] : [instance] }), {
+          status: 200,
+        }),
+    );
+    renderPage();
+    await screen.findByText('Add your first widget');
+    empty = false;
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange', { bubbles: true }));
+    });
+    await vi.waitFor(() => expect(gridProps.current?.width).toBe(1200));
+    const grid = document.querySelector('[data-slot="grid-guides"]');
+    expect(grid).not.toBeNull();
+    expect([...observed].filter((el) => el.isConnected && el.contains(grid))).toHaveLength(1);
+  });
+
   // One render: Radix menus in jsdom don't reopen reliably across separate renders.
   it('moves and resizes from the widget menu through the layout save, with a dismissible alert on failure', async () => {
     renderPage();
