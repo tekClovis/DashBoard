@@ -15,11 +15,11 @@ src/auth/auth.controller.spec.ts:212:28: warning typescript(unbound-method): Avo
 src/auth/auth.controller.spec.ts:276:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 src/auth/auth.controller.spec.ts:344:28: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 src/auth/auth.controller.spec.ts:374:28: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
-src/services/weather/weather.widgets.spec.ts:91:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
-src/services/weather/weather.widgets.spec.ts:104:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
-src/services/weather/weather.widgets.spec.ts:125:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 src/services/weather/open-meteo.spec.ts:148:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
+src/services/weather/weather.widgets.spec.ts:117:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
+src/services/weather/weather.widgets.spec.ts:130:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 src/services/weather/open-meteo.spec.ts:168:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
+src/services/weather/weather.widgets.spec.ts:151:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 src/services/weather/open-meteo.spec.ts:191:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 src/services/weather/open-meteo.spec.ts:200:18: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 src/timer/fetch.service.spec.ts:30:16: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
@@ -35,14 +35,15 @@ src/timer/timer.service.spec.ts:119:25: warning typescript(unbound-method): Avoi
 src/timer/timer.service.spec.ts:131:25: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 test/steam-widgets.e2e-spec.ts:274:47: warning typescript(unbound-method): Avoid referencing unbound methods which may cause unintentional scoping of `this`. help: If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead.
 test/weather.e2e-spec.ts:152:75: warning typescript(no-base-to-string): 'input' may use Object's default stringification format ('[object Object]') when stringified. help: Consider picking a property (e.g. `user.name`), using a formatter (or `JSON.stringify`), or implementing a custom `toString()`/`toLocaleString()` on the type.
+test/weather.e2e-spec.ts:212:61: warning typescript(no-base-to-string): 'input' may use Object's default stringification format ('[object Object]') when stringified. help: Consider picking a property (e.g. `user.name`), using a formatter (or `JSON.stringify`), or implementing a custom `toString()`/`toLocaleString()` on the type.
+test/weather.e2e-spec.ts:213:72: warning typescript(no-base-to-string): 'input' may use Object's default stringification format ('[object Object]') when stringified. help: Consider picking a property (e.g. `user.name`), using a formatter (or `JSON.stringify`), or implementing a custom `toString()`/`toLocaleString()` on the type.
 
 > web@0.0.1 lint
 > oxlint --type-aware src/
 
 src/api/client.ts:17:52: warning typescript(no-misused-spread): Using the spread operator on an array in an object will result in a list of indices.
-exit=0
-
-$ tsc --noEmit -p server
-exit=0
-$ tsc --noEmit -p web (tsc -b)
-exit=0
+exit 0
+$ (server) npx tsc --noEmit
+exit 0
+$ (web) npx tsc --noEmit
+exit 0

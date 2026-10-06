@@ -1,4 +1,8 @@
 
+> dashboard@0.0.1 test:e2e
+> npm run test:e2e -w server
+
+
 > server@0.0.1 test:e2e
 > vitest run --config ./vitest.config.e2e.ts
 
@@ -9,12 +13,22 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
 Loaded Prisma config from prisma.config.ts.
 
 Prisma schema loaded from prisma/schema.prisma.
-Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32770"
+Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32816"
 
 1 migration found in prisma/migrations
 
 Applying migration `20260914000000_init`
 
+┌─────────────────────────────────────────────────────────┐
+│  Update available 7.10.0 -> 8.0.0-rc.20                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
 The following migration(s) have been applied:
 
 migrations/
@@ -22,10 +36,13 @@ migrations/
     └─ migration.sql
 
 All migrations have been successfully applied.
+[31m[Nest] 431423  - [39m10/06/2026, 6:09:17 PM [31m  ERROR[39m [38;5;3m[MailService] [39m[31mFailed to send confirmation email to signup-b1751bfa-a0e2-4d4e-afba-81f1873431dd@example.com[39m
+Error: connect ECONNREFUSED ::1:1025
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1706:16)
 
  Test Files  12 passed (12)
-      Tests  116 passed (116)
-   Start at  13:47:26
-   Duration  67.69s (transform 414ms, setup 0ms, import 6.11s, tests 56.59s, environment 1ms)
+      Tests  120 passed (120)
+   Start at  18:08:13
+   Duration  70.27s (transform 510ms, setup 0ms, import 6.74s, tests 57.69s, environment 1ms)
 
-exit=0
+exit 0
