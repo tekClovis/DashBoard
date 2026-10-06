@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import { JwtService } from '../jwt.service.js';
 import { OAuthController } from './oauth.controller.js';
 import type { OAuthCallbackRequest, OAuthResolvedState } from './oauth.guard.js';
-import { OAuthIdentityConflictError, OAuthLinkRefusedError } from './oauth-login.service.js';
+import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthNoAccountError } from './oauth-login.service.js';
 
 const APP_URL = 'http://localhost:8080';
 const PROFILE = { provider: 'GITHUB', providerUserId: 'gh-1', email: 'a@b.com', emailVerified: true };
@@ -84,6 +84,17 @@ describe('OAuthController', () => {
 
       expect(res.cookie).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/login?error=EMAIL_LINK_REQUIRED`);
+    });
+
+    it('redirects to login when no account matches the provider', async () => {
+      const { controller, oauthLogin } = makeDeps();
+      oauthLogin.loginOrLink.mockRejectedValue(new OAuthNoAccountError());
+      const { res, asResponse } = makeRes();
+
+      await controller.githubCallback(makeReq(LOGIN_STATE), asResponse);
+
+      expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/login?error=OAUTH_NO_ACCOUNT`);
     });
 
     it('rethrows an unexpected login failure without redirecting', async () => {

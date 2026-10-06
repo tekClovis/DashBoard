@@ -182,7 +182,7 @@ POST /api/auth/resend        → rate-limited, always 200 (no account enumeratio
 POST /api/auth/login         → local strategy; 403 EMAIL_NOT_CONFIRMED if unverified
 ```
 
-OIDC signups are marked verified immediately, but only when the provider reports a verified email.
+OAuth never creates an account: users register with email + password first, then log in or link a provider.
 
 **Account linking** (subject: "link the third-party account to an existing platform user"):
 
@@ -190,7 +190,7 @@ OIDC signups are marked verified immediately, but only when the provider reports
 2. Otherwise, if a `User` with the same email exists:
    - If the provider email is verified **and** the local user is confirmed: create the `AuthIdentity` and log in.
    - Otherwise: refuse with *"log in with your password, then link from Profile."*
-3. Otherwise, create the `User` and the `AuthIdentity`.
+3. Otherwise: refuse with *"register with your email first, then link from Profile."*
 
 A logged-in user can also link or unlink identities from Profile. The last remaining login method cannot be unlinked.
 

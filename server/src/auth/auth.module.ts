@@ -17,8 +17,8 @@ import { VerificationService } from './verification.service.js';
 // into passport on instantiation and OAuthLoginService is theirs to own; OAuthModule just
 // imports this module to reach them.
 // AuthController.register() creates the signup user's default Dashboard by writing the
-// `dashboard` row directly inside the same transaction as the `user` row (same pattern as
-// OAuthLoginService.loginOrLink), rather than depending on DashboardsService — DashboardsModule
+// `dashboard` row directly inside the same transaction as the `user` row, rather than depending
+// on DashboardsService — DashboardsModule
 // imports CatalogModule, which imports this module, so a static import of DashboardsModule here
 // would close AuthModule -> DashboardsModule -> CatalogModule -> AuthModule into a real circular
 // import (forwardRef only defers Nest's own DI resolution, not the underlying ES module load

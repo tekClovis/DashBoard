@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService } from './oauth-login.service.js';
+import { OAuthIdentityConflictError, OAuthLinkRefusedError, OAuthLoginService, OAuthNoAccountError } from './oauth-login.service.js';
 import type { NormalizedOAuthProfile } from './normalized-profile.js';
 
 function makePrisma() {
@@ -85,19 +85,20 @@ describe('OAuthLoginService', () => {
     expect(prisma.authIdentity.create).not.toHaveBeenCalled();
   });
 
-  it('creates a new verified user + identity when nothing matches', async () => {
+  it.each([
+    ['no local user has the email', 'brandnew@example.com'],
+    ['the provider shares no email', null],
+  ])('refuses without creating anything when %s', async (_label, email) => {
     const prisma = makePrisma();
     prisma.authIdentity.findUnique.mockResolvedValue(null);
     prisma.user.findUnique.mockResolvedValue(null);
 
     const service = new OAuthLoginService(prisma as never);
-    const result = await service.loginOrLink(profile({ email: 'brandnew@example.com' }));
 
-    expect(result).toEqual({ id: 'new-user', email: 'new@x.com' });
-    expect(prisma.$transaction).toHaveBeenCalled();
-    expect(prisma.tx.dashboard.create).toHaveBeenCalledWith({
-      data: { userId: 'new-user', name: 'My Dashboard', position: 0 },
-    });
+    await expect(service.loginOrLink(profile({ email }))).rejects.toBeInstanceOf(OAuthNoAccountError);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.authIdentity.create).not.toHaveBeenCalled();
   });
 
   describe('linkIdentity', () => {

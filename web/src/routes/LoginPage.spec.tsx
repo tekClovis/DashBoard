@@ -98,4 +98,12 @@ describe('LoginPage', () => {
     expect(notice.dataset.tone).toBe('warning');
     expect(notice.textContent).toContain('This email already has an account');
   });
+
+  it('explains that OAuth cannot create an account', () => {
+    stubAuthApi();
+    renderAt('/login?error=OAUTH_NO_ACCOUNT', '/login', <LoginPage />);
+    const notice = screen.getByRole('status');
+    expect(notice.dataset.tone).toBe('warning');
+    expect(notice.textContent).toContain('No account for this provider');
+  });
 });

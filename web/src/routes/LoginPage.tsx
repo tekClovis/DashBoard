@@ -30,6 +30,8 @@ export function LoginPage() {
   // Set by the oauth callback redirect (server/src/auth/oauth) when account-linking rule
   // 2's refusal branch fires — docs/Architecture.md §5.1 "Account linking".
   const linkRequired = searchParams.get('error') === 'EMAIL_LINK_REQUIRED';
+  // Rule 3: OAuth never creates an account.
+  const noAccount = searchParams.get('error') === 'OAUTH_NO_ACCOUNT';
   const unconfirmed = login.error instanceof ApiError && login.error.code === 'EMAIL_NOT_CONFIRMED';
   const wrongCredentials = invalidInput || (login.isError && !unconfirmed);
 
@@ -59,6 +61,15 @@ export function LoginPage() {
           <AlertContent>
             <AlertTitle>This email already has an account</AlertTitle>
             <AlertDescription>Log in with your password, then link the provider from Profile.</AlertDescription>
+          </AlertContent>
+        </Alert>
+      )}
+      {noAccount && (
+        <Alert tone="warning">
+          <TriangleAlert strokeWidth={1.75} aria-hidden />
+          <AlertContent>
+            <AlertTitle>No account for this provider</AlertTitle>
+            <AlertDescription>Register with your email first, then link the provider from Profile.</AlertDescription>
           </AlertContent>
         </Alert>
       )}
