@@ -82,7 +82,7 @@ describe('Add widget dialog, game search', () => {
     fireEvent.click((await screen.findAllByRole('option'))[1]);
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByText('app_id=620')).toBeTruthy();
+    expect(screen.getByText('Portal 2 app_id=620')).toBeTruthy();
     expect(screen.queryByText(/game_image/)).toBeNull();
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
 

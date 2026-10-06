@@ -318,7 +318,7 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
                   spec.params
                     .filter((p) => !p.hidden)
                     .map((p) => (
-                      <span key={p.name} className="block font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
+                      <span key={p.name} className="block font-mono text-xs">{`${p.search && values.game_name ? `${values.game_name} ` : ''}${p.name}=${values[p.name] ?? ''}`}</span>
                     ))
                 ) : (
                   <span className="text-muted-foreground">None</span>
