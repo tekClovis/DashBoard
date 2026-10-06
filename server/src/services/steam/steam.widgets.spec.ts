@@ -29,8 +29,12 @@ describe('steam widgets', () => {
     expect(gameNews).toMatchObject({ service: 'steam', name: 'game_news', auth: 'connection', minRefreshSec: 900 });
     expect(gameNews.params.map((p) => [p.name, p.type, p.required])).toEqual([
       ['app_id', 'integer', true],
+      ['game_name', 'string', undefined],
+      ['game_image', 'string', undefined],
       ['number', 'integer', true],
     ]);
+    expect(gameNews.params[0]).toMatchObject({ search: 'steam.game' });
+    expect(gameNews.params.filter((p) => p.hidden).map((p) => p.name)).toEqual(['game_name', 'game_image']);
   });
 
   describe('recently_played', () => {

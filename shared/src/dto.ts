@@ -167,3 +167,14 @@ export interface LayoutUpdateEntry {
   w: number;
   h: number;
 }
+
+/** One Steam store match from GET /api/steam/search?q= */
+export interface GameCandidate {
+  appId: number;
+  name: string;
+  image: string;
+}
+
+export interface GameSearchResponse {
+  results: GameCandidate[];
+}
