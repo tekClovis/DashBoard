@@ -155,7 +155,7 @@ describe('ProfilePage', () => {
       fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete account' }));
 
       expect(mutate).toHaveBeenCalledTimes(1);
-      expect(navigateMock).toHaveBeenCalledWith('/login');
+      expect(navigateMock).toHaveBeenCalledWith('/login', { state: { accountDeleted: true } });
     });
 
     it('shows the only-admin error on LAST_ADMIN', () => {

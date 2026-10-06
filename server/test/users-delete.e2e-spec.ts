@@ -6,11 +6,13 @@ import { INestApplication } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { Test, TestingModule } from '@nestjs/testing';
 import bcrypt from 'bcrypt';
+import type { Redis } from 'ioredis';
 import { io as ioClient, type Socket as ClientSocket } from 'socket.io-client';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { JwtService } from '../src/auth/jwt.service.js';
+import { REDIS } from '../src/core/redis/redis.provider.js';
 import { PrismaService } from '../src/core/prisma/prisma.service.js';
 import type { Role } from '../src/generated/prisma/enums.js';
 
@@ -18,6 +20,7 @@ describe('DELETE /users/me (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let jwtService: JwtService;
+  let redis: Redis;
   let baseUrl: string;
   const sockets: ClientSocket[] = [];
 
@@ -30,6 +33,7 @@ describe('DELETE /users/me (e2e)', () => {
     baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
     prisma = app.get(PrismaService);
     jwtService = app.get(JwtService);
+    redis = app.get(REDIS);
   });
 
   afterAll(async () => {
@@ -45,6 +49,8 @@ describe('DELETE /users/me (e2e)', () => {
     await prisma.widgetInstance.deleteMany();
     await prisma.dashboard.deleteMany();
     await prisma.user.deleteMany();
+    // The login attempt below is rate limited per IP, and the Redis container is shared across e2e files.
+    await redis.flushdb();
   });
 
   async function createUser(role: Role = 'USER') {

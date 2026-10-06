@@ -117,7 +117,7 @@ function DangerZone({ email }: { email: string }) {
   function onConfirm() {
     setError(null);
     del.mutate(undefined, {
-      onSuccess: () => navigate('/login'),
+      onSuccess: () => navigate('/login', { state: { accountDeleted: true } }),
       onError: (err) =>
         setError(
           err instanceof ApiError && err.code === 'LAST_ADMIN'

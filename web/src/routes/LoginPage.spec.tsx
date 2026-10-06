@@ -91,6 +91,26 @@ describe('LoginPage', () => {
     expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('ada@example.com');
   });
 
+  it('confirms an account deletion carried in the location state', () => {
+    stubAuthApi();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[{ pathname: '/login', state: { accountDeleted: true } }]}>
+          <LoginPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const notice = screen.getByRole('status');
+    expect(notice.dataset.tone).toBe('success');
+    expect(notice.textContent).toContain('Your account was deleted');
+  });
+
+  it('shows no deletion notice on a plain visit', () => {
+    stubAuthApi();
+    renderAt('/login', '/login', <LoginPage />);
+    expect(screen.queryByText('Your account was deleted')).toBeNull();
+  });
+
   it('explains the account-linking refusal from the OAuth callback', () => {
     stubAuthApi();
     renderAt('/login?error=EMAIL_LINK_REQUIRED', '/login', <LoginPage />);
