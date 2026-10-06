@@ -13,7 +13,7 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
 Loaded Prisma config from prisma.config.ts.
 
 Prisma schema loaded from prisma/schema.prisma.
-Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32793"
+Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32807"
 
 1 migration found in prisma/migrations
 
@@ -26,13 +26,13 @@ migrations/
     └─ migration.sql
 
 All migrations have been successfully applied.
-[31m[Nest] 302237  - [39m10/06/2026, 5:33:48 PM [31m  ERROR[39m [38;5;3m[MailService] [39m[31mFailed to send confirmation email to signup-91b99058-ada1-4b00-a5e2-0218555f181c@example.com[39m
+[31m[Nest] 361645  - [39m10/06/2026, 5:49:09 PM [31m  ERROR[39m [38;5;3m[MailService] [39m[31mFailed to send confirmation email to signup-7231bac7-df17-42c1-8bcd-f24f8875f5fe@example.com[39m
 Error: getaddrinfo EAI_AGAIN mailpit
     at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)
 
  Test Files  12 passed (12)
       Tests  114 passed (114)
-   Start at  17:32:45
-   Duration  68.12s (transform 513ms, setup 0ms, import 6.28s, tests 56.58s, environment 1ms)
+   Start at  17:48:04
+   Duration  68.73s (transform 471ms, setup 0ms, import 6.51s, tests 56.83s, environment 1ms)
 
 exit 0

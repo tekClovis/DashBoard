@@ -1,6 +1,6 @@
-== tsc --noEmit -p shared/tsconfig.json
+== shared
 exit 0
-== tsc --noEmit -p server/tsconfig.json
+== server
 exit 0
-== tsc --noEmit -p web/tsconfig.json
+== web
 exit 0
