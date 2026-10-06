@@ -1,0 +1,70 @@
+login ada -> 200
+login lin -> 200
+login boss -> 200
+$ POST /dashboards/1000..0001/share {lin} as ada -> 201
+$ POST /dashboards/1000..0002/share {lin} as ada -> 201
+$ GET /shares/incoming as lin -> {"shares":[{"id":"543efc77-82f2-4a86-af4d-5846e8311e43","dashboardName":"Pending","fromEmail":"ada@example.com","widgetCount":0,"createdAt":"2026-10-06T23:01:17.511Z"},{"id":"9a66122c-f8a1-4447-af6f-8e5a4ceaa4b5","dashboardName":"Shared","fromEmail":"ada@example.com","widgetCount":1,"createdAt":"2026-10-06T23:01:17.490Z"}]}
+$ POST /shares/9a66122c-f8a1-4447-af6f-8e5a4ceaa4b5/accept as lin -> 201
+$ GET /shares/incoming as lin -> {"shares":[{"id":"543efc77-82f2-4a86-af4d-5846e8311e43","dashboardName":"Pending","fromEmail":"ada@example.com","widgetCount":0,"createdAt":"2026-10-06T23:01:17.511Z"}]}
+$ POST /dashboards/<Lin home>/share {ada} as lin -> 201
+
+=== BEFORE deletion (DB query, ada = 00000000-...-00a) ===
+SELECT
+ (SELECT count(*) FROM "User" WHERE email='ada@example.com') AS users,
+ (SELECT count(*) FROM "Dashboard" WHERE "userId"='00000000-0000-0000-0000-00000000000a') AS dashboards,
+ (SELECT count(*) FROM "WidgetInstance" w WHERE w."dashboardId" IN ('10000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002')) AS widgets,
+ (SELECT count(*) FROM "ServiceConnection" WHERE "userId"='00000000-0000-0000-0000-00000000000a') AS connections,
+ (SELECT count(*) FROM "AuthIdentity" WHERE "userId"='00000000-0000-0000-0000-00000000000a') AS identities,
+ (SELECT count(*) FROM "EmailToken" WHERE "userId"='00000000-0000-0000-0000-00000000000a') AS email_tokens,
+ (SELECT count(*) FROM "DashboardShare" WHERE "fromUserId"='00000000-0000-0000-0000-00000000000a' OR "toUserId"='00000000-0000-0000-0000-00000000000a') AS shares;
+SELECT u.email, d.name, (SELECT count(*) FROM "WidgetInstance" w WHERE w."dashboardId"=d.id) AS widgets FROM "Dashboard" d JOIN "User" u ON u.id=d."userId" ORDER BY 1,2;
+ users | dashboards | widgets | connections | identities | email_tokens | shares 
+-------+------------+---------+-------------+------------+--------------+--------
+     1 |          2 |       1 |           1 |          1 |            1 |      3
+(1 row)
+
+      email       |   name    | widgets 
+------------------+-----------+---------
+ ada@example.com  | Pending   |       0
+ ada@example.com  | Shared    |       1
+ boss@example.com | Boss home |       0
+ lin@example.com  | Lin home  |       0
+ lin@example.com  | Shared    |       1
+(5 rows)
+
+
+=== AFTER ada deleted via the UI (DB query) ===
+ users | dashboards | widgets | connections | identities | email_tokens | shares 
+-------+------------+---------+-------------+------------+--------------+--------
+     0 |          0 |       0 |           0 |          0 |            0 |      0
+(1 row)
+
+      email       |   name    | widgets 
+------------------+-----------+---------
+ boss@example.com | Boss home |       0
+ lin@example.com  | Lin home  |       0
+ lin@example.com  | Shared    |       1
+(3 rows)
+
+orphans:
+ orphan_widgets | orphan_shares 
+----------------+---------------
+              0 |             0
+(1 row)
+
+$ POST /auth/login ada old password -> {"error":"INVALID_CREDENTIALS"} 401
+$ GET /auth/me with ada's old curl cookie -> {"message":"Unauthorized","statusCode":401} 401
+$ GET /shares/incoming as lin -> {"shares":[]} 200
+$ GET /dashboards as lin -> {"dashboards":[{"id":"10000000-0000-0000-0000-000000000003","name":"Lin home","position":0},{"id":"2468f87e-f0d1-49ff-8077-98e2d8b4a630","name":"Shared","position":1}]} 200
+$ DELETE /users/me without session -> {"message":"Unauthorized","statusCode":401} 401
+$ DELETE /users/me/<lin id> as boss -> {"message":"Cannot DELETE /api/users/me/00000000-0000-0000-0000-00000000000b","error":"Not Found","statusCode":404} 404
+$ DELETE /users/00000000-0000-0000-0000-00000000000b as boss -> {"message":"Cannot DELETE /api/users/00000000-0000-0000-0000-00000000000b","error":"Not Found","statusCode":404} 404
+users now:
+boss@example.com|ADMIN
+lin@example.com|USER
+
+=== raw response headers: DELETE /users/me as tmp@example.com ===
+HTTP/1.1 204 No Content
+Set-Cookie: session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax
+
+$ DELETE /users/me as boss (only ADMIN) -> {"error":"LAST_ADMIN"} 409
