@@ -15,12 +15,14 @@ let dashboards: { id: string; name: string; position: number }[];
 let shares: Share[];
 let calls: { url: string; method: string; body?: unknown }[];
 let shareError: string | null;
+let acceptStatus: number;
 
 beforeEach(() => {
   dashboards = [{ id: 'a', name: 'Home', position: 0 }];
   shares = [{ id: 's1', dashboardName: 'Game night', fromEmail: 'grace@example.com', widgetCount: 3, createdAt: '2026-10-05T10:00:00Z' }];
   calls = [];
   shareError = null;
+  acceptStatus = 201;
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit) => {
@@ -29,8 +31,12 @@ beforeEach(() => {
       const json = (data: unknown, status = 200) =>
         Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(data) });
       if (url === '/api/shares/incoming') return json({ shares });
-      if (url.endsWith('/share')) return shareError ? json({ error: shareError }, 400) : json({ ok: true }, 201);
+      if (url.endsWith('/share')) return shareError ? json({ error: shareError }, shareError === 'ALREADY_SHARED' ? 409 : 400) : json({ ok: true }, 201);
       if (url === '/api/shares/s1/accept') {
+        if (acceptStatus === 404) {
+          shares = [];
+          return json({}, 404);
+        }
         shares = [];
         dashboards.push({ id: 'new', name: 'Game night', position: 1 });
         return json({ id: 'new', name: 'Game night', position: 1 }, 201);
@@ -102,6 +108,14 @@ describe('sharing a dashboard', () => {
     expect(await screen.findByText(/No user found for “nobody@example\.com”/)).toBeTruthy();
   });
 
+  it('says so when the dashboard is already shared with that user', async () => {
+    shareError = 'ALREADY_SHARED';
+    renderSwitcher();
+    fireEvent.change(await openShare(), { target: { value: 'lin@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    expect(await screen.findByText(/Already shared with lin@example\.com/)).toBeTruthy();
+  });
+
   it('shows an error when sharing with yourself', async () => {
     shareError = 'CANNOT_SHARE_WITH_SELF';
     renderSwitcher();
@@ -141,9 +155,26 @@ describe('incoming shares', () => {
     renderSwitcher();
     const inbox = await openInbox();
     fireEvent.click(inbox.getByRole('button', { name: 'Decline' }));
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false);
+    expect(inbox.getByText(/Decline this share\?/)).toBeTruthy();
+    fireEvent.click(inbox.getByRole('button', { name: 'Keep' }));
+    expect(inbox.queryByText(/Decline this share\?/)).toBeNull();
+    fireEvent.click(inbox.getByRole('button', { name: 'Decline' }));
+    fireEvent.click(inbox.getByRole('button', { name: 'Decline' }));
     expect(await screen.findByText('Nothing shared with you right now.')).toBeTruthy();
     expect(calls).toContainEqual({ url: '/api/shares/s1', method: 'DELETE', body: undefined });
     expect(calls.some((c) => c.url.endsWith('/accept'))).toBe(false);
+  });
+
+  it('a share whose dashboard was removed shows "no longer available" and can be dismissed', async () => {
+    acceptStatus = 404;
+    renderSwitcher();
+    const inbox = await openInbox();
+    fireEvent.click(inbox.getByRole('button', { name: 'Add to my dashboards' }));
+    expect(await screen.findByText('This share is no longer available')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add to my dashboards' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(await screen.findByText('Nothing shared with you right now.')).toBeTruthy();
   });
 
   it('shows an empty state when nothing is pending', async () => {

@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { DashboardEventsService } from './dashboard-events.js';
 import { DashboardShareService } from './dashboard-shares.service.js';
@@ -48,11 +48,12 @@ function makeFake() {
       },
     },
     dashboardShare: {
-      upsert: async ({ where, create }: { where: { dashboardId_toUserId: { dashboardId: string; toUserId: string } }; create: Omit<ShareRow, 'id' | 'createdAt'> }) => {
+      findUnique: async ({ where }: { where: { dashboardId_toUserId: { dashboardId: string; toUserId: string } } }) => {
         const key = where.dashboardId_toUserId;
-        const found = shares.find((s) => s.dashboardId === key.dashboardId && s.toUserId === key.toUserId);
-        if (found) return found;
-        const row = { id: id('s'), createdAt: new Date(), ...create };
+        return shares.find((s) => s.dashboardId === key.dashboardId && s.toUserId === key.toUserId) ?? null;
+      },
+      create: async ({ data }: { data: Omit<ShareRow, 'id' | 'createdAt'> }) => {
+        const row = { id: id('s'), createdAt: new Date(), ...data };
         shares.push(row);
         return row;
       },
@@ -114,10 +115,12 @@ describe('DashboardShareService', () => {
       await expect(service.share('u2', 'd1', 'eve@example.com')).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('is idempotent for the same dashboard and recipient', async () => {
+    it('rejects a second pending share of the same dashboard to the same recipient with ALREADY_SHARED', async () => {
       const { service, shares } = makeFake();
       await service.share('u1', 'd1', 'grace@example.com');
-      await service.share('u1', 'd1', 'grace@example.com');
+      const err = await service.share('u1', 'd1', 'grace@example.com').catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(ConflictException);
+      expect((err as ConflictException).getResponse()).toEqual({ error: 'ALREADY_SHARED' });
       expect(shares).toHaveLength(1);
     });
   });

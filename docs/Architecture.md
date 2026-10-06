@@ -318,7 +318,7 @@ All routes are under `/api` and require the JWT cookie unless marked public. Bod
 | GET | `/dashboards/{id}/widgets` | List the dashboard's instances `{ widgets: [...] }` |
 | POST | `/dashboards/{id}/widgets` | Add instance `{ service, widget, params, refreshRate, x, y, w, h }` |
 | PATCH | `/dashboards/{id}/layout` | Bulk `[{ id, x, y, w, h }]` after a drag or resize |
-| POST | `/dashboards/{id}/share` | Share with another user `{ email }`; unknown email is 400 `UNKNOWN_USER` |
+| POST | `/dashboards/{id}/share` | Share with another user `{ email }`; unknown email is 400 `UNKNOWN_USER`, an already-pending share is 409 `ALREADY_SHARED` |
 | GET | `/shares/incoming` | Pending shares sent to me `{ shares: [{ id, dashboardName, fromEmail, widgetCount, createdAt }] }` |
 | POST / DELETE | `/shares/{id}/accept`, `/shares/{id}` | Add a personal copy (returns the new dashboard) / decline. Only the recipient; anyone else gets 404 |
 | PATCH / DELETE | `/widgets/{id}` | Reconfigure (`params`, `refreshRate`) / delete |

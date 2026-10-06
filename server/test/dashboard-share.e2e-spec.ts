@@ -63,6 +63,13 @@ describe('Dashboard sharing (e2e)', () => {
     expect(res.body).toMatchObject({ error: 'UNKNOWN_USER' });
   });
 
+  it('1. sharing the same dashboard to the same user twice is a 409 ALREADY_SHARED', async () => {
+    const { owner, dashboard } = await seed();
+    await share(owner.cookie, dashboard.id, 'recipient@example.com').expect(201);
+    const res = await share(owner.cookie, dashboard.id, 'recipient@example.com').expect(409);
+    expect(res.body).toMatchObject({ error: 'ALREADY_SHARED' });
+  });
+
   it('1. only the dashboard owner can share it', async () => {
     const { other, dashboard } = await seed();
     await share(other.cookie, dashboard.id, 'recipient@example.com').expect(404);

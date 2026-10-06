@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton.js';
 function shareErrorMessage(error: unknown, email: string): string {
   const code = error instanceof ApiError ? error.code : null;
   if (code === 'UNKNOWN_USER') return `No user found for “${email}”. Check the spelling and try again.`;
+  if (code === 'ALREADY_SHARED') return `Already shared with ${email}. They haven’t answered yet.`;
   if (code === 'CANNOT_SHARE_WITH_SELF') return 'You can’t share a dashboard with yourself.';
   return 'Couldn’t send the dashboard. Try again.';
 }
@@ -82,12 +83,14 @@ export function ShareDialog({ dashboard }: { dashboard: DashboardEntry }) {
   );
 }
 
-function ShareRow({ share, onAccepted }: { share: IncomingShareEntry; onAccepted: () => void }) {
+function ShareRow({ share, onAccepted, onDismiss }: { share: IncomingShareEntry; onAccepted: () => void; onDismiss: () => void }) {
   const navigate = useNavigate();
   const accept = useAcceptShare();
   const decline = useDeclineShare();
+  const [confirming, setConfirming] = useState(false);
   const busy = accept.isPending || decline.isPending;
-  const failed = accept.isError || decline.isError;
+  const gone = accept.error instanceof ApiError && accept.error.status === 404;
+  const failed = !gone && (accept.isError || decline.isError);
 
   return (
     <li className="grid gap-2 rounded-md border p-3">
@@ -98,26 +101,54 @@ function ShareRow({ share, onAccepted }: { share: IncomingShareEntry; onAccepted
           {share.widgetCount === 1 ? 'widget' : 'widgets'}
         </div>
       </div>
-      {failed && <FieldError id={`share-err-${share.id}`}>Something went wrong. Try again.</FieldError>}
-      <div className="flex justify-end gap-2">
-        <Button variant="ghost" size="sm" disabled={busy} onClick={() => decline.mutate(share.id)}>
-          Decline
-        </Button>
-        <Button
-          size="sm"
-          disabled={busy}
-          onClick={() =>
-            accept.mutate(share.id, {
-              onSuccess: (created) => {
-                onAccepted();
-                void navigate(`/d/${created.id}`);
-              },
-            })
-          }
-        >
-          {accept.isPending ? 'Adding…' : 'Add to my dashboards'}
-        </Button>
-      </div>
+      {gone ? (
+        <>
+          <FieldError id={`share-gone-${share.id}`}>This share is no longer available</FieldError>
+          <p className="text-muted-foreground text-xs">The sender removed it, or it was meant for someone else.</p>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={onDismiss}>
+              Dismiss
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          {failed && <FieldError id={`share-err-${share.id}`}>Something went wrong. Try again.</FieldError>}
+          {confirming ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <span className="text-muted-foreground mr-auto text-xs">
+                Decline this share? {share.fromEmail} isn’t told.
+              </span>
+              <Button variant="destructive-solid" size="sm" disabled={busy} onClick={() => decline.mutate(share.id)}>
+                Decline
+              </Button>
+              <Button variant="ghost" size="sm" autoFocus onClick={() => setConfirming(false)}>
+                Keep
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirming(true)}>
+                Decline
+              </Button>
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() =>
+                  accept.mutate(share.id, {
+                    onSuccess: (created) => {
+                      onAccepted();
+                      void navigate(`/d/${created.id}`);
+                    },
+                  })
+                }
+              >
+                {accept.isPending ? 'Adding…' : 'Add to my dashboards'}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </li>
   );
 }
@@ -154,7 +185,7 @@ export function IncomingSharesDialog({ onClose }: { onClose: () => void }) {
         ) : (
           <ul role="list" className="grid gap-2">
             {shares.map((s) => (
-              <ShareRow key={s.id} share={s} onAccepted={onClose} />
+              <ShareRow key={s.id} share={s} onAccepted={onClose} onDismiss={() => void refetch()} />
             ))}
           </ul>
         ))}

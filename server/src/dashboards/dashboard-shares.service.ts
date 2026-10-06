@@ -5,7 +5,7 @@
 // are scoped by toUserId in the query itself, so someone else's share is a 404, like the rest of
 // the dashboards API.
 
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { DashboardEntry, IncomingShareEntry } from '@dashboard/shared';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
@@ -26,11 +26,11 @@ export class DashboardShareService {
     if (!recipient || recipient.bannedAt) throw new BadRequestException({ error: 'UNKNOWN_USER' });
     if (recipient.id === userId) throw new BadRequestException({ error: 'CANNOT_SHARE_WITH_SELF' });
 
-    await this.prisma.dashboardShare.upsert({
+    const pending = await this.prisma.dashboardShare.findUnique({
       where: { dashboardId_toUserId: { dashboardId, toUserId: recipient.id } },
-      create: { dashboardId, fromUserId: userId, toUserId: recipient.id },
-      update: {},
     });
+    if (pending) throw new ConflictException({ error: 'ALREADY_SHARED' });
+    await this.prisma.dashboardShare.create({ data: { dashboardId, fromUserId: userId, toUserId: recipient.id } });
   }
 
   async listIncoming(userId: string): Promise<IncomingShareEntry[]> {
