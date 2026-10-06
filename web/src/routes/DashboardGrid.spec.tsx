@@ -105,6 +105,48 @@ describe('DashboardPage grid (md+)', () => {
     expect([...observed].filter((el) => el.isConnected && el.contains(grid))).toHaveLength(1);
   });
 
+  const stubObserver = () =>
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private cb: (entries: unknown[]) => void) {}
+        observe = (el: Element) => {
+          setTimeout(() => this.cb([{ contentRect: { width: el.isConnected ? 1200 : 0 } }]), 0);
+        };
+        disconnect = () => undefined;
+        unobserve = () => undefined;
+      },
+    );
+
+  it('measures the same width when the page loads with widgets already stored (reload)', async () => {
+    stubObserver();
+    gridProps.current = undefined;
+    renderPage();
+    await vi.waitFor(() => expect(gridProps.current?.width).toBe(1200));
+  });
+
+  it('lays out a second and third widget after the first one on a formerly empty dashboard', async () => {
+    stubObserver();
+    gridProps.current = undefined;
+    let widgets: unknown[] = [];
+    respondWhen(
+      (url, method) => url.endsWith('/widgets') && method === 'GET',
+      () => new Response(JSON.stringify({ widgets }), { status: 200 }),
+    );
+    renderPage();
+    await screen.findByText('Add your first widget');
+    const refetch = () => act(() => void document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+    const ids = (layouts: unknown) =>
+      (layouts as { lg: { i: string; w: number }[] }).lg.map((l) => `${l.i}:${l.w}`);
+    widgets = [instance];
+    refetch();
+    await vi.waitFor(() => expect(ids(gridProps.current?.layouts)).toEqual(['i1:4']));
+    widgets = [instance, { ...instance, id: 'i2', y: 5 }, { ...instance, id: 'i3', x: 0, y: 8 }];
+    refetch();
+    await vi.waitFor(() => expect(ids(gridProps.current?.layouts)).toEqual(['i1:4', 'i2:4', 'i3:4']));
+    expect(gridProps.current?.width).toBe(1200);
+  });
+
   // One render: Radix menus in jsdom don't reopen reliably across separate renders.
   it('moves and resizes from the widget menu through the layout save, with a dismissible alert on failure', async () => {
     renderPage();
