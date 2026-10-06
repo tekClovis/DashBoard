@@ -1,6 +1,6 @@
 import { LayoutGrid, LogOut, Menu, Moon, OctagonX, Plug, Sun, TriangleAlert, User, Users, type LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link, Outlet, useLocation, useMatch, useNavigate } from 'react-router';
 import { useLogout, useMe } from '@/api/auth.js';
 import { useDashboards } from '@/api/dashboards.js';
 import { ThemeToggle } from '@/components/theme-toggle.js';
@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import { useTheme } from '@/lib/theme.js';
 import { cn } from '@/lib/utils.js';
 import { SocketProvider, useSocket } from '@/realtime/SocketProvider.js';
+import { DashboardPage } from './DashboardPage.js';
 
 interface NavItem {
   to: string;
@@ -284,6 +285,38 @@ function ShellHeader() {
   );
 }
 
+/**
+ * Keep-alive for the last-visited dashboard (docs/Architecture.md §9): it stays mounted, hidden and
+ * inert, while Services / Profile / Admin show, so its widgets, subscriptions, grid and scroll survive.
+ * Only one dashboard is kept; a different one replaces it. It lives and dies with the shell (logout
+ * unmounts it), and a deleted dashboard renders nothing, which drops its subscriptions.
+ */
+function KeptDashboard() {
+  const activeId = useMatch('/d/:dashboardId')?.params.dashboardId;
+  const [keptId, setKeptId] = useState(activeId);
+  if (activeId && activeId !== keptId) setKeptId(activeId);
+  const visible = Boolean(activeId);
+  const scrollY = useRef(0);
+
+  useLayoutEffect(() => {
+    if (!visible) return;
+    if (scrollY.current > 0) window.scrollTo(0, scrollY.current);
+    const onScroll = () => {
+      scrollY.current = window.scrollY;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [visible]);
+
+  const id = activeId ?? keptId;
+  if (!id) return null;
+  return (
+    <div hidden={!visible} inert={!visible} data-testid="kept-dashboard">
+      <DashboardPage dashboardId={id} hiddenView={!visible} />
+    </div>
+  );
+}
+
 /** Authenticated app shell: nav header + realtime socket connection, per docs/Architecture.md §9. */
 export function AppShell() {
   return (
@@ -298,6 +331,7 @@ export function AppShell() {
         <ShellHeader />
         <ConnectionBanner />
         <main id="main" tabIndex={-1} className="px-4 pt-4 pb-10 focus:outline-none md:px-6 md:pt-5 md:pb-12">
+          <KeptDashboard />
           <Outlet />
         </main>
       </div>
