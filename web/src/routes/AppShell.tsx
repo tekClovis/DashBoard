@@ -257,7 +257,7 @@ function ShellHeader() {
   return (
     <header className="bg-background/92 sticky top-0 z-30 flex h-12 items-center gap-2 border-b pr-2 pl-4 backdrop-blur-sm md:gap-5 md:px-6">
       <MobileMenu {...shellNav} />
-      <Link to={nav[0].to} className={brandClass}>
+      <Link to={nav[0].to} className={cn(brandClass, 'max-md:hidden')}>
         <Brand />
       </Link>
       <DashboardSwitcher />

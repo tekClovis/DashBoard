@@ -176,7 +176,7 @@ export function DashboardSwitcher() {
   };
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="md:relative">
       <Button
         variant="outline"
         aria-haspopup="dialog"
@@ -195,7 +195,7 @@ export function DashboardSwitcher() {
           id="dashboard-switcher"
           role="dialog"
           aria-label="Dashboards"
-          className="bg-popover text-popover-foreground absolute top-[calc(100%+4px)] left-0 z-40 w-64 rounded-md border p-1 shadow-[0_8px_24px_-8px_oklch(0_0_0/35%)]"
+          className="bg-popover text-popover-foreground fixed inset-x-2 top-13 z-40 rounded-md md:absolute md:inset-x-auto md:top-[calc(100%+4px)] md:left-0 md:w-64 border p-1 shadow-[0_8px_24px_-8px_oklch(0_0_0/35%)]"
         >
           <div className="text-muted-foreground px-2 pt-2 pb-1 text-xs">Your dashboards</div>
           {isPending && (

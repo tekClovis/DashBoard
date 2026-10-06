@@ -86,6 +86,15 @@ describe('DashboardSwitcher', () => {
     expect(menu.getByRole('button', { name: 'Work' }).getAttribute('aria-current')).toBeNull();
   });
 
+  it('pins the menu inside the screen below md (fixed, inset-x-2) and anchors it to the button from md', async () => {
+    renderSwitcher();
+    const menu = await openMenu();
+    const cls = menu.getByRole('button', { name: 'Home' }).closest('[role="dialog"]')!.className;
+    expect(cls).toContain('fixed');
+    expect(cls).toContain('inset-x-2');
+    expect(cls).toContain('md:absolute');
+  });
+
   it('switching navigates to /d/<id>', async () => {
     renderSwitcher();
     const menu = await openMenu();

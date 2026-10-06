@@ -59,6 +59,14 @@ function mockMe(role: 'USER' | 'ADMIN') {
 const mainNav = () => within(screen.getByRole('navigation', { name: 'Main' }));
 
 describe('AppShell nav', () => {
+  it('hides the brand link below md so the dashboard switcher has room', () => {
+    mockMe('USER');
+    renderShell();
+
+    const brand = screen.getAllByText('dashboard')[0].closest('a')!;
+    expect(brand.className).toContain('max-md:hidden');
+  });
+
   it('hides the Admin link for a USER', () => {
     mockMe('USER');
     renderShell();
