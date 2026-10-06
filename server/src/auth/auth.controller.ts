@@ -70,8 +70,8 @@ export class AuthController {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
-    // Same default Dashboard as OAuth signup, created atomically with the User row here — see
-    // OAuthLoginService.loginOrLink's comment on why DashboardsService.createDefault isn't used.
+    // Default Dashboard created atomically with the User row here — see AuthModule's comment on
+    // why DashboardsService.createDefault isn't used.
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({ data: { email, passwordHash } });
       await tx.dashboard.create({

@@ -169,7 +169,7 @@ describe('OAuth login (e2e)', () => {
       expect(await prisma.authIdentity.count()).toBe(0);
     });
 
-    it('creates a new verified user + identity when nothing matches', async () => {
+    it('refuses when nothing matches: no login, no user or identity created', async () => {
       stubStrategyProfile(getStrategy(), makeProfile(`${provider}-400`, `brand-new-${provider}@example.com`, true));
 
       const { cookie, state } = await startAndGetState(provider);
@@ -178,12 +178,11 @@ describe('OAuth login (e2e)', () => {
         .set('Cookie', cookie)
         .expect(302);
 
-      expect(res.headers['location']).toContain('/d/placeholder');
-      expect(extractCookie(res, 'session')).toBeTruthy();
-      const user = await prisma.user.findUnique({ where: { email: `brand-new-${provider}@example.com` } });
-      expect(user?.emailVerifiedAt).not.toBeNull();
-      const identity = await prisma.authIdentity.findFirst({ where: { userId: user!.id } });
-      expect(identity).toMatchObject({ provider: dbProvider, providerUserId: `${provider}-400` });
+      expect(res.headers['location']).toContain('/login');
+      expect(res.headers['location']).toContain('OAUTH_NO_ACCOUNT');
+      expect(() => extractCookie(res, 'session')).toThrow();
+      expect(await prisma.user.count()).toBe(0);
+      expect(await prisma.authIdentity.count()).toBe(0);
     });
   });
 
