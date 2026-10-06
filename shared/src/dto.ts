@@ -122,6 +122,25 @@ export interface UpdateDashboardRequest {
   position?: number;
 }
 
+/** POST /api/dashboards/{id}/share */
+export interface ShareDashboardRequest {
+  email: string;
+}
+
+/** One pending share in GET /api/shares/incoming. */
+export interface IncomingShareEntry {
+  id: string;
+  dashboardName: string;
+  fromEmail: string;
+  widgetCount: number;
+  createdAt: string;
+}
+
+/** GET /api/shares/incoming */
+export interface IncomingSharesResponse {
+  shares: IncomingShareEntry[];
+}
+
 /** One WidgetInstance, as returned by dashboards-api's widget-instance endpoints. */
 export interface WidgetInstanceEntry {
   id: string;

@@ -28,6 +28,7 @@ beforeEach(() => {
       calls.push({ url, method, body });
       const json = (data: unknown, ok = true) =>
         Promise.resolve({ ok, status: ok ? 200 : 500, json: () => Promise.resolve(data) });
+      if (url === '/api/shares/incoming') return json({ shares: [] });
       if (method !== 'GET' && failNext) return json({}, false);
       const id = url.split('/')[3];
       if (method === 'POST') {
