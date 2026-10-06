@@ -1,8 +1,0 @@
-commits3 OK noleak {"n":3,"dates":["2012-03-06T23:06:50Z","2011-09-14T04:42:41Z","2011-01-26T19:06:08Z"],"states":[]}
-pulls-closed OK noleak {"states":["closed"],"np":20}
-pulls-all OK noleak {"states":["open","closed"],"np":20}
-pulls-open OK noleak {"states":["open"],"np":20}
-alerts-foreign ERR UPSTREAM_ERROR GitHub responded with HTTP 403. noleak
-alerts-own ERR UPSTREAM_ERROR GitHub responded with HTTP 403. noleak
-missing-repo ERR INVALID_PARAMS Repository not found or not accessible. noleak
-bad-token ERR REAUTH_REQUIRED GitHub rejected the access token. noleak

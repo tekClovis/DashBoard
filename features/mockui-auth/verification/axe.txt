@@ -1,7 +1,0 @@
-agent-browser a11y (axe-core 4.12.1), 1440x900
-register validation dark: violations 0, passes 34
-login link-required + invalid input dark: violations 0, passes 36
-confirm expired dark: violations 0, passes 33
-register validation light: violations 0, passes 34
-login link-required + invalid input light: violations 0, passes 36
-confirm expired light: violations 0, passes 33
