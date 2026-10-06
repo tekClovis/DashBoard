@@ -1,0 +1,7 @@
+web/src/routes/AdminPage.spec.tsx:147:    await screen.findByText('user19@example.com'); // page 2 loaded (placeholder still shows page 1 until then)
+web/src/routes/AdminPage.tsx:68:        placeholder="Search by email..."
+web/src/routes/DashboardGrid.spec.tsx:7:type DragCallback = (layout: readonly unknown[], old: unknown, item: unknown, placeholder: unknown) => void;
+web/src/routes/DashboardGrid.spec.tsx:76:    const placeholder = { i: 'i1', x: 8, y: 5, w: 4, h: 5 };
+web/src/routes/DashboardGrid.spec.tsx:78:    act(() => callback('onDrag')([placeholder], null, placeholder, placeholder));
+web/src/routes/DashboardGrid.spec.tsx:83:    act(() => callback('onDragStop')([placeholder], null, placeholder, placeholder));
+grep exit=0

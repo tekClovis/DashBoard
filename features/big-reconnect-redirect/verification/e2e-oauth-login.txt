@@ -1,0 +1,44 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-reconnect-redirect/server
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32866"
+
+1 migration found in prisma/migrations
+
+Applying migration `20260914000000_init`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260914000000_init/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > start > redirects to GitHub authorize URL with client_id, scope, and a signed state, bound to a cookie 20ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > callback — invalid/expired state (checklist 7) > rejects a callback whose state does not match the cookie, without touching the provider 11ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > callback — invalid/expired state (checklist 7) > rejects a callback with no oauth_state cookie at all 4ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'github' callback (checklist 2-6) > logs in the existing identity owner without creating a duplicate user/identity 34ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'github' callback (checklist 2-6) > lands on the same dashboard when logging in again 22ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'github' callback (checklist 2-6) > auto-links when the provider email is verified and the local user is confirmed 17ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'github' callback (checklist 2-6) > refuses when the local user is unconfirmed: no login, no identity created 11ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'github' callback (checklist 2-6) > creates a new verified user + identity when nothing matches 18ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'google' callback (checklist 2-6) > logs in the existing identity owner without creating a duplicate user/identity 17ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'google' callback (checklist 2-6) > lands on the same dashboard when logging in again 19ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'google' callback (checklist 2-6) > auto-links when the provider email is verified and the local user is confirmed 14ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'google' callback (checklist 2-6) > refuses when the local user is unconfirmed: no login, no identity created 8ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > 'google' callback (checklist 2-6) > creates a new verified user + identity when nothing matches 16ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > identities link/unlink (checklist 8-9) > links a second provider via a completed OAuth handshake, then unlinks it while a password remains 35ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > identities link/unlink (checklist 8-9) > rejects unlinking the only remaining login method 12ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > identities link/unlink (checklist 8-9) > rejects the old raw-body link endpoint — it no longer exists (account-takeover fix) 13ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > identities link/unlink (checklist 8-9) > requires an authenticated session to start a link handshake 3ms
+ ✓ test/oauth.e2e-spec.ts > OAuth login (e2e) > identities link/unlink (checklist 8-9) > rejects linking a provider identity already linked to a different user, leaving the original untouched 16ms
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  19:27:00
+   Duration  5.44s (transform 325ms, setup 0ms, import 816ms, tests 717ms, environment 0ms)
+
