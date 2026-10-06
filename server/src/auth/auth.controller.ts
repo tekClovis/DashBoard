@@ -65,6 +65,11 @@ export class AuthController {
       if (existing.emailVerifiedAt || existing.passwordHash === null) {
         throw new ConflictException({ error: 'EMAIL_IN_USE' });
       }
+      // The unverified row may have been created by someone else: the latest registrant's password wins.
+      await this.prisma.user.update({
+        where: { id: existing.id },
+        data: { passwordHash: await bcrypt.hash(dto.password, BCRYPT_COST), tokenVersion: { increment: 1 } },
+      });
       await this.issueAndSend(existing.id, email);
       return { ok: true };
     }
