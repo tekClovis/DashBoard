@@ -129,4 +129,30 @@ describe('SearchPicker', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
     expect(screen.getByText('Île-de-France, France')).toBeTruthy();
   });
+
+  it('draws a round avatar (32px in rows, 40px when picked) for avatar images, and a capsule otherwise', async () => {
+    const withImage = (shape?: 'avatar') => (i: Item): PickerOption => ({ title: i.name, image: 'https://img/a.jpg', imageShape: shape });
+    const renderPicker = (opt: (i: Item) => PickerOption, initial: Item | null) =>
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <SearchPicker id="p" queryKey="k" search={async () => PARIS} toOption={opt} picked={initial && opt(initial)} onPick={() => {}} onClear={() => {}} nouns={['city', 'cities']} />
+        </QueryClientProvider>,
+      );
+
+    renderPicker(withImage('avatar'), null);
+    type('Paris');
+    const row = (await screen.findAllByRole('option'))[0].querySelector('img')!;
+    expect(row.className).toContain('size-8');
+    expect(row.className).toContain('rounded-full');
+    cleanup();
+
+    renderPicker(withImage('avatar'), PARIS[0]);
+    const card = document.querySelector('img')!;
+    expect(card.className).toContain('size-10');
+    expect(card.className).toContain('rounded-full');
+    cleanup();
+
+    renderPicker(withImage(), PARIS[0]);
+    expect(document.querySelector('img')!.className).toContain('w-[5.5rem]');
+  });
 });

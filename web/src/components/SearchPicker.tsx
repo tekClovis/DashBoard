@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input.js';
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
 
-function Thumb({ src }: { src?: string }) {
-  return src ? <img src={src} alt="" loading="lazy" className="bg-muted h-9 w-[5.5rem] shrink-0 rounded-sm object-cover" /> : null;
+function Thumb({ src, shape, size }: { src?: string; shape?: 'avatar'; size: 'row' | 'card' }) {
+  if (!src) return null;
+  const cls = shape === 'avatar' ? `rounded-full ${size === 'card' ? 'size-10' : 'size-8'}` : 'h-9 w-[5.5rem] rounded-sm';
+  return <img src={src} alt="" loading="lazy" className={`bg-muted shrink-0 object-cover ${cls}`} />;
 }
 
 /** How one candidate (or the chosen one) is shown. */
@@ -18,6 +20,8 @@ export interface PickerOption {
   meta?: string;
   /** Thumbnail URL, shown before the text. */
   image?: string;
+  /** 'avatar' draws the image as a circle (32px in rows, 40px when picked) instead of a wide capsule. */
+  imageShape?: 'avatar';
 }
 
 interface SearchPickerProps<T> {
@@ -91,7 +95,7 @@ export function SearchPicker<T>({
   if (picked) {
     return (
       <div className="border-foreground flex items-center gap-3 rounded-md border p-2.5 shadow-[inset_0_0_0_1px_var(--foreground)]">
-        <Thumb src={picked.image} />
+        <Thumb src={picked.image} shape={picked.imageShape} size="card" />
         <div className="grid min-w-0 gap-0.5">
           <b className="text-sm font-semibold">{picked.title}</b>
           {picked.subtitle && <span className="text-muted-foreground text-xs">{picked.subtitle}</span>}
@@ -190,7 +194,7 @@ export function SearchPicker<T>({
                 onClick={() => pick(item)}
                 className="hover:bg-accent aria-selected:bg-accent aria-selected:shadow-[inset_2px_0_0_var(--foreground)] flex cursor-pointer items-center gap-3 border-t px-2.5 py-2 first:border-t-0"
               >
-                <Thumb src={o.image} />
+                <Thumb src={o.image} shape={o.imageShape} size="row" />
                 <div className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 max-sm:grid-cols-1">
                 <span className="col-start-1 text-[0.8125rem] font-[550]">{o.title}</span>
                 {o.subtitle && <span className="text-muted-foreground col-start-1 text-xs">{o.subtitle}</span>}

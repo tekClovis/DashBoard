@@ -264,3 +264,72 @@ describe('Add widget dialog, city search', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 });
+
+describe('Add widget dialog, YouTube channel search', () => {
+  const CHANNELS = [
+    { id: 'UC1', title: 'Telemetry Labs', thumbnail: 'https://img/1.jpg' },
+    { id: 'UC2', title: 'Tele Two' },
+  ];
+
+  function serveChannelSearch() {
+    const fallback = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (url === '/api/catalog') {
+        const spec = {
+          service: 'youtube',
+          name: 'channel_stats',
+          description: 'Channel stats',
+          minRefreshSec: 600,
+          params: [
+            { name: 'channel_id', type: 'string', required: true, label: 'Channel', search: 'youtube.channel' },
+            { name: 'channel_title', type: 'string', hidden: true },
+            { name: 'channel_image', type: 'string', hidden: true },
+          ],
+        };
+        return new Response(JSON.stringify({ services: [{ name: 'youtube', connection: 'oauth', connected: true, status: 'OK', widgets: [spec] }] }));
+      }
+      if (typeof url === 'string' && url.startsWith('/api/youtube/channels/search')) {
+        calls.push({ url, method: 'GET' });
+        return new Response(JSON.stringify({ results: CHANNELS }));
+      }
+      return fallback(url, init);
+    });
+  }
+
+  async function openSettings() {
+    fireEvent.click(await screen.findByRole('button', { name: 'Add widget' }));
+    fireEvent.click(await screen.findByRole('radio', { name: /Channel stats/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    return screen.findByRole('combobox');
+  }
+
+  it('picks a channel by name, shows its avatar after Back, and saves id, title and image', async () => {
+    serveChannelSearch();
+    renderPage();
+    const input = await openSettings();
+    expect(screen.queryByLabelText('channel_id')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Pick a channel from the results.')).toBeTruthy();
+
+    fireEvent.change(input, { target: { value: 'tele' } });
+    fireEvent.click((await screen.findAllByRole('option'))[0]);
+    expect(document.querySelector('img[src="https://img/1.jpg"]')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByText('Telemetry Labs')).toBeTruthy();
+    expect(document.querySelector('img[src="https://img/1.jpg"]')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Telemetry Labs channel_id=UC1')).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({
+      widget: 'channel_stats',
+      params: { channel_id: 'UC1', channel_title: 'Telemetry Labs', channel_image: 'https://img/1.jpg' },
+    });
+  });
+});

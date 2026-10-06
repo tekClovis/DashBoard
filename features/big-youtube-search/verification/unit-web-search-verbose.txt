@@ -1,0 +1,41 @@
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a75673746614637fe/web
+
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > lists every candidate with its disambiguating detail 404ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > shows skeleton rows and "Searching…" immediately, even while the debounce is pending 13ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > asks for more characters instead of searching on a one-character query 9ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog > waits for the catalog when configuring instead of showing a blank step 335ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > shows a clear empty state, not an error, when nothing matches 272ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog > opens Configure from the widget menu with focus on the first field, inside the dialog 217ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > shows an error with Retry when the search fails, and recovers on retry 294ms
+stderr | src/routes/AddWidgetDialog.spec.tsx > Add widget dialog > walks all 4 steps, keeping values across Back, and creates the widget with the chosen settings
+An update to ParamForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog > walks all 4 steps, keeping values across Back, and creates the widget with the chosen settings 258ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > picks with the mouse: swaps the list for the chosen candidate and Change brings the search back 287ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog > after Add widget, announces the new widget, returns focus to Add widget and scrolls the new panel into view 129ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog, city search > lists several candidates for "Paris" with region and country to tell them apart 342ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > picks with the keyboard: arrows move the active option, Enter picks it 279ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > starts on the chosen candidate when one is already picked 2ms
+ ✓ src/components/SearchPicker.spec.tsx > SearchPicker > draws a round avatar (32px in rows, 40px when picked) for avatar images, and a capsule otherwise 273ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog, city search > saves the picked candidate’s own coordinates on the widget 391ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog, city search > shows an empty state, not an error, when nothing matches 341ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog, city search > blocks Next until a candidate is picked, saying so 91ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog, city search > reconfigures from the saved choice, not a fresh search 89ms
+ ✓ src/routes/AddWidgetDialog.spec.tsx > Add widget dialog, YouTube channel search > picks a channel by name, shows its avatar after Back, and saves id, title and image 453ms
+
+ Test Files  2 passed (2)
+      Tests  19 passed (19)
+   Start at  22:32:14
+   Duration  3.88s (tests 70%, environment 16%, import 7%, transform 7%)
+
+exit=0

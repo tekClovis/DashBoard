@@ -57,6 +57,16 @@ function fakeYoutube(url: URL, token: string): Response {
       ],
     });
   }
+  if (url.pathname.endsWith('/search')) {
+    const q = url.searchParams.get('q') ?? '';
+    if (url.searchParams.get('type') !== 'channel' || q === 'zzqxv') return Response.json({ items: [] });
+    return Response.json({
+      items: ['One', 'Two'].map((n) => ({
+        id: { kind: 'youtube#channel', channelId: `UC_${n}` },
+        snippet: { title: `${q} ${n}`, thumbnails: { default: { url: `https://img/${n}.jpg` } } },
+      })),
+    });
+  }
   if (url.pathname.endsWith('/playlistItems')) {
     const items = Array.from({ length: max }, (_, i) => ({
       snippet: { ...snippet(`upload ${i}`, 20 - i), resourceId: { videoId: `up${i}` } },
@@ -269,6 +279,30 @@ describe('YouTube widgets (e2e)', () => {
     const instanceId = await createInstance(userId, 'channel_stats', { channel_id: 'UC_unknown' });
 
     expect((await firstEvent(cookie, instanceId)).error).toMatchObject({ instanceId, code: 'INVALID_PARAMS' });
+  });
+
+  it('search. GET /api/youtube/channels/search lists channels (id, title, thumbnail) for a name', async () => {
+    const { cookie } = await createUser('search@example.com', { access: 'tok' });
+
+    const res = await request(app.getHttpServer()).get('/api/youtube/channels/search?q=tele').set('Cookie', cookie).expect(200);
+    expect(res.body.results).toEqual([
+      { id: 'UC_One', title: 'tele One', thumbnail: 'https://img/One.jpg' },
+      { id: 'UC_Two', title: 'tele Two', thumbnail: 'https://img/Two.jpg' },
+    ]);
+    const empty = await request(app.getHttpServer()).get('/api/youtube/channels/search?q=zzqxv').set('Cookie', cookie).expect(200);
+    expect(empty.body.results).toEqual([]);
+    await request(app.getHttpServer()).get('/api/youtube/channels/search?q=t').set('Cookie', cookie).expect(400);
+    await request(app.getHttpServer()).get('/api/youtube/channels/search?q=tele').expect(401);
+  });
+
+  it('search. refreshes an expired token and answers 409 NOT_CONNECTED without a connection', async () => {
+    const { cookie } = await createUser('search-exp@example.com', { access: EXPIRED, refresh: GOOD_REFRESH });
+    await request(app.getHttpServer()).get('/api/youtube/channels/search?q=tele').set('Cookie', cookie).expect(200);
+    expect(youtubeCalls.map((c) => c.token)).toEqual([EXPIRED, REFRESHED]);
+
+    const { cookie: bare } = await createUser('search-none@example.com');
+    const res = await request(app.getHttpServer()).get('/api/youtube/channels/search?q=tele').set('Cookie', bare).expect(409);
+    expect(res.body).toMatchObject({ error: 'NOT_CONNECTED' });
   });
 
   it('4. latest_videos returns up to `number` videos, most recent first', async () => {

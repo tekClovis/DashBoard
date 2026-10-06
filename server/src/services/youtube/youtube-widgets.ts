@@ -9,7 +9,12 @@ import { fixedMessage, youtubeClient, type TokenRefresher, type YoutubeGet } fro
 /** ISO 3166-1 alpha-2 country code, as YouTube's `regionCode` expects. */
 const REGION_PATTERN = '^[A-Z]{2}$';
 
-const channelParam: ParamSpec = { name: 'channel_id', type: 'string', required: true, label: 'Channel ID' };
+const channelParam: ParamSpec = { name: 'channel_id', type: 'string', required: true, label: 'Channel', search: 'youtube.channel' };
+/** Set by the channel picker so the dialog can show the picked channel again; never rendered as fields. */
+const channelPickParams: ParamSpec[] = [
+  { name: 'channel_title', type: 'string', hidden: true },
+  { name: 'channel_image', type: 'string', hidden: true, pattern: '^https://' },
+];
 const numberParam: ParamSpec = { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Videos' };
 
 interface RawChannel {
@@ -66,7 +71,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     service: 'youtube',
     name: 'channel_stats',
     description: 'Subscriber, view and video counts of a channel.',
-    params: [channelParam],
+    params: [channelParam, ...channelPickParams],
     minRefreshSec: 600,
     auth: 'connection',
     fetch: guarded(async (params, ctx) => {
@@ -87,7 +92,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     service: 'youtube',
     name: 'latest_videos',
     description: 'Most recent uploads of a channel.',
-    params: [channelParam, numberParam],
+    params: [channelParam, ...channelPickParams, numberParam],
     minRefreshSec: 600,
     auth: 'connection',
     fetch: guarded(async (params, ctx) => {

@@ -1,0 +1,54 @@
+# GET /api/youtube/channels/search against feature/big-youtube-search @ 8bee307 (server on :8093, googleapis.com faked by a node --import preload)
+
+$ curl -b cookies '/api/youtube/channels/search?q=tele'
+HTTP 200
+{
+  "results": [
+    {
+      "id": "UC_tele1",
+      "title": "Telemetry Labs",
+      "thumbnail": "https://placehold.co/88x88/png?text=TL"
+    },
+    {
+      "id": "UC_tele2",
+      "title": "Telemetry Daily",
+      "thumbnail": "https://placehold.co/88x88/png?text=TD"
+    },
+    {
+      "id": "UC_tele3",
+      "title": "Tele Talks",
+      "thumbnail": "https://placehold.co/88x88/png?text=TT"
+    },
+    {
+      "id": "UC_tele4",
+      "title": "Telemetry No Avatar"
+    }
+  ]
+}
+
+$ curl -b cookies '/api/youtube/channels/search?q=zzqxv'
+HTTP 200
+{
+  "results": []
+}
+
+$ curl -b cookies '/api/youtube/channels/search?q=t'
+HTTP 400
+{
+  "error": "INVALID_QUERY"
+}
+
+$ curl -b cookies '/api/youtube/channels/search?q=tele-err'
+HTTP 502
+{
+  "error": "UPSTREAM_ERROR"
+}
+
+$ curl (no session) '/api/youtube/channels/search?q=tele'
+{"message":"Unauthorized","statusCode":401}
+HTTP 401
+
+# upstream calls made by the server for these requests:
+[fake-google] https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=tele&maxResults=8
+[fake-google] https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=zzqxv&maxResults=8
+[fake-google] https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=tele-err&maxResults=8

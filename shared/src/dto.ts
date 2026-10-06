@@ -224,3 +224,15 @@ export interface CityCandidate {
 export interface CitySearchResponse {
   results: CityCandidate[];
 }
+
+/** One YouTube channel match from GET /api/youtube/channels/search?q= */
+export interface ChannelCandidate {
+  id: string;
+  title: string;
+  /** Avatar URL. */
+  thumbnail?: string;
+}
+
+export interface ChannelSearchResponse {
+  results: ChannelCandidate[];
+}

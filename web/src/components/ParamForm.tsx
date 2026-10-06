@@ -1,8 +1,9 @@
-import type { CityCandidate, GameCandidate, ParamSpec } from '@dashboard/shared';
+import type { ChannelCandidate, CityCandidate, GameCandidate, ParamSpec } from '@dashboard/shared';
 import { CircleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { searchGames } from '@/api/steam.js';
 import { searchCities } from '@/api/weather.js';
+import { searchChannels } from '@/api/youtube.js';
 import { SearchPicker, type PickerOption } from '@/components/SearchPicker.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
@@ -126,10 +127,25 @@ const weatherCity: Picker<CityCandidate> = {
       : null,
 };
 
+const youtubeChannel: Picker<ChannelCandidate> = {
+  queryKey: 'youtube.channel',
+  nouns: ['channel', 'channels'],
+  placeholder: 'Search a channel, for example Fireship',
+  search: searchChannels,
+  toOption: (c) => ({ title: c.title, meta: c.id, image: c.thumbnail, imageShape: 'avatar' }),
+  keys: ['channel_id', 'channel_title', 'channel_image'],
+  toValues: (c) => ({ channel_id: c.id, channel_title: c.title, channel_image: c.thumbnail ?? '' }),
+  fromValues: (v) =>
+    v['channel_id']
+      ? { title: v['channel_title'] || v['channel_id'], meta: v['channel_id'], image: v['channel_image'] || undefined, imageShape: 'avatar' }
+      : null,
+};
+
 /** Picker registry; each entry hands its picker to a generic callback so the candidate type stays checked. */
 const PICKERS: Record<string, <R>(use: <T>(picker: Picker<T>) => R) => R> = {
   'steam.game': (use) => use(steamGame),
   'weather.city': (use) => use(weatherCity),
+  'youtube.channel': (use) => use(youtubeChannel),
 };
 
 interface ParamFormProps {
