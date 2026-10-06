@@ -60,3 +60,29 @@ describe('MailService.sendConfirmationEmail', () => {
     expect(logError).toHaveBeenCalledWith(expect.any(String), 'smtp down');
   });
 });
+
+describe('MailService.sendPasswordResetEmail', () => {
+  beforeEach(() => {
+    sendMail.mockReset();
+  });
+
+  it('sends a reset message carrying the link in text and html', async () => {
+    sendMail.mockResolvedValue({});
+    const url = 'http://localhost:8080/reset-password?token=abc123';
+
+    await new MailService(config).sendPasswordResetEmail('user@example.com', url);
+
+    const msg = sendMail.mock.calls[0][0];
+    expect(msg.to).toBe('user@example.com');
+    expect(msg.subject).toBe('Reset your password');
+    expect(msg.text).toContain(url);
+    expect(msg.html).toContain(`<a href="${url}">`);
+  });
+
+  it('never throws when the transport fails', async () => {
+    sendMail.mockRejectedValue(new Error('smtp down'));
+    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+    await expect(new MailService(config).sendPasswordResetEmail('u@example.com', 'x')).resolves.toBeUndefined();
+  });
+});

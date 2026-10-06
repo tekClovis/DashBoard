@@ -19,7 +19,11 @@ function makeDeps() {
     tx,
   };
   const verification = { issueToken: vi.fn().mockResolvedValue('raw-token'), confirm: vi.fn() };
-  const mail = { sendConfirmationEmail: vi.fn().mockResolvedValue(undefined) };
+  const passwordReset = { issueToken: vi.fn().mockResolvedValue('reset-token'), reset: vi.fn().mockResolvedValue(undefined) };
+  const mail = {
+    sendConfirmationEmail: vi.fn().mockResolvedValue(undefined),
+    sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+  };
   const config = { getOrThrow: vi.fn().mockReturnValue('http://localhost:8080') };
   const jwt = { sign: vi.fn().mockReturnValue('signed-jwt'), verify: vi.fn() };
   const revocation = { revoke: vi.fn().mockResolvedValue(undefined), isRevoked: vi.fn().mockResolvedValue(false) };
@@ -36,6 +40,7 @@ function makeDeps() {
   const controller = new AuthController(
     prisma as never,
     verification as never,
+    passwordReset as never,
     mail as never,
     config as never,
     jwt as never,
@@ -43,7 +48,7 @@ function makeDeps() {
     redis as never,
   );
 
-  return { controller, prisma, verification, mail, config, jwt, revocation, redis };
+  return { controller, store, prisma, verification, passwordReset, mail, config, jwt, revocation, redis };
 }
 
 function makeReq(): Request {
@@ -193,6 +198,82 @@ describe('AuthController', () => {
 
       expect(res).toEqual({ ok: true });
       expect(mail.sendConfirmationEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('answers ok and sends no mail for an unknown email', async () => {
+      const { controller, prisma, mail, passwordReset } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      expect(await controller.forgotPassword({ email: 'nobody@b.com' })).toEqual({ ok: true });
+      expect(passwordReset.issueToken).not.toHaveBeenCalled();
+      expect(mail.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it('answers ok and sends no mail for an OAuth-only account', async () => {
+      const { controller, prisma, mail } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: null });
+
+      expect(await controller.forgotPassword({ email: 'a@b.com' })).toEqual({ ok: true });
+      expect(mail.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it('mails a reset link for a password account, normalizing the email', async () => {
+      const { controller, prisma, mail, passwordReset } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'h' });
+
+      expect(await controller.forgotPassword({ email: '  A@B.com ' })).toEqual({ ok: true });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'a@b.com' } });
+      expect(passwordReset.issueToken).toHaveBeenCalledWith('u1');
+      expect(mail.sendPasswordResetEmail).toHaveBeenCalledWith(
+        'a@b.com',
+        'http://localhost:8080/reset-password?token=reset-token',
+      );
+    });
+
+    it('sends nothing but still answers ok within 60 s of the previous request', async () => {
+      const { controller, prisma, mail } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'h' });
+
+      await controller.forgotPassword({ email: 'a@b.com' });
+      mail.sendPasswordResetEmail.mockClear();
+
+      expect(await controller.forgotPassword({ email: 'a@b.com' })).toEqual({ ok: true });
+      expect(mail.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it('caps at 5 mails a day per email', async () => {
+      const { controller, prisma, mail, store } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'h' });
+
+      for (let i = 0; i < 6; i++) {
+        // Simulate the 60 s window expiring between requests.
+        store.delete('reset:request:a@b.com');
+        await controller.forgotPassword({ email: 'a@b.com' });
+      }
+
+      expect(mail.sendPasswordResetEmail).toHaveBeenCalledTimes(5);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('hashes the new password and delegates to the service', async () => {
+      const { controller, passwordReset } = makeDeps();
+
+      expect(await controller.resetPassword({ token: 'raw', password: 'abc12345!' }, makeReq())).toEqual({ ok: true });
+      const [token, hash] = passwordReset.reset.mock.calls[0];
+      expect(token).toBe('raw');
+      expect(await bcrypt.compare('abc12345!', hash)).toBe(true);
+    });
+
+    it('propagates the service rejection', async () => {
+      const { controller, passwordReset } = makeDeps();
+      passwordReset.reset.mockRejectedValue(Object.assign(new Error('x'), { status: 400 }));
+
+      await expect(controller.resetPassword({ token: 'bad', password: 'abc12345!' }, makeReq())).rejects.toMatchObject({
+        status: 400,
+      });
     });
   });
 

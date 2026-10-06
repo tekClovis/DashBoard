@@ -27,11 +27,14 @@ import { PrismaService } from '../core/prisma/prisma.service.js';
 import { REDIS } from '../core/redis/redis.provider.js';
 import { DEFAULT_DASHBOARD_NAME, DEFAULT_DASHBOARD_POSITION } from '../dashboards/dashboards.service.js';
 import { CurrentUser } from './current-user.decorator.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { ResendDto } from './dto/resend.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { JwtGuard } from './jwt.guard.js';
 import { JwtService } from './jwt.service.js';
+import { PasswordResetService } from './password-reset.service.js';
 import { clearSessionCookie, setSessionCookie } from './session-cookie.js';
 import { SESSION_COOKIE } from './session.constants.js';
 import { TokenRevocationService } from './token-revocation.service.js';
@@ -46,6 +49,7 @@ export class AuthController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly verification: VerificationService,
+    private readonly passwordReset: PasswordResetService,
     private readonly mail: MailService,
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
@@ -113,6 +117,37 @@ export class AuthController {
       }
     }
 
+    return { ok: true };
+  }
+
+  /** Always 200 so the response never reveals whether an account exists. OAuth-only accounts get no mail. */
+  @Post('forgot-password')
+  @HttpCode(200)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{ ok: true }> {
+    const email = normalizeEmail(dto.email);
+
+    const [withinShortLimit, withinDailyLimit] = await Promise.all([
+      this.checkRateLimit(`reset:request:${email}`, 1, 60),
+      this.checkRateLimit(`reset:request:daily:${email}`, 5, 86400),
+    ]);
+
+    if (withinShortLimit && withinDailyLimit) {
+      const user = await this.prisma.user.findUnique({ where: { email } });
+      if (user?.passwordHash) {
+        const token = await this.passwordReset.issueToken(user.id);
+        const appUrl = this.config.getOrThrow<string>('APP_URL');
+        await this.mail.sendPasswordResetEmail(email, `${appUrl}/reset-password?token=${token}`);
+      }
+    }
+
+    return { ok: true };
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request): Promise<{ ok: true }> {
+    await this.enforceRateLimit(`reset:confirm:${clientAddress(req)}`, 20, 3600);
+    await this.passwordReset.reset(dto.token, await bcrypt.hash(dto.password, BCRYPT_COST));
     return { ok: true };
   }
 

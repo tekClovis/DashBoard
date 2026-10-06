@@ -1,6 +1,6 @@
-import { Mail, OctagonX, TriangleAlert } from 'lucide-react';
+import { Check, Mail, OctagonX, TriangleAlert } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { oauthStartUrl, useLogin, useResend } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
@@ -18,6 +18,8 @@ export function LoginPage() {
       ? carried.email
       : '',
   );
+  const passwordReset =
+    typeof carried === 'object' && carried !== null && 'passwordReset' in carried && carried.passwordReset === true;
   const [password, setPassword] = useState('');
   const [invalidInput, setInvalidInput] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -55,6 +57,15 @@ export function LoginPage() {
 
   return (
     <AuthLayout title="Log in">
+      {passwordReset && (
+        <Alert tone="success" role="status">
+          <Check strokeWidth={1.75} aria-hidden />
+          <AlertContent>
+            <AlertTitle>Password updated</AlertTitle>
+            <AlertDescription>Log in with your new password. Any other device was logged out.</AlertDescription>
+          </AlertContent>
+        </Alert>
+      )}
       {linkRequired && (
         <Alert tone="warning">
           <TriangleAlert strokeWidth={1.75} aria-hidden />
@@ -88,7 +99,12 @@ export function LoginPage() {
           />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-baseline justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link to="/forgot-password" className="text-xs underline underline-offset-3">
+              Forgot password?
+            </Link>
+          </div>
           <Input
             id="password"
             ref={passwordRef}

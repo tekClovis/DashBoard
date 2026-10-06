@@ -1,9 +1,11 @@
 import type {
+  ForgotPasswordRequest,
   LoginRequest,
   MeResponse,
   OkResponse,
   RegisterRequest,
   ResendRequest,
+  ResetPasswordRequest,
 } from "@dashboard/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "./client.js";
@@ -46,6 +48,26 @@ export function useResend() {
   return useMutation({
     mutationFn: (body: ResendRequest) =>
       apiFetch<OkResponse>("/auth/resend", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (body: ForgotPasswordRequest) =>
+      apiFetch<OkResponse>("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (body: ResetPasswordRequest) =>
+      apiFetch<OkResponse>("/auth/reset-password", {
         method: "POST",
         body: JSON.stringify(body),
       }),

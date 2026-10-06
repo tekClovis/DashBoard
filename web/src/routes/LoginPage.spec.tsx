@@ -91,6 +91,24 @@ describe('LoginPage', () => {
     expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('ada@example.com');
   });
 
+  it('links to /forgot-password', () => {
+    stubAuthApi();
+    renderAt('/login', '/login', <LoginPage />);
+    expect(screen.getByRole('link', { name: 'Forgot password?' }).getAttribute('href')).toBe('/forgot-password');
+  });
+
+  it('confirms a completed password reset', () => {
+    stubAuthApi();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[{ pathname: '/login', state: { passwordReset: true } }]}>
+          <LoginPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole('status').textContent).toContain('Password updated');
+  });
+
   it('explains the account-linking refusal from the OAuth callback', () => {
     stubAuthApi();
     renderAt('/login?error=EMAIL_LINK_REQUIRED', '/login', <LoginPage />);
