@@ -144,7 +144,7 @@ describe('DashboardPage grid (md+)', () => {
     widgets = [instance, { ...instance, id: 'i2', y: 5 }, { ...instance, id: 'i3', x: 0, y: 8 }];
     refetch();
     await vi.waitFor(() => expect(ids(gridProps.current?.layouts)).toEqual(['i1:4', 'i2:4', 'i3:4']));
-    expect(gridProps.current?.width).toBe(1200);
+    expect((gridProps.current as Record<string, unknown> | undefined)?.width).toBe(1200);
   });
 
   // One render: Radix menus in jsdom don't reopen reliably across separate renders.
