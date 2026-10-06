@@ -22,6 +22,8 @@ const fakeSocket = {
 };
 
 vi.mock('socket.io-client', () => ({ io: () => fakeSocket }));
+// The kept-alive dashboard is covered by KeepAlive.spec.tsx; here it would only add unmocked requests.
+vi.mock('./DashboardPage.js', () => ({ DashboardPage: () => <div>kept dashboard</div> }));
 
 afterEach(() => {
   cleanup();

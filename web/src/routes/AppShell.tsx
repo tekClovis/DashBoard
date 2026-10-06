@@ -294,9 +294,12 @@ function ShellHeader() {
 function KeptDashboard() {
   const activeId = useMatch('/d/:dashboardId')?.params.dashboardId;
   const [keptId, setKeptId] = useState(activeId);
-  if (activeId && activeId !== keptId) setKeptId(activeId);
-  const visible = Boolean(activeId);
   const scrollY = useRef(0);
+  if (activeId && activeId !== keptId) {
+    setKeptId(activeId);
+    scrollY.current = 0; // a different dashboard doesn't inherit the previous one's offset
+  }
+  const visible = Boolean(activeId);
 
   useLayoutEffect(() => {
     if (!visible) return;
