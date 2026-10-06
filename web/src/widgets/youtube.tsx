@@ -84,7 +84,7 @@ export function TrendingVideosView({ data }: WidgetViewProps) {
           {videos.map((v, i) => (
             <Row key={v.id}>
               <RowId>#{i + 1}</RowId>
-              <Thumb src={v.imageUrl} width={80} height={45} />
+              <Thumb src={v.imageUrl} width={i === 0 ? 144 : 64} height={i === 0 ? 81 : 36} />
               <RowTitle href={v.url}>{v.title}</RowTitle>
               <RowMeta>{v.channel}</RowMeta>
             </Row>

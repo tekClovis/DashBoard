@@ -108,4 +108,11 @@ describe('youtube widget views', () => {
     expect(screen.getByText('Broken')).toBeTruthy();
     expect(screen.getByText('None')).toBeTruthy();
   });
+
+  it('trending_videos: #1 has a larger thumbnail than the ranked rows', () => {
+    const videos = [video('a', 'A', '2026-09-21T10:00:00Z'), video('b', 'B', '2026-09-20T10:00:00Z')];
+    const { container } = renderView('trending_videos', { region: 'FR', videos });
+    const widths = [...container.querySelectorAll('[data-slot="thumb"]')].map((t) => (t as HTMLElement).style.width);
+    expect(widths).toEqual(['144px', '64px']);
+  });
 });

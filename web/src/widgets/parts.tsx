@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { ImageOff } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { hhmm } from '@/lib/time.js';
 import { cn } from '@/lib/utils.js';
 import type { WidgetPush } from '@/realtime/useWidgetData.js';
@@ -74,17 +75,19 @@ export function RowTitle({ href, children, prefix }: { href?: string; children: 
   );
 }
 
-/** Fixed-size image slot: the box is kept when the src is missing, unsafe or fails to load. */
+/** Fixed-size image slot: pulses while loading; the box is kept, hatched with an icon, when the src is missing, unsafe or fails. */
 export function Thumb({ src, width, height }: { src?: string | null; width: number; height: number }) {
-  const [failed, setFailed] = useState(false);
-  const show = !!src && isHttpUrl(src) && !failed;
+  const [state, setState] = useState<'loading' | 'loaded' | 'failed'>('loading');
+  useEffect(() => setState('loading'), [src]);
+  const show = !!src && isHttpUrl(src) && state !== 'failed';
+  const current = show ? state : 'failed';
   return (
     <span
       data-slot="thumb"
-      data-state={show ? undefined : 'failed'}
+      data-state={current === 'loaded' ? undefined : current}
       aria-hidden="true"
       style={{ width, height }}
-      className="bg-muted relative inline-block flex-none self-center overflow-hidden rounded-sm after:absolute after:inset-0 after:rounded-sm after:shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--foreground)_12%,transparent)]"
+      className="bg-muted text-muted-foreground relative inline-grid flex-none cursor-default place-items-center self-center overflow-hidden rounded-sm after:absolute after:inset-0 after:rounded-sm after:shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--foreground)_12%,transparent)] data-[state=failed]:bg-[repeating-linear-gradient(135deg,color-mix(in_oklch,var(--foreground)_6%,transparent)_0_1px,transparent_1px_6px)] data-[state=loading]:animate-pulse"
     >
       {show && (
         <img
@@ -95,10 +98,12 @@ export function Thumb({ src, width, height }: { src?: string | null; width: numb
           loading="lazy"
           decoding="async"
           referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
+          onLoad={() => setState('loaded')}
+          onError={() => setState('failed')}
           className="block size-full object-cover"
         />
       )}
+      {!show && <ImageOff className="size-3.5" />}
     </span>
   );
 }

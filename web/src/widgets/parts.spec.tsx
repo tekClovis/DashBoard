@@ -90,4 +90,25 @@ describe('Thumb', () => {
     expect(imgs(container)).toHaveLength(0);
     expect(container.querySelector('[data-slot="thumb"]')?.getAttribute('data-state')).toBe('failed');
   });
+
+  const slot = (c: HTMLElement) => c.querySelector('[data-slot="thumb"]');
+
+  it('is in the loading state until the image loads', () => {
+    const { container } = render(<Thumb src="https://cdn.example/a.jpg" width={64} height={30} />);
+    expect(slot(container)?.getAttribute('data-state')).toBe('loading');
+    fireEvent.load(imgs(container)[0]);
+    expect(slot(container)?.hasAttribute('data-state')).toBe(false);
+  });
+
+  it('shows an icon in the failed state', () => {
+    const { container } = render(<Thumb src={null} width={64} height={30} />);
+    expect(slot(container)?.querySelector('svg')).not.toBeNull();
+  });
+
+  it('retries when the src changes after a failure', () => {
+    const { container, rerender } = render(<Thumb src="https://cdn.example/a.jpg" width={64} height={30} />);
+    fireEvent.error(imgs(container)[0]);
+    rerender(<Thumb src="https://cdn.example/b.jpg" width={64} height={30} />);
+    expect(imgs(container)[0].getAttribute('src')).toBe('https://cdn.example/b.jpg');
+  });
 });
