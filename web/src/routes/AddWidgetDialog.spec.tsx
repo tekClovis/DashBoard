@@ -143,4 +143,57 @@ describe('Add widget dialog', () => {
     expect(document.querySelector('[data-widget-id="i2"]')).toBeTruthy();
     expect(scrollTo).toHaveBeenCalledWith({ top: -80, behavior: 'smooth' });
   });
+
+  it('picks a YouTube channel by name instead of typing its ID, and saves the picked id', async () => {
+    const youtube = {
+      name: 'youtube',
+      connection: 'oauth',
+      connected: true,
+      status: 'OK',
+      widgets: [
+        {
+          service: 'youtube',
+          name: 'channel_stats',
+          description: 'Channel stats',
+          minRefreshSec: 600,
+          params: [
+            { name: 'channel_id', type: 'string', required: true, label: 'Channel', search: '/youtube/channels/search' },
+          ],
+        },
+      ],
+    };
+    respondWhen(
+      (url) => url === '/api/catalog',
+      () => new Response(JSON.stringify({ services: [youtube] }), { status: 200 }),
+    );
+    respondWhen(
+      (url) => url.startsWith('/api/youtube/channels/search'),
+      () => new Response(JSON.stringify({ results: [{ id: 'UC1', title: 'Telemetry Labs' }] }), { status: 200 }),
+    );
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Add widget' }));
+    fireEvent.click(await screen.findByRole('radio', { name: /Channel stats/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    // The only field is a search input: no raw channel-ID text field.
+    const search = await screen.findByRole('searchbox', { name: 'Channel' });
+    expect(screen.queryByLabelText('channel_id')).toBeNull();
+
+    // Next without picking is blocked.
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Pick one of the search results to continue.')).toBeTruthy();
+    expect(screen.getByText('Step 2 of 4: Settings')).toBeTruthy();
+
+    fireEvent.change(search, { target: { value: 'tele' } });
+    fireEvent.click(await screen.findByRole('button', { name: /Telemetry Labs/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('channel_id=UC1')).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(calls.find((c) => c.method === 'POST')).toMatchObject({
+      body: { service: 'youtube', widget: 'channel_stats', params: { channel_id: 'UC1' } },
+    });
+  });
 });

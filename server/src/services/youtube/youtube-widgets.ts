@@ -4,12 +4,13 @@
 import type { ParamSpec, YoutubeVideo } from '@dashboard/shared';
 import type { WidgetDefinition } from '../../catalog/widget-definition.js';
 import { FetchError } from '../../timer/fetch-error.js';
+import { CHANNEL_SEARCH_PATH } from './youtube-search.js';
 import { fixedMessage, youtubeClient, type TokenRefresher, type YoutubeGet } from './youtube-api.js';
 
 /** ISO 3166-1 alpha-2 country code, as YouTube's `regionCode` expects. */
 const REGION_PATTERN = '^[A-Z]{2}$';
 
-const channelParam: ParamSpec = { name: 'channel_id', type: 'string', required: true, label: 'Channel ID' };
+const channelParam: ParamSpec = { name: 'channel_id', type: 'string', required: true, label: 'Channel', search: CHANNEL_SEARCH_PATH };
 const numberParam: ParamSpec = { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Videos' };
 
 interface RawChannel {

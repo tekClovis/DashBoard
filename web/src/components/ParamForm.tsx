@@ -2,6 +2,7 @@ import type { ParamSpec } from '@dashboard/shared';
 import { CircleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input.js';
+import { SearchPicker } from '@/components/SearchPicker.js';
 import { Label } from '@/components/ui/label.js';
 import { cn } from '@/lib/utils.js';
 
@@ -9,7 +10,7 @@ export type ParamValues = Record<string, string>;
 
 /** Returns an error message for one param's raw string value, or null when it is valid. */
 export function validateParam(spec: ParamSpec, raw: string): string | null {
-  if (raw === '') return spec.required ? 'Required.' : null;
+  if (raw === '') return spec.required ? (spec.search ? 'Pick one of the search results to continue.' : 'Required.') : null;
   if (spec.enum) return spec.enum.includes(raw) ? null : 'Pick one of the listed values.';
   if (spec.type === 'integer') {
     const n = Number(raw);
@@ -58,7 +59,6 @@ export function FieldError({ id, children }: { id: string; children: string }) {
 const PARAM_UI: Record<string, { hint?: string; mono?: true }> = {
   repo: { hint: 'owner/name, for example acme/telemetry', mono: true },
   app_id: { hint: 'The number in the game’s store URL, for example 730', mono: true },
-  channel_id: { mono: true },
   region: { mono: true },
 };
 
@@ -97,7 +97,17 @@ export function ParamForm({ specs, values, onChange, showErrors = false }: Param
             {hint}
           </span>
         )}
-        {spec.enum ? (
+        {spec.search ? (
+          <SearchPicker
+            id={id}
+            endpoint={spec.search}
+            noun={(spec.label ?? spec.name).toLowerCase()}
+            value={value}
+            onChange={set}
+            describedBy={describedBy}
+            invalid={!!error}
+          />
+        ) : spec.enum ? (
           <select
             id={id}
             value={value}

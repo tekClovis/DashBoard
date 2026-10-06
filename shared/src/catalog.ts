@@ -15,6 +15,8 @@ export interface ParamSpec {
   /** String regex, e.g. owner/repo. */
   pattern?: string;
   label?: string;
+  /** API path (under /api) of a `?q=` search returning SearchResponse; rendered as a search picker saving the picked id. */
+  search?: string;
 }
 
 /** Public shape of one widget, shared by /about.json and /api/catalog. */

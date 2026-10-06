@@ -28,6 +28,19 @@ export interface CatalogResponse {
   services: (ServiceSpec & { connected: boolean; status: ConnectionEntry['status'] })[];
 }
 
+/** One match of a ParamSpec `search` endpoint: the id is what the widget param saves. */
+export interface SearchResult {
+  id: string;
+  title: string;
+  /** Avatar or thumbnail URL. */
+  thumbnail?: string;
+}
+
+/** GET /api/youtube/channels/search?q= */
+export interface SearchResponse {
+  results: SearchResult[];
+}
+
 /** 8-72 chars, at least one digit and one non-alphanumeric symbol — docs/auth/specs.md §Flows. */
 export const PASSWORD_PATTERN = /^(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 
