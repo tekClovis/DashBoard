@@ -113,7 +113,9 @@ class BaseProviderOAuthGuard implements CanActivate {
     const jwtSecret = this.config.getOrThrow<string>('JWT_SECRET');
     const appUrl = this.config.getOrThrow<string>('APP_URL');
 
-    if (req.query['code']) {
+    // A provider denial (`?error=access_denied`, no `code`) is still a callback leg: restarting
+    // auth would silently bounce the user back to the provider instead of surfacing the error.
+    if (req.query['code'] || req.query['error']) {
       const queryState = req.query['state'] as string | undefined;
       const cookieState = readCookie(req.headers.cookie, OAUTH_STATE_COOKIE) ?? undefined;
       let loginState: OAuthStatePayload | undefined;

@@ -265,6 +265,32 @@ describe('GithubOAuthGuard', () => {
       expect(authenticate).toHaveBeenCalledWith('github-connect', { session: false }, expect.any(Function));
     });
 
+    it('surfaces a provider denial (error, no code) instead of restarting the authorize flow', async () => {
+      const authenticate = stubPassport({ user: false, info: { message: 'access_denied' } });
+      const { guard } = makeGuard();
+      const state = signConnectState({ provider: 'github', userId: 'u1', csrfToken: 'csrf-token' }, SECRET);
+      const { context, setCookie } = makeExchange(
+        { error: 'access_denied', state },
+        { [OAUTH_CSRF_COOKIE]: 'csrf-token' },
+      );
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject({
+        status: 401,
+        response: { message: 'access_denied' },
+      });
+      expect(authenticate).toHaveBeenCalledExactlyOnceWith('github-connect', { session: false }, expect.any(Function));
+      expect(setCookie(OAUTH_STATE_COOKIE)).toBeUndefined();
+    });
+
+    it('rejects a denial callback whose state does not verify', async () => {
+      const authenticate = stubPassport();
+      const { guard } = makeGuard();
+      const { context } = makeExchange({ error: 'access_denied' });
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject(INVALID_STATE);
+      expect(authenticate).not.toHaveBeenCalled();
+    });
+
     it('rejects a connect state whose CSRF cookie does not match', async () => {
       const authenticate = stubPassport();
       const { guard } = makeGuard();
