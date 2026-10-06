@@ -188,6 +188,7 @@ describe('Add widget dialog', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Telemetry Labs/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Telemetry Labs')).toBeTruthy();
     expect(screen.getByText('channel_id=UC1')).toBeTruthy();
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
 

@@ -19,6 +19,10 @@ interface SearchPickerProps {
   /** Saved value: the picked result's id, or '' while nothing is picked. */
   value: string;
   onChange: (id: string) => void;
+  /** Title of the saved id when the caller remembers it (e.g. after Back), instead of showing the bare id. */
+  savedTitle?: string;
+  /** Called with the picked result, or null on Change, so the caller can show it later (e.g. the confirm step). */
+  onPick?: (result: SearchResult | null) => void;
   describedBy?: string;
   invalid?: boolean;
 }
@@ -39,7 +43,7 @@ function Avatar({ src, size }: { src?: string; size: number }) {
  * to save its id. Typing again after a pick is not possible until "Change", so the saved id always matches
  * what the user sees.
  */
-export function SearchPicker({ id, endpoint, noun, value, onChange, describedBy, invalid }: SearchPickerProps) {
+export function SearchPicker({ id, endpoint, noun, value, onChange, savedTitle, onPick, describedBy, invalid }: SearchPickerProps) {
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState<SearchResult | null>(null);
@@ -54,8 +58,8 @@ export function SearchPicker({ id, endpoint, noun, value, onChange, describedBy,
   const settled = typed === query && query.length >= MIN_SEARCH_LENGTH;
   const results = search.data?.results ?? [];
 
-  // A saved id with no result at hand (reconfiguring a widget) shows the id as its title.
-  const picked = value ? (chosen?.id === value ? chosen : { id: value, title: value }) : null;
+  // A saved id with no result at hand (reconfiguring a widget) shows its remembered title, else the id.
+  const picked = value ? (chosen?.id === value ? chosen : { id: value, title: savedTitle ?? value }) : null;
 
   if (picked) {
     return (
@@ -75,6 +79,7 @@ export function SearchPicker({ id, endpoint, noun, value, onChange, describedBy,
               setText('');
               setQuery('');
               onChange('');
+              onPick?.(null);
               // The search input mounts on the next render.
               requestAnimationFrame(() => document.getElementById(id)?.focus());
             }}
@@ -153,6 +158,7 @@ export function SearchPicker({ id, endpoint, noun, value, onChange, describedBy,
                     onClick={() => {
                       setChosen(r);
                       onChange(r.id);
+                      onPick?.(r);
                     }}
                     className="hover:bg-accent focus-visible:outline-ring grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-3 py-2 text-left focus-visible:outline-2 focus-visible:-outline-offset-2"
                   >

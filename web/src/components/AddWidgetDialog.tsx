@@ -71,6 +71,8 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
   const [step, setStep] = useState(firstStep);
   const [picked, setPicked] = useState<WidgetSpec | undefined>();
   const [values, setValues] = useState<ParamValues>({});
+  // Titles of picked search results by param name: the confirm step shows them beside the saved id.
+  const [titles, setTitles] = useState<Record<string, string>>({});
   const [refresh, setRefresh] = useState(instance ? String(instance.refreshRate) : '');
   // Errors show after a blocked Next (params) or once the field is left (refresh).
   const [showParamErrors, setShowParamErrors] = useState(false);
@@ -251,7 +253,14 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
         {step === 2 && spec && (
           <>
             <p className="text-muted-foreground text-[0.8125rem]">{widgetName}</p>
-            <ParamForm specs={spec.params} values={values} onChange={setValues} showErrors={showParamErrors} />
+            <ParamForm
+              specs={spec.params}
+              values={values}
+              onChange={setValues}
+              showErrors={showParamErrors}
+              titles={titles}
+              onTitleChange={(name, title) => setTitles((t) => ({ ...t, [name]: title ?? '' }))}
+            />
           </>
         )}
 
@@ -316,7 +325,10 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
               <dd>
                 {spec.params.length > 0 ? (
                   spec.params.map((p) => (
-                    <span key={p.name} className="block font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
+                    <span key={p.name} className="block">
+                      {p.search && titles[p.name] && <span className="mr-1.5 text-[0.8125rem]">{titles[p.name]}</span>}
+                      <span className="font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
+                    </span>
                   ))
                 ) : (
                   <span className="text-muted-foreground">None</span>

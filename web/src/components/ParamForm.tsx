@@ -68,13 +68,16 @@ interface ParamFormProps {
   onChange: (values: ParamValues) => void;
   /** Show every field's error (after a blocked Next), not only the ones already left. */
   showErrors?: boolean;
+  /** Titles of the results picked in `search` params, by param name; kept by the caller across steps. */
+  titles?: Record<string, string>;
+  onTitleChange?: (name: string, title: string | undefined) => void;
 }
 
 /**
  * Form generated from a widget's ParamSpec[]: enum → select, integer → bounded number, string → pattern-checked text.
  * A field's error appears once it is left non-empty (or `showErrors`), then follows each keystroke.
  */
-export function ParamForm({ specs, values, onChange, showErrors = false }: ParamFormProps) {
+export function ParamForm({ specs, values, onChange, showErrors = false, titles, onTitleChange }: ParamFormProps) {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   if (specs.length === 0) return <p className="text-muted-foreground">This widget has no settings.</p>;
 
@@ -104,6 +107,8 @@ export function ParamForm({ specs, values, onChange, showErrors = false }: Param
             noun={(spec.label ?? spec.name).toLowerCase()}
             value={value}
             onChange={set}
+            savedTitle={titles?.[spec.name]}
+            onPick={(r) => onTitleChange?.(spec.name, r?.title)}
             describedBy={describedBy}
             invalid={!!error}
           />
