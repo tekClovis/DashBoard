@@ -13,7 +13,7 @@ const channelParam: ParamSpec = { name: 'channel_id', type: 'string', required: 
 const numberParam: ParamSpec = { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Videos' };
 
 interface RawChannel {
-  snippet: { title: string };
+  snippet: { title: string; thumbnails?: RawVideoSnippet['thumbnails'] };
   statistics: { subscriberCount?: string; hiddenSubscriberCount: boolean; viewCount: string; videoCount: string };
   contentDetails?: { relatedPlaylists?: { uploads?: string } };
 }
@@ -78,6 +78,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
         subscribers: statistics.subscriberCount === undefined ? null : Number(statistics.subscriberCount),
         views: Number(statistics.viewCount),
         videos: Number(statistics.videoCount),
+        imageUrl: snippet.thumbnails?.default?.url ?? null,
       };
     }),
   };

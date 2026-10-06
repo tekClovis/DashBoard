@@ -71,7 +71,7 @@ describe('steam views', () => {
     expect(screen.getByText('No games played in the last 2 weeks.')).toBeTruthy();
   });
 
-  it('every row of both widgets shows its game image, and a failed image leaves the row text', () => {
+  it('recently_played rows show their game image and game_news shows one header image; a failed image leaves the text', () => {
     const games = [
       { appId: 220, name: 'Half-Life 2', playtime2Weeks: 192, playtimeForever: 900, imageUrl: 'https://cdn/220.jpg' },
       { appId: 620, name: 'Portal 2', playtime2Weeks: 90, playtimeForever: 300, imageUrl: 'https://cdn/620.jpg' },
@@ -86,10 +86,12 @@ describe('steam views', () => {
       { id: 'n1', title: 'Patch', url: 'https://x/1', feedLabel: 'Community', date: '2026-09-01T12:00:00Z', imageUrl: 'https://cdn/620.jpg' },
     ];
     const { container } = render(<News data={{ appId: 620, items }} />);
-    const imgs = container.querySelectorAll('li img');
-    expect(imgs).toHaveLength(1);
-    fireEvent.error(imgs[0]);
+    const header = container.querySelector<HTMLElement>('[data-slot="game-id"] [data-slot="thumb"]')!;
+    expect([header.style.width, header.style.height]).toEqual(['128px', '60px']);
+    expect(header.querySelector('img')?.getAttribute('src')).toBe('https://cdn/620.jpg');
     expect(container.querySelectorAll('li img')).toHaveLength(0);
+    fireEvent.error(header.querySelector('img')!);
+    expect(container.querySelectorAll('img')).toHaveLength(0);
     expect(screen.getByText('Patch')).toBeTruthy();
   });
 });

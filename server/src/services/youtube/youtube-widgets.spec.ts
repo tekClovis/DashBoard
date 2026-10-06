@@ -32,7 +32,7 @@ function call(fetchMock: ReturnType<typeof stubFetch>, i: number): { url: URL; a
 }
 
 const CHANNEL = {
-  snippet: { title: 'Google for Developers' },
+  snippet: { title: 'Google for Developers', thumbnails: { default: { url: 'https://yt3.ggpht.com/avatar=s88' } } },
   statistics: { subscriberCount: '2400000', hiddenSubscriberCount: false, viewCount: '180000000', videoCount: '412' },
   contentDetails: { relatedPlaylists: { uploads: 'UUuploads' } },
 };
@@ -88,7 +88,7 @@ describe('youtube widgets fetch()', () => {
     expect(url.origin + url.pathname).toBe('https://www.googleapis.com/youtube/v3/channels');
     expect(url.searchParams.get('id')).toBe('UC_x5');
     expect(auth).toBe('Bearer tok');
-    expect(data).toEqual({ channelId: 'UC_x5', title: 'Google for Developers', subscribers: 2400000, views: 180000000, videos: 412 });
+    expect(data).toEqual({ channelId: 'UC_x5', title: 'Google for Developers', subscribers: 2400000, views: 180000000, videos: 412, imageUrl: 'https://yt3.ggpht.com/avatar=s88' });
   });
 
   it('channel_stats reports a missing subscriber count as null, not NaN', async () => {
@@ -103,6 +103,13 @@ describe('youtube widgets fetch()', () => {
     stubFetch(() => Response.json({ items: [hidden] }));
 
     await expect(widget('channel_stats').fetch({ channel_id: 'UC_x5' }, ctx)).resolves.toMatchObject({ subscribers: null });
+  });
+
+  it('channel_stats reports a missing avatar as a null imageUrl', async () => {
+    const bare = { ...CHANNEL, snippet: { title: 'Google for Developers' } };
+    stubFetch(() => Response.json({ items: [bare] }));
+
+    await expect(widget('channel_stats').fetch({ channel_id: 'UC_x5' }, ctx)).resolves.toMatchObject({ imageUrl: null });
   });
 
   it('an unknown channel_id is INVALID_PARAMS', async () => {

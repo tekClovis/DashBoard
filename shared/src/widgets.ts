@@ -95,6 +95,8 @@ export interface YoutubeChannelStats {
   subscribers: number | null;
   views: number;
   videos: number;
+  /** Channel avatar (`snippet.thumbnails.default`); null when absent. */
+  imageUrl: string | null;
 }
 
 export interface YoutubeVideo {
