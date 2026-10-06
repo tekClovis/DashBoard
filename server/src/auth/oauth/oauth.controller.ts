@@ -63,10 +63,11 @@ export class OAuthController {
     await this.handleCallback(req, res, 'steam');
   }
 
-  /** Where connect/link flows land: the user's first dashboard (same fallback as login). */
+  /** Where login/connect/link flows land: the user's first dashboard, created if they have none. */
   private async dashboardUrl(appUrl: string, userId: string): Promise<string> {
     const [first] = await this.dashboards.list(userId);
-    return `${appUrl}/d/${first?.id ?? 'placeholder'}`;
+    const home = first ?? (await this.dashboards.createDefault(userId));
+    return `${appUrl}/d/${home.id}`;
   }
 
   private async handleCallback(req: OAuthCallbackRequest, res: Response, provider: ConnectServiceProvider): Promise<void> {
@@ -126,7 +127,7 @@ export class OAuthController {
       }
       const token = this.jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion });
       setSessionCookie(res, appUrl, token);
-      res.redirect(`${appUrl}/d/placeholder`);
+      res.redirect(await this.dashboardUrl(appUrl, user.id));
     } catch (err) {
       if (err instanceof OAuthLinkRefusedError) {
         res.redirect(`${appUrl}/login?error=EMAIL_LINK_REQUIRED`);
