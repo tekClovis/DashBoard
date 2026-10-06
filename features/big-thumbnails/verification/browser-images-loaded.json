@@ -1,0 +1,574 @@
+[
+  {
+    "allSlots": [
+      {
+        "box": "40x40",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 120,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      }
+    ],
+    "band": null,
+    "gameIdBlock": null,
+    "headerSlots": 1,
+    "previous": false,
+    "rows": [
+      {
+        "inPrevious": false,
+        "text": "Views 98.8M",
+        "thumbs": []
+      },
+      {
+        "inPrevious": false,
+        "text": "Videos 321",
+        "thumbs": []
+      }
+    ],
+    "widget": "YouTube Channel stats",
+    "width": 459
+  },
+  {
+    "allSlots": [
+      {
+        "box": "80x45",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "80x45",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/jNQXAC9IVRw/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "80x45",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "80x45",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/kJQP7kiw5Fk/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "80x45",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/OPf0YbXqDm0/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      }
+    ],
+    "band": null,
+    "gameIdBlock": null,
+    "headerSlots": 5,
+    "previous": false,
+    "rows": [
+      {
+        "inPrevious": false,
+        "text": "Rick Astley - Never Gonna Give You Up (Official Video) 3h",
+        "thumbs": [
+          {
+            "box": "80x45",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "Me at the zoo 23h",
+        "thumbs": [
+          {
+            "box": "80x45",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/jNQXAC9IVRw/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "PSY - GANGNAM STYLE (M/V) 43h",
+        "thumbs": [
+          {
+            "box": "80x45",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "Luis Fonsi - Despacito ft. Daddy Yankee 2d",
+        "thumbs": [
+          {
+            "box": "80x45",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/kJQP7kiw5Fk/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "Mark Ronson - Uptown Funk ft. Bruno Mars 3d",
+        "thumbs": [
+          {
+            "box": "80x45",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/OPf0YbXqDm0/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      }
+    ],
+    "widget": "YouTube Latest videos",
+    "width": 458
+  },
+  {
+    "allSlots": [
+      {
+        "box": "144x81",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/jNQXAC9IVRw/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x36",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x36",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/kJQP7kiw5Fk/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x36",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/OPf0YbXqDm0/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x36",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 320,
+          "opacity": "1",
+          "src": "https://i.ytimg.com/vi/RgKAFK5djSk/mqdefault.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      }
+    ],
+    "band": null,
+    "gameIdBlock": null,
+    "headerSlots": 5,
+    "previous": false,
+    "rows": [
+      {
+        "inPrevious": false,
+        "text": "#1 Me at the zoo jawed",
+        "thumbs": [
+          {
+            "box": "144x81",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/jNQXAC9IVRw/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "#2 PSY - GANGNAM STYLE (M/V) officialpsy",
+        "thumbs": [
+          {
+            "box": "64x36",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "#3 Luis Fonsi - Despacito ft. Daddy Yankee LuisFonsiVEVO",
+        "thumbs": [
+          {
+            "box": "64x36",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/kJQP7kiw5Fk/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "#4 Mark Ronson - Uptown Funk ft. Bruno Mars MarkRonsonVEVO",
+        "thumbs": [
+          {
+            "box": "64x36",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/OPf0YbXqDm0/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "#5 Wiz Khalifa - See You Again ft. Charlie Puth Wiz Khalifa",
+        "thumbs": [
+          {
+            "box": "64x36",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 320,
+              "opacity": "1",
+              "src": "https://i.ytimg.com/vi/RgKAFK5djSk/mqdefault.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      }
+    ],
+    "widget": "YouTube Trending videos",
+    "width": 459
+  },
+  {
+    "allSlots": [
+      {
+        "box": "64x30",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 460,
+          "opacity": "1",
+          "src": "https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x30",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 460,
+          "opacity": "1",
+          "src": "https://cdn.akamai.steamstatic.com/steam/apps/570/header.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x30",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 460,
+          "opacity": "1",
+          "src": "https://cdn.akamai.steamstatic.com/steam/apps/440/header.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x30",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 460,
+          "opacity": "1",
+          "src": "https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      },
+      {
+        "box": "64x30",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 460,
+          "opacity": "1",
+          "src": "https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      }
+    ],
+    "band": null,
+    "gameIdBlock": null,
+    "headerSlots": 5,
+    "previous": false,
+    "rows": [
+      {
+        "inPrevious": false,
+        "text": "Counter-Strike 2 15.0 h",
+        "thumbs": [
+          {
+            "box": "64x30",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 460,
+              "opacity": "1",
+              "src": "https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "Dota 2 10.7 h",
+        "thumbs": [
+          {
+            "box": "64x30",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 460,
+              "opacity": "1",
+              "src": "https://cdn.akamai.steamstatic.com/steam/apps/570/header.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "Team Fortress 2 5.0 h",
+        "thumbs": [
+          {
+            "box": "64x30",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 460,
+              "opacity": "1",
+              "src": "https://cdn.akamai.steamstatic.com/steam/apps/440/header.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "ELDEN RING 3.0 h",
+        "thumbs": [
+          {
+            "box": "64x30",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 460,
+              "opacity": "1",
+              "src": "https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "inPrevious": false,
+        "text": "Grand Theft Auto V 1.0 h",
+        "thumbs": [
+          {
+            "box": "64x30",
+            "img": {
+              "complete": true,
+              "filter": "none",
+              "naturalWidth": 460,
+              "opacity": "1",
+              "src": "https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg"
+            },
+            "state": "loaded",
+            "visible": true
+          }
+        ]
+      }
+    ],
+    "widget": "Steam Recently played",
+    "width": 459
+  },
+  {
+    "allSlots": [
+      {
+        "box": "128x60",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 460,
+          "opacity": "1",
+          "src": "https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      }
+    ],
+    "band": null,
+    "gameIdBlock": [
+      {
+        "box": "128x60",
+        "img": {
+          "complete": true,
+          "filter": "none",
+          "naturalWidth": 460,
+          "opacity": "1",
+          "src": "https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg"
+        },
+        "state": "loaded",
+        "visible": true
+      }
+    ],
+    "headerSlots": 1,
+    "previous": false,
+    "rows": [
+      {
+        "inPrevious": false,
+        "text": "Patch notes for 730 Community Announcements 10h",
+        "thumbs": []
+      },
+      {
+        "inPrevious": false,
+        "text": "Community update Community Announcements 2d",
+        "thumbs": []
+      },
+      {
+        "inPrevious": false,
+        "text": "Major release announced Community Announcements 4d",
+        "thumbs": []
+      }
+    ],
+    "widget": "Steam Game news",
+    "width": 458
+  }
+]

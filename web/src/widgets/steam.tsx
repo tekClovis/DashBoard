@@ -56,6 +56,7 @@ export function GameNewsView({ data, compact }: WidgetViewProps) {
         <Rows>
           {items.map((item) => (
             <Row key={item.id}>
+              <Thumb src={item.imageUrl} width={64} height={30} />
               <RowTitle href={item.url}>{item.title}</RowTitle>
               <RowMeta className="@max-[420px]:hidden">{item.feedLabel}</RowMeta>
               <RowMeta mono>
