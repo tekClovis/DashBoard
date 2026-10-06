@@ -45,7 +45,10 @@ export function useWidgetData(instanceId: string, config?: string) {
       subscribedConfig.current = config;
       queryClient.setQueryData<WidgetCacheEntry>(['widget', instanceId], { data: null, fetchedAt: null, error: null });
     }
-    socket.emit(SOCKET_EVENTS.subscribe, { instanceId });
+    function subscribe() {
+      socket!.emit(SOCKET_EVENTS.subscribe, { instanceId });
+    }
+    subscribe();
 
     function onData(event: WidgetDataPayload) {
       if (event.instanceId !== instanceId) return;
@@ -67,11 +70,14 @@ export function useWidgetData(instanceId: string, config?: string) {
       }));
     }
 
+    // Rooms are per server-side socket: a reconnect starts with none, so subscribe again.
+    socket.on('connect', subscribe);
     socket.on(SOCKET_EVENTS.data, onData);
     socket.on(SOCKET_EVENTS.error, onError);
 
     return () => {
       socket.emit(SOCKET_EVENTS.unsubscribe, { instanceId });
+      socket.off('connect', subscribe);
       socket.off(SOCKET_EVENTS.data, onData);
       socket.off(SOCKET_EVENTS.error, onError);
     };
