@@ -1,0 +1,11 @@
+
+> server@0.0.1 db:generate
+> node --env-file-if-exists=../.env.local --env-file-if-exists=../.env $(command -v prisma) generate
+
+../.env.local not found. Continuing without it.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (7.10.0) to ./src/generated/prisma in 58ms
+

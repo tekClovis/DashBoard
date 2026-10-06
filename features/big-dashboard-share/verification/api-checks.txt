@@ -1,0 +1,213 @@
+## Setup: ada's dashboard beb5716a-a560-4e95-8918-bd7397368c0a renamed and given 3 widgets
+$ [ada] PATCH /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a {"name":"Ops board"}
+{"id":"beb5716a-a560-4e95-8918-bd7397368c0a","name":"Ops board","position":0}
+-> HTTP 200
+
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/widgets {"service":"weather","widget":"current_weather","params":{"city":"Paris","units":"metric"},"refreshRate":600,"x":0,"y":0,"w":4,"h":3}
+{"id":"38a674b3-a877-4923-9995-c4aa47040d1b","dashboardId":"beb5716a-a560-4e95-8918-bd7397368c0a","service":"weather","widget":"current_weather","params":{"city":"Paris","units":"metric"},"refreshRate":600,"x":0,"y":0,"w":4,"h":3}
+-> HTTP 201
+
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/widgets {"service":"weather","widget":"forecast","params":{"city":"Lyon","days":3},"refreshRate":900,"x":4,"y":0,"w":6,"h":4}
+{"id":"51c64966-24f4-40cb-8e8f-43cacb7c89e3","dashboardId":"beb5716a-a560-4e95-8918-bd7397368c0a","service":"weather","widget":"forecast","params":{"city":"Lyon","days":3},"refreshRate":900,"x":4,"y":0,"w":6,"h":4}
+-> HTTP 201
+
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/widgets {"service":"steam","widget":"game_news","params":{"app_id":570,"number":3},"refreshRate":1200,"x":0,"y":3,"w":4,"h":5}
+{"id":"4bd64980-7089-4815-bd22-fe55786739bb","dashboardId":"beb5716a-a560-4e95-8918-bd7397368c0a","service":"steam","widget":"game_news","params":{"app_id":570,"number":3},"refreshRate":1200,"x":0,"y":3,"w":4,"h":5}
+-> HTTP 201
+
+## Item 1: share to existing / unknown / self / duplicate / non-owner
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/share {"email":"lin@example.com"}
+{"ok":true}
+-> HTTP 201
+
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/share {"email":"nobody@example.com"}
+{"error":"UNKNOWN_USER"}
+-> HTTP 400
+
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/share {"email":"ada@example.com"}
+{"error":"CANNOT_SHARE_WITH_SELF"}
+-> HTTP 400
+
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/share {"email":"lin@example.com"}
+{"error":"ALREADY_SHARED"}
+-> HTTP 409
+
+$ [eve] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/share {"email":"lin@example.com"}
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+## Sent-status list (new): owner sees Waiting; non-owner 404
+$ [ada] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/shares 
+{"shares":[{"id":"5db88757-ea30-477b-a408-7644c6764862","toEmail":"lin@example.com","status":"PENDING"}]}
+-> HTTP 200
+
+$ [eve] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/shares 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+$ [lin] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/shares 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+## Item 2: recipient sees incoming share
+$ [lin] GET /shares/incoming 
+{"shares":[{"id":"5db88757-ea30-477b-a408-7644c6764862","dashboardName":"Ops board","fromEmail":"ada@example.com","widgetCount":3,"createdAt":"2026-10-06T16:55:40.018Z"}]}
+-> HTTP 200
+
+## Item 5: non-recipient (eve), sender (ada), anonymous
+$ [eve] GET /shares/incoming 
+{"shares":[]}
+-> HTTP 200
+
+$ [ada] GET /shares/incoming 
+{"shares":[]}
+-> HTTP 200
+
+$ [eve] POST /shares/5db88757-ea30-477b-a408-7644c6764862/accept 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+$ [ada] POST /shares/5db88757-ea30-477b-a408-7644c6764862/accept 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+$ [eve] DELETE /shares/5db88757-ea30-477b-a408-7644c6764862 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+$ [-] POST /shares/5db88757-ea30-477b-a408-7644c6764862/accept 
+{"message":"Unauthorized","statusCode":401}
+-> HTTP 401
+
+$ [-] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/shares 
+{"message":"Unauthorized","statusCode":401}
+-> HTTP 401
+
+## Item 3: lin accepts -> copy with same widgets/layout
+$ [lin] POST /shares/5db88757-ea30-477b-a408-7644c6764862/accept 
+{"id":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","name":"Ops board","position":1}
+-> HTTP 201
+
+$ [lin] GET /dashboards 
+{"dashboards":[{"id":"bdda4d27-004b-4300-8858-fee3b0de5e06","name":"My Dashboard","position":0},{"id":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","name":"Ops board","position":1}]}
+-> HTTP 200
+
+$ [lin] POST /shares/5db88757-ea30-477b-a408-7644c6764862/accept 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+-- second accept above must be 404 (share no longer PENDING)
+$ [ada] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/shares 
+{"shares":[{"id":"5db88757-ea30-477b-a408-7644c6764862","toEmail":"lin@example.com","status":"ADDED"}]}
+-> HTTP 200
+
+-- status ADDED expected above
+$ [lin] GET /shares/incoming 
+{"shares":[]}
+-> HTTP 200
+
+original: [{"service":"weather","widget":"current_weather","params":{"city":"Paris","units":"metric"},"refreshRate":600,"x":0,"y":0,"w":4,"h":3},{"service":"steam","widget":"game_news","params":{"app_id":570,"number":3},"refreshRate":1200,"x":0,"y":3,"w":4,"h":5},{"service":"weather","widget":"forecast","params":{"city":"Lyon","days":3},"refreshRate":900,"x":4,"y":0,"w":6,"h":4}]
+copy:     [{"service":"weather","widget":"current_weather","params":{"city":"Paris","units":"metric"},"refreshRate":600,"x":0,"y":0,"w":4,"h":3},{"service":"steam","widget":"game_news","params":{"app_id":570,"number":3},"refreshRate":1200,"x":0,"y":3,"w":4,"h":5},{"service":"weather","widget":"forecast","params":{"city":"Lyon","days":3},"refreshRate":900,"x":4,"y":0,"w":6,"h":4}]
+IDENTICAL
+shared widget ids: 0
+
+## Item 4: edits on copy don't touch original, and vice versa
+$ [lin] PATCH /dashboards/e15ffd87-3f91-4da5-b6ba-1f45f6582209/layout [{"id":"7b25ffb4-6a8f-433a-8fc5-63ef7ba0e648","x":6,"y":6,"w":3,"h":2}]
+[{"id":"7b25ffb4-6a8f-433a-8fc5-63ef7ba0e648","dashboardId":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","service":"weather","widget":"current_weather","params":{"city":"Paris","units":"metric"},"refreshRate":600,"x":6,"y":6,"w":3,"h":2}]
+-> HTTP 200
+
+$ [lin] PATCH /widgets/7b25ffb4-6a8f-433a-8fc5-63ef7ba0e648 {"params":{"city":"Berlin","units":"metric"}}
+{"id":"7b25ffb4-6a8f-433a-8fc5-63ef7ba0e648","dashboardId":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","service":"weather","widget":"current_weather","params":{"city":"Berlin","units":"metric"},"refreshRate":600,"x":6,"y":6,"w":3,"h":2}
+-> HTTP 200
+
+$ [lin] DELETE /widgets/0d7bff6c-f705-4a51-a25b-9a19c2ccd5eb 
+{"ok":true}
+-> HTTP 200
+
+$ [lin] PATCH /dashboards/e15ffd87-3f91-4da5-b6ba-1f45f6582209 {"name":"Lin copy"}
+{"id":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","name":"Lin copy","position":1}
+-> HTTP 200
+
+$ [ada] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/widgets 
+{"widgets":[{"id":"38a674b3-a877-4923-9995-c4aa47040d1b","dashboardId":"beb5716a-a560-4e95-8918-bd7397368c0a","service":"weather","widget":"current_weather","params":{"city":"Paris","units":"metric"},"refreshRate":600,"x":0,"y":0,"w":4,"h":3},{"id":"51c64966-24f4-40cb-8e8f-43cacb7c89e3","dashboardId":"beb5716a-a560-4e95-8918-bd7397368c0a","service":"weather","widget":"forecast","params":{"city":"Lyon","days":3},"refreshRate":900,"x":4,"y":0,"w":6,"h":4},{"id":"4bd64980-7089-4815-bd22-fe55786739bb","dashboardId":"beb5716a-a560-4e95-8918-bd7397368c0a","service":"steam","widget":"game_news","params":{"app_id":570,"number":3},"refreshRate":1200,"x":0,"y":3,"w":4,"h":5}]}
+-> HTTP 200
+
+-- original unchanged: [{"service":"weather","widget":"current_weather","params":{"city":"Paris","units":"metric"},"refreshRate":600,"x":0,"y":0,"w":4,"h":3},{"service":"steam","widget":"game_news","params":{"app_id":570,"number":3},"refreshRate":1200,"x":0,"y":3,"w":4,"h":5},{"service":"weather","widget":"forecast","params":{"city":"Lyon","days":3},"refreshRate":900,"x":4,"y":0,"w":6,"h":4}]
+ORIGINAL UNCHANGED
+$ [ada] PATCH /widgets/38a674b3-a877-4923-9995-c4aa47040d1b {"params":{"city":"Rome","units":"metric"}}
+{"id":"38a674b3-a877-4923-9995-c4aa47040d1b","dashboardId":"beb5716a-a560-4e95-8918-bd7397368c0a","service":"weather","widget":"current_weather","params":{"city":"Rome","units":"metric"},"refreshRate":600,"x":0,"y":0,"w":4,"h":3}
+-> HTTP 200
+
+$ [ada] PATCH /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a {"name":"Ops board v2"}
+{"id":"beb5716a-a560-4e95-8918-bd7397368c0a","name":"Ops board v2","position":0}
+-> HTTP 200
+
+COPY UNCHANGED after original edit
+$ [lin] GET /dashboards 
+{"dashboards":[{"id":"bdda4d27-004b-4300-8858-fee3b0de5e06","name":"My Dashboard","position":0},{"id":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","name":"Lin copy","position":1}]}
+-> HTTP 200
+
+## Decline flow + status DECLINED; re-share after answer
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/share {"email":"eve@example.com"}
+{"ok":true}
+-> HTTP 201
+
+$ [eve] GET /shares/incoming 
+{"shares":[{"id":"259b3d1f-ba55-41e0-8774-6aed1402c812","dashboardName":"Ops board v2","fromEmail":"ada@example.com","widgetCount":3,"createdAt":"2026-10-06T16:55:40.458Z"}]}
+-> HTTP 200
+
+$ [lin] DELETE /shares/259b3d1f-ba55-41e0-8774-6aed1402c812 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+$ [eve] DELETE /shares/259b3d1f-ba55-41e0-8774-6aed1402c812 
+{"ok":true}
+-> HTTP 200
+
+$ [eve] DELETE /shares/259b3d1f-ba55-41e0-8774-6aed1402c812 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+$ [eve] GET /shares/incoming 
+{"shares":[]}
+-> HTTP 200
+
+$ [ada] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/shares 
+{"shares":[{"id":"5db88757-ea30-477b-a408-7644c6764862","toEmail":"lin@example.com","status":"ADDED"},{"id":"259b3d1f-ba55-41e0-8774-6aed1402c812","toEmail":"eve@example.com","status":"DECLINED"}]}
+-> HTTP 200
+
+-- expected lin ADDED, eve DECLINED
+$ [ada] POST /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/share {"email":"eve@example.com"}
+{"ok":true}
+-> HTTP 201
+
+$ [ada] GET /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a/shares 
+{"shares":[{"id":"5db88757-ea30-477b-a408-7644c6764862","toEmail":"lin@example.com","status":"ADDED"},{"id":"259b3d1f-ba55-41e0-8774-6aed1402c812","toEmail":"eve@example.com","status":"PENDING"}]}
+-> HTTP 200
+
+-- re-share reopens eve's row as PENDING
+$ [eve] GET /shares/incoming 
+{"shares":[{"id":"259b3d1f-ba55-41e0-8774-6aed1402c812","dashboardName":"Ops board v2","fromEmail":"ada@example.com","widgetCount":3,"createdAt":"2026-10-06T16:55:40.528Z"}]}
+-> HTTP 200
+
+## Original deleted -> pending share gone (404) and copy survives
+$ [ada] POST /dashboards {"name":"Spare"}
+{"id":"7174350c-d4fa-4902-b3b7-f6a7ba877c3d","name":"Spare","position":1}
+-> HTTP 201
+
+$ [ada] DELETE /dashboards/beb5716a-a560-4e95-8918-bd7397368c0a 
+{"ok":true}
+-> HTTP 200
+
+$ [eve] POST /shares/259b3d1f-ba55-41e0-8774-6aed1402c812/accept 
+{"message":"Not Found","statusCode":404}
+-> HTTP 404
+
+$ [eve] GET /shares/incoming 
+{"shares":[]}
+-> HTTP 200
+
+$ [lin] GET /dashboards/e15ffd87-3f91-4da5-b6ba-1f45f6582209/widgets 
+{"widgets":[{"id":"7b25ffb4-6a8f-433a-8fc5-63ef7ba0e648","dashboardId":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","service":"weather","widget":"current_weather","params":{"city":"Berlin","units":"metric"},"refreshRate":600,"x":6,"y":6,"w":3,"h":2},{"id":"9aba0074-1d2d-4f5e-8ce5-dbf39869a754","dashboardId":"e15ffd87-3f91-4da5-b6ba-1f45f6582209","service":"weather","widget":"forecast","params":{"city":"Lyon","days":3},"refreshRate":900,"x":4,"y":0,"w":6,"h":4}]}
+-> HTTP 200
+

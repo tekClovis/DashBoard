@@ -4,17 +4,21 @@
 import type { ParamSpec, YoutubeVideo } from '@dashboard/shared';
 import type { WidgetDefinition } from '../../catalog/widget-definition.js';
 import { FetchError } from '../../timer/fetch-error.js';
-import { CHANNEL_SEARCH_PATH } from './youtube-search.js';
 import { fixedMessage, youtubeClient, type TokenRefresher, type YoutubeGet } from './youtube-api.js';
 
 /** ISO 3166-1 alpha-2 country code, as YouTube's `regionCode` expects. */
 const REGION_PATTERN = '^[A-Z]{2}$';
 
-const channelParam: ParamSpec = { name: 'channel_id', type: 'string', required: true, label: 'Channel', search: CHANNEL_SEARCH_PATH };
+const channelParam: ParamSpec = { name: 'channel_id', type: 'string', required: true, label: 'Channel', search: 'youtube.channel' };
+/** Set by the channel picker so the dialog can show the picked channel again; never rendered as fields. */
+const channelPickParams: ParamSpec[] = [
+  { name: 'channel_title', type: 'string', hidden: true },
+  { name: 'channel_image', type: 'string', hidden: true, pattern: '^https://' },
+];
 const numberParam: ParamSpec = { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Videos' };
 
 interface RawChannel {
-  snippet: { title: string };
+  snippet: { title: string; thumbnails?: RawVideoSnippet['thumbnails'] };
   statistics: { subscriberCount?: string; hiddenSubscriberCount: boolean; viewCount: string; videoCount: string };
   contentDetails?: { relatedPlaylists?: { uploads?: string } };
 }
@@ -23,6 +27,7 @@ interface RawVideoSnippet {
   title: string;
   channelTitle: string;
   publishedAt: string;
+  thumbnails?: Partial<Record<'default' | 'medium' | 'high', { url: string }>>;
 }
 
 interface RawPlaylistItem {
@@ -53,6 +58,7 @@ function toVideo(id: string, snippet: RawVideoSnippet): YoutubeVideo {
     channel: snippet.channelTitle,
     publishedAt: snippet.publishedAt,
     url: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+    imageUrl: (snippet.thumbnails?.medium ?? snippet.thumbnails?.high ?? snippet.thumbnails?.default)?.url ?? null,
   };
 }
 
@@ -65,7 +71,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     service: 'youtube',
     name: 'channel_stats',
     description: 'Subscriber, view and video counts of a channel.',
-    params: [channelParam],
+    params: [channelParam, ...channelPickParams],
     minRefreshSec: 600,
     auth: 'connection',
     fetch: guarded(async (params, ctx) => {
@@ -77,6 +83,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
         subscribers: statistics.subscriberCount === undefined ? null : Number(statistics.subscriberCount),
         views: Number(statistics.viewCount),
         videos: Number(statistics.videoCount),
+        imageUrl: snippet.thumbnails?.default?.url ?? null,
       };
     }),
   };
@@ -85,7 +92,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     service: 'youtube',
     name: 'latest_videos',
     description: 'Most recent uploads of a channel.',
-    params: [channelParam, numberParam],
+    params: [channelParam, ...channelPickParams, numberParam],
     minRefreshSec: 600,
     auth: 'connection',
     fetch: guarded(async (params, ctx) => {

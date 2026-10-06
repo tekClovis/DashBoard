@@ -24,8 +24,9 @@ function makeDeps() {
     upsertOAuthConnection: vi.fn().mockResolvedValue(undefined),
     upsertSteamConnection: vi.fn().mockResolvedValue(undefined),
   };
-  const controller = new OAuthController(oauthLogin as never, connections as never, config as never, jwt);
-  return { controller, oauthLogin, connections, jwt };
+  const dashboards = { list: vi.fn().mockResolvedValue([{ id: 'd1' }, { id: 'd2' }]) };
+  const controller = new OAuthController(oauthLogin as never, connections as never, dashboards as never, config as never, jwt);
+  return { controller, oauthLogin, connections, dashboards, jwt };
 }
 
 function makeReq(oauthState: OAuthResolvedState | undefined, user: unknown = PROFILE): OAuthCallbackRequest {
@@ -98,8 +99,8 @@ describe('OAuthController', () => {
   });
 
   describe('link', () => {
-    it('links the identity to the state-bound user and returns to the profile without a new session', async () => {
-      const { controller, oauthLogin } = makeDeps();
+    it('links the identity to the state-bound user and returns to the first dashboard without a new session', async () => {
+      const { controller, oauthLogin, dashboards } = makeDeps();
       const { res, asResponse } = makeRes();
 
       await controller.githubCallback(makeReq(LINK_STATE), asResponse);
@@ -107,7 +108,8 @@ describe('OAuthController', () => {
       expect(oauthLogin.linkIdentity).toHaveBeenCalledWith('u1', PROFILE);
       expect(oauthLogin.loginOrLink).not.toHaveBeenCalled();
       expect(res.cookie).not.toHaveBeenCalled();
-      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/profile`);
+      expect(dashboards.list).toHaveBeenCalledWith('u1');
+      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/d1`);
     });
 
     it('reports an identity already linked to someone else', async () => {
@@ -143,7 +145,7 @@ describe('OAuthController', () => {
       expect(connections.upsertOAuthConnection).toHaveBeenCalledWith('u1', 'github', connectResult);
       expect(oauthLogin.loginOrLink).not.toHaveBeenCalled();
       expect(res.cookie).not.toHaveBeenCalled();
-      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/connections?connected=github`);
+      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/d1`);
     });
 
     it('stores a Google connect as the youtube service', async () => {
@@ -153,7 +155,7 @@ describe('OAuthController', () => {
       await controller.googleCallback(makeReq(connectState('google'), connectResult), asResponse);
 
       expect(connections.upsertOAuthConnection).toHaveBeenCalledWith('u1', 'youtube', connectResult);
-      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/connections?connected=youtube`);
+      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/d1`);
     });
 
     it('stores a Steam connection from the OpenID result', async () => {
@@ -164,7 +166,16 @@ describe('OAuthController', () => {
 
       expect(connections.upsertSteamConnection).toHaveBeenCalledWith('u1', '7656');
       expect(connections.upsertOAuthConnection).not.toHaveBeenCalled();
-      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/connections?connected=steam`);
+      expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/d1`);
+    });
+
+    it('looks up the first dashboard of the state-bound user', async () => {
+      const { controller, dashboards } = makeDeps();
+      const { asResponse } = makeRes();
+
+      await controller.githubCallback(makeReq(connectState('github'), connectResult), asResponse);
+
+      expect(dashboards.list).toHaveBeenCalledWith('u1');
     });
 
     it('redirects with CONNECT_FAILED when storing the connection fails', async () => {

@@ -12,8 +12,10 @@ import {
 } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { Link, useParams } from 'react-router';
+import { useDashboards } from '@/api/dashboards.js';
 import { useDeleteWidget, useUpdateLayout, useWidgets } from '@/api/widgets.js';
 import { AddWidgetDialog } from '@/components/AddWidgetDialog.js';
+import { ShareButton } from '@/components/DashboardShare.js';
 import { frameState, type FrameState } from '@/components/frame-state.js';
 import { PageHead } from '@/components/page-head.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
@@ -129,6 +131,31 @@ interface Preview {
 /** Dashboard grid — docs/Architecture.md §9. Drag/resize on md+, single stacked column below. */
 export function DashboardPage() {
   const { dashboardId = '' } = useParams();
+  const { data: list } = useDashboards();
+  const known = list?.dashboards;
+  if (Array.isArray(known) && !known.some((d) => d.id === dashboardId)) {
+    return <DashboardNotFound path={`/d/${dashboardId}`} firstId={known[0]?.id} firstName={known[0]?.name} />;
+  }
+  return <DashboardView dashboardId={dashboardId} />;
+}
+
+function DashboardNotFound({ path, firstId, firstName }: { path: string; firstId?: string; firstName?: string }) {
+  return (
+    <div className="grid justify-items-center gap-2 py-16 text-center">
+      <h1 className="text-lg font-semibold">Dashboard not found</h1>
+      <p className="text-muted-foreground text-[0.8125rem]">
+        There’s no dashboard at <span className="font-mono text-[0.6875rem]">{path}</span>. It may have been deleted.
+      </p>
+      {firstId && (
+        <Button asChild>
+          <Link to={`/d/${firstId}`}>Go to {firstName}</Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function DashboardView({ dashboardId }: { dashboardId: string }) {
   const { data, isError, refetch } = useWidgets(dashboardId);
   const updateLayout = useUpdateLayout(dashboardId);
   const deleteWidget = useDeleteWidget(dashboardId);
@@ -317,12 +344,15 @@ export function DashboardPage() {
         className="items-center"
         sub={empty ? 'No widgets on this dashboard.' : data && <DashboardCounters widgets={widgets} />}
       >
-        {!empty && (
-          <Button ref={addRef} onClick={openAdd}>
-            <Plus />
-            Add <span className="max-md:hidden">widget</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ShareButton dashboardId={dashboardId} />
+          {!empty && (
+            <Button ref={addRef} onClick={openAdd}>
+              <Plus />
+              Add <span className="max-md:hidden">widget</span>
+            </Button>
+          )}
+        </div>
       </PageHead>
 
       {saveError && (
@@ -361,110 +391,113 @@ export function DashboardPage() {
         </div>
       )}
 
-      {empty ? (
-        <section
-          aria-labelledby="empty-title"
-          className="grid min-h-105 place-items-center rounded-lg border border-dashed bg-[linear-gradient(to_right,color-mix(in_oklch,var(--border)_60%,transparent)_1px,transparent_1px)] bg-size-[calc((100%_+_8px)/12)_100%] px-4 py-8 text-center"
-        >
-          <div className="bg-background grid max-w-95 justify-items-center gap-3 rounded-lg p-5">
-            <h2 id="empty-title" className="text-base font-semibold">
-              Add your first widget
-            </h2>
-            <p className="text-muted-foreground text-[0.8125rem] text-pretty">
-              Widgets update on their own once added. Weather works right away. GitHub and Steam need a connected
-              account first.
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={openAdd}>
-                <Plus />
-                Add widget
-              </Button>
-              <Button asChild variant="outline">
-                <Link to="/services">Connect services</Link>
-              </Button>
+      {/* Always mounted: useContainerWidth only observes the node present at mount. */}
+      <div ref={containerRef}>
+        {empty ? (
+          <section
+            aria-labelledby="empty-title"
+            className="grid min-h-105 place-items-center rounded-lg border border-dashed bg-[linear-gradient(to_right,color-mix(in_oklch,var(--border)_60%,transparent)_1px,transparent_1px)] bg-size-[calc((100%_+_8px)/12)_100%] px-4 py-8 text-center"
+          >
+            <div className="bg-background grid max-w-95 justify-items-center gap-3 rounded-lg p-5">
+              <h2 id="empty-title" className="text-base font-semibold">
+                Add your first widget
+              </h2>
+              <p className="text-muted-foreground text-[0.8125rem] text-pretty">
+                Widgets update on their own once added. Weather works right away. GitHub and Steam need a connected
+                account first.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={openAdd}>
+                  <Plus />
+                  Add widget
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/services">Connect services</Link>
+                </Button>
+              </div>
             </div>
+          </section>
+        ) : isDesktop ? (
+          <div className="relative">
+            <div
+              aria-hidden="true"
+              data-slot="grid-guides"
+              data-active={preview ? '' : undefined}
+              className="pointer-events-none absolute inset-0 grid grid-cols-12 gap-2 opacity-0 transition-opacity duration-(--dur) data-active:opacity-100"
+            >
+              {Array.from({ length: GRID_COLS }, (_, i) => (
+                <span key={i} className="border-muted-foreground/30 border-x border-dashed" />
+              ))}
+            </div>
+            <ResponsiveGridLayout
+              width={width}
+              breakpoints={{ lg: 768 }}
+              cols={{ lg: GRID_COLS }}
+              layouts={{
+                lg:
+                  dropped ??
+                  normalize(widgets).map((w) => ({
+                    i: w.id,
+                    x: w.x,
+                    y: w.y,
+                    w: w.w,
+                    h: w.h,
+                  })),
+              }}
+              rowHeight={ROW_HEIGHT}
+              margin={[GAP, GAP]}
+              containerPadding={[0, 0]}
+              // normalize() already packs; rendered layout must equal the stored one.
+              compactor={compactor}
+              dragConfig={{ handle: '.widget-drag-handle' }}
+              onDragStart={begin}
+              onResizeStart={begin}
+              onDrag={track('drag')}
+              onResize={track('resize')}
+              onDragStop={persist}
+              onResizeStop={persist}
+            >
+              {widgets.map((w) => (
+                <div key={w.id} data-widget-id={w.id}>
+                  {renderFrame(w)}
+                </div>
+              ))}
+            </ResponsiveGridLayout>
+            {preview && (
+              <div
+                aria-hidden="true"
+                data-slot="grid-readout"
+                // Over the resizing panel (z-index 20), whose corner covers the readout.
+                className={cn('pointer-events-none absolute', preview.mode === 'resize' ? 'z-30' : 'z-2')}
+                style={{
+                  left: preview.x * (col + GAP),
+                  top: preview.y * (ROW_HEIGHT + GAP),
+                  width: preview.w * col + (preview.w - 1) * GAP,
+                  height: preview.h * ROW_HEIGHT + (preview.h - 1) * GAP,
+                }}
+              >
+                <span
+                  className={cn(
+                    'bg-background absolute right-2 inline-flex gap-2.5 rounded-sm border px-1.5 py-0.75 font-mono text-xs',
+                    preview.mode === 'drag' ? 'top-2' : 'bottom-2',
+                  )}
+                >
+                  <span>{`x${preview.x} y${preview.y}`}</span>
+                  <span>{`${preview.w}×${preview.h}`}</span>
+                </span>
+              </div>
+            )}
           </div>
-        </section>
-      ) : isDesktop ? (
-        <div ref={containerRef} className="relative">
-          <div
-            aria-hidden="true"
-            data-slot="grid-guides"
-            data-active={preview ? '' : undefined}
-            className="pointer-events-none absolute inset-0 grid grid-cols-12 gap-2 opacity-0 transition-opacity duration-(--dur) data-active:opacity-100"
-          >
-            {Array.from({ length: GRID_COLS }, (_, i) => (
-              <span key={i} className="border-muted-foreground/30 border-x border-dashed" />
-            ))}
-          </div>
-          <ResponsiveGridLayout
-            width={width}
-            breakpoints={{ lg: 768 }}
-            cols={{ lg: GRID_COLS }}
-            layouts={{
-              lg:
-                dropped ??
-                normalize(widgets).map((w) => ({
-                  i: w.id,
-                  x: w.x,
-                  y: w.y,
-                  w: w.w,
-                  h: w.h,
-                })),
-            }}
-            rowHeight={ROW_HEIGHT}
-            margin={[GAP, GAP]}
-            containerPadding={[0, 0]}
-            // normalize() already packs; rendered layout must equal the stored one.
-            compactor={compactor}
-            dragConfig={{ handle: '.widget-drag-handle' }}
-            onDragStart={begin}
-            onResizeStart={begin}
-            onDrag={track('drag')}
-            onResize={track('resize')}
-            onDragStop={persist}
-            onResizeStop={persist}
-          >
-            {widgets.map((w) => (
-              <div key={w.id} data-widget-id={w.id}>
+        ) : (
+          <div className="grid gap-2">
+            {sortStacked(widgets).map((w) => (
+              <div key={w.id} data-widget-id={w.id} className="grid min-h-49">
                 {renderFrame(w)}
               </div>
             ))}
-          </ResponsiveGridLayout>
-          {preview && (
-            <div
-              aria-hidden="true"
-              data-slot="grid-readout"
-              // Over the resizing panel (z-index 20), whose corner covers the readout.
-              className={cn('pointer-events-none absolute', preview.mode === 'resize' ? 'z-30' : 'z-2')}
-              style={{
-                left: preview.x * (col + GAP),
-                top: preview.y * (ROW_HEIGHT + GAP),
-                width: preview.w * col + (preview.w - 1) * GAP,
-                height: preview.h * ROW_HEIGHT + (preview.h - 1) * GAP,
-              }}
-            >
-              <span
-                className={cn(
-                  'bg-background absolute right-2 inline-flex gap-2.5 rounded-sm border px-1.5 py-0.75 font-mono text-xs',
-                  preview.mode === 'drag' ? 'top-2' : 'bottom-2',
-                )}
-              >
-                <span>{`x${preview.x} y${preview.y}`}</span>
-                <span>{`${preview.w}×${preview.h}`}</span>
-              </span>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="grid gap-2">
-          {sortStacked(widgets).map((w) => (
-            <div key={w.id} data-widget-id={w.id} className="grid min-h-49">
-              {renderFrame(w)}
-            </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       <p aria-live="polite" data-slot="announcer" className="sr-only">
         {announcement}

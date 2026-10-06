@@ -28,19 +28,6 @@ export interface CatalogResponse {
   services: (ServiceSpec & { connected: boolean; status: ConnectionEntry['status'] })[];
 }
 
-/** One match of a ParamSpec `search` endpoint: the id is what the widget param saves. */
-export interface SearchResult {
-  id: string;
-  title: string;
-  /** Avatar or thumbnail URL. */
-  thumbnail?: string;
-}
-
-/** GET /api/youtube/channels/search?q= */
-export interface SearchResponse {
-  results: SearchResult[];
-}
-
 /** 8-72 chars, at least one digit and one non-alphanumeric symbol — docs/auth/specs.md §Flows. */
 export const PASSWORD_PATTERN = /^(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 
@@ -135,6 +122,39 @@ export interface UpdateDashboardRequest {
   position?: number;
 }
 
+/** POST /api/dashboards/{id}/share */
+export interface ShareDashboardRequest {
+  email: string;
+}
+
+/** One pending share in GET /api/shares/incoming. */
+export interface IncomingShareEntry {
+  id: string;
+  dashboardName: string;
+  fromEmail: string;
+  widgetCount: number;
+  createdAt: string;
+}
+
+export type ShareStatus = 'PENDING' | 'ADDED' | 'DECLINED';
+
+/** One row of GET /api/dashboards/{id}/shares: who a dashboard was sent to and their answer. */
+export interface SentShareEntry {
+  id: string;
+  toEmail: string;
+  status: ShareStatus;
+}
+
+/** GET /api/dashboards/{id}/shares */
+export interface SentSharesResponse {
+  shares: SentShareEntry[];
+}
+
+/** GET /api/shares/incoming */
+export interface IncomingSharesResponse {
+  shares: IncomingShareEntry[];
+}
+
 /** One WidgetInstance, as returned by dashboards-api's widget-instance endpoints. */
 export interface WidgetInstanceEntry {
   id: string;
@@ -179,4 +199,40 @@ export interface LayoutUpdateEntry {
   y: number;
   w: number;
   h: number;
+}
+
+/** One Steam store match from GET /api/steam/search?q= */
+export interface GameCandidate {
+  appId: number;
+  name: string;
+  image: string;
+}
+
+export interface GameSearchResponse {
+  results: GameCandidate[];
+}
+
+/** One geocoding match from GET /api/weather/search?q= */
+export interface CityCandidate {
+  name: string;
+  region?: string;
+  country?: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface CitySearchResponse {
+  results: CityCandidate[];
+}
+
+/** One YouTube channel match from GET /api/youtube/channels/search?q= */
+export interface ChannelCandidate {
+  id: string;
+  title: string;
+  /** Avatar URL. */
+  thumbnail?: string;
+}
+
+export interface ChannelSearchResponse {
+  results: ChannelCandidate[];
 }

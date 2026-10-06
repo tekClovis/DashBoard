@@ -61,7 +61,13 @@ export function setupPage() {
       const method = init?.method ?? 'GET';
       calls.push({ url, method, body: init?.body ? JSON.parse(init.body as string) : undefined });
       const body =
-        url === '/api/catalog' ? catalog : url.endsWith('/widgets') && method === 'GET' ? { widgets: [instance] } : {};
+        url === '/api/catalog'
+          ? catalog
+          : url === '/api/dashboards'
+            ? { dashboards: [{ id: 'dash-1', name: 'Home', position: 0 }] }
+            : url.endsWith('/widgets') && method === 'GET'
+              ? { widgets: [instance] }
+              : {};
       return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
     }),
   );

@@ -28,6 +28,14 @@ const realFetch = globalThis.fetch;
 function stubSteamApi(): void {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
+    if (url.hostname === 'store.steampowered.com' && url.pathname === '/api/storesearch/') {
+      const term = url.searchParams.get('term') ?? '';
+      const items = [
+        { type: 'app', id: 400, name: 'Portal', tiny_image: 'https://cdn.example/400.jpg' },
+        { type: 'app', id: 620, name: 'Portal 2', tiny_image: 'https://cdn.example/620.jpg' },
+      ];
+      return Response.json({ total: 2, items: term === 'portal' ? items : [] });
+    }
     if (url.hostname !== 'api.steampowered.com') return realFetch(input, init);
 
     if (url.pathname === '/IPlayerService/GetRecentlyPlayedGames/v1/' && url.searchParams.get('steamid') === STEAM_ID) {
@@ -152,10 +160,33 @@ describe('Steam widgets (e2e)', () => {
           description: expect.any(String),
           params: [
             { name: 'app_id', type: 'integer' },
+            { name: 'game_name', type: 'string' },
+            { name: 'game_image', type: 'string' },
             { name: 'number', type: 'integer' },
           ],
         },
       ],
+    });
+  });
+
+  describe('game search', () => {
+    const search = (cookie: string | undefined, q: string) =>
+      request(app.getHttpServer()).get('/api/steam/search').query({ q }).set('Cookie', cookie ?? '');
+
+    it('returns several games with app id, name and image for "portal"', async () => {
+      const { cookie } = await createUser('gs1@example.com');
+
+      const res = await search(cookie, 'portal').expect(200);
+
+      expect(res.body.results).toHaveLength(2);
+      for (const g of res.body.results) expect(g).toMatchObject({ appId: expect.any(Number), name: expect.any(String), image: expect.any(String) });
+    });
+
+    it('answers no matches with an empty list and requires a session', async () => {
+      const { cookie } = await createUser('gs2@example.com');
+
+      expect((await search(cookie, 'zzzz').expect(200)).body).toEqual({ results: [] });
+      await search(undefined, 'portal').expect(401);
     });
   });
 

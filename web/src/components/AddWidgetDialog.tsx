@@ -1,4 +1,4 @@
-import type { CatalogResponse, SearchResult, WidgetInstanceEntry, WidgetSpec } from '@dashboard/shared';
+import type { CatalogResponse, WidgetInstanceEntry, WidgetSpec } from '@dashboard/shared';
 import { Ellipsis, RefreshCw, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
@@ -27,6 +27,10 @@ import { getWidgetMeta } from '@/widgets/registry.js';
 const MAX_REFRESH_SEC = 86400;
 const STEPS = ['Widget', 'Settings', 'Refresh', 'Confirm'];
 const PRESETS = [60, 300, 900, 3600];
+/** Picker companions already shown through the picked param's own line. */
+const CONFIRM_HIDDEN = new Set(['region', 'country', 'game_name', 'game_image', 'channel_title', 'channel_image']);
+/** The companion param holding a picker's chosen title, shown before the picked param's own line. */
+const PICK_TITLE: Record<string, string> = { 'steam.game': 'game_name', 'youtube.channel': 'channel_title' };
 
 interface AddWidgetDialogProps {
   dashboardId: string;
@@ -71,8 +75,6 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
   const [step, setStep] = useState(firstStep);
   const [picked, setPicked] = useState<WidgetSpec | undefined>();
   const [values, setValues] = useState<ParamValues>({});
-  // Titles of picked search results by param name: the confirm step shows them beside the saved id.
-  const [picks, setPicks] = useState<Record<string, SearchResult>>({});
   const [refresh, setRefresh] = useState(instance ? String(instance.refreshRate) : '');
   // Errors show after a blocked Next (params) or once the field is left (refresh).
   const [showParamErrors, setShowParamErrors] = useState(false);
@@ -253,19 +255,7 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
         {step === 2 && spec && (
           <>
             <p className="text-muted-foreground text-[0.8125rem]">{widgetName}</p>
-            <ParamForm
-              specs={spec.params}
-              values={values}
-              onChange={setValues}
-              showErrors={showParamErrors}
-              picks={picks}
-              onPickChange={(name, r) =>
-                setPicks((p) => {
-                  const { [name]: _, ...rest } = p;
-                  return r ? { ...rest, [name]: r } : rest;
-                })
-              }
-            />
+            <ParamForm specs={spec.params} values={values} onChange={setValues} showErrors={showParamErrors} />
           </>
         )}
 
@@ -329,12 +319,16 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
               <dt className="text-muted-foreground">Settings</dt>
               <dd>
                 {spec.params.length > 0 ? (
-                  spec.params.map((p) => (
-                    <span key={p.name} className="block">
-                      {p.search && picks[p.name] && <span className="mr-1.5 text-[0.8125rem]">{picks[p.name]?.title}</span>}
-                      <span className="font-mono text-xs">{`${p.name}=${values[p.name] ?? ''}`}</span>
-                    </span>
-                  ))
+                  spec.params
+                    .filter((p) => !p.hidden || (values[p.name] && !CONFIRM_HIDDEN.has(p.name)))
+                    .map((p) => {
+                      const value = [values[p.name] ?? '', ...(p.name === 'city' ? [values.region, values.country] : [])].filter(Boolean).join(', ');
+                      const title = p.search ? values[PICK_TITLE[p.search] ?? ''] : '';
+                      const prefix = title ? `${title} ` : '';
+                      return (
+                        <span key={p.name} className="block font-mono text-xs">{`${prefix}${p.name}=${value}`}</span>
+                      );
+                    })
                 ) : (
                   <span className="text-muted-foreground">None</span>
                 )}

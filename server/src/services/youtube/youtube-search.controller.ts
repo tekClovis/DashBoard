@@ -1,7 +1,7 @@
 // GET /api/youtube/channels/search?q= — see features/big-youtube-search/spec.md.
 
 import { BadRequestException, Controller, Get, HttpException, Query, UseGuards } from '@nestjs/common';
-import type { SearchResponse } from '@dashboard/shared';
+import type { ChannelSearchResponse } from '@dashboard/shared';
 import { CurrentUser } from '../../auth/current-user.decorator.js';
 import { JwtGuard } from '../../auth/jwt.guard.js';
 import type { RequestUser } from '../../auth/types.js';
@@ -32,7 +32,7 @@ export class YoutubeSearchController {
   ) {}
 
   @Get('search')
-  async search(@Query('q') q: unknown, @CurrentUser() user: RequestUser): Promise<SearchResponse> {
+  async search(@Query('q') q: unknown, @CurrentUser() user: RequestUser): Promise<ChannelSearchResponse> {
     const query = typeof q === 'string' ? q.trim() : '';
     if (query.length < MIN_QUERY || query.length > MAX_QUERY) throw new BadRequestException({ error: 'INVALID_QUERY' });
 

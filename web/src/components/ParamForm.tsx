@@ -1,8 +1,11 @@
-import type { ParamSpec, SearchResult } from '@dashboard/shared';
+import type { ChannelCandidate, CityCandidate, GameCandidate, ParamSpec } from '@dashboard/shared';
 import { CircleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { searchGames } from '@/api/steam.js';
+import { searchCities } from '@/api/weather.js';
+import { searchChannels } from '@/api/youtube.js';
+import { SearchPicker, type PickerOption } from '@/components/SearchPicker.js';
 import { Input } from '@/components/ui/input.js';
-import { SearchPicker } from '@/components/SearchPicker.js';
 import { Label } from '@/components/ui/label.js';
 import { cn } from '@/lib/utils.js';
 
@@ -10,7 +13,8 @@ export type ParamValues = Record<string, string>;
 
 /** Returns an error message for one param's raw string value, or null when it is valid. */
 export function validateParam(spec: ParamSpec, raw: string): string | null {
-  if (raw === '') return spec.required ? (spec.search ? 'Pick one of the search results to continue.' : 'Required.') : null;
+  if (raw === '' && spec.search && spec.required) return `Pick a ${(spec.label ?? spec.name).toLowerCase()} from the results.`;
+  if (raw === '') return spec.required ? 'Required.' : null;
   if (spec.enum) return spec.enum.includes(raw) ? null : 'Pick one of the listed values.';
   if (spec.type === 'integer') {
     const n = Number(raw);
@@ -58,8 +62,90 @@ export function FieldError({ id, children }: { id: string; children: string }) {
 /** Display-only extras the catalog doesn't carry: a usage hint and monospace for identifier-like values. */
 const PARAM_UI: Record<string, { hint?: string; mono?: true }> = {
   repo: { hint: 'owner/name, for example acme/telemetry', mono: true },
-  app_id: { hint: 'The number in the game’s store URL, for example 730', mono: true },
+  channel_id: { mono: true },
   region: { mono: true },
+};
+
+/** A search-backed param: how its candidates look and which values (the param's own plus hidden companions) a pick sets. */
+interface Picker<T> {
+  queryKey: string;
+  nouns: [string, string];
+  placeholder: string;
+  search: (query: string) => Promise<T[]>;
+  toOption: (item: T) => PickerOption;
+  /** Every param a pick sets, cleared again by Change. */
+  keys: string[];
+  /** The values a pick sets. */
+  toValues: (item: T) => ParamValues;
+  /** The saved choice, or null when the param is empty. */
+  fromValues: (values: ParamValues) => PickerOption | null;
+}
+
+const coordinates = (lat: number | string, lon: number | string) => `${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`;
+const place = (region?: string, country?: string) => [region, country].filter(Boolean).join(', ');
+
+const steamGame: Picker<GameCandidate> = {
+  queryKey: 'steam.game',
+  nouns: ['game', 'games'],
+  placeholder: 'Search a game, for example Portal',
+  search: searchGames,
+  toOption: (g) => ({ title: g.name, meta: `App ${g.appId}`, image: g.image }),
+  keys: ['app_id', 'game_name', 'game_image'],
+  toValues: (g) => ({ app_id: String(g.appId), game_name: g.name, game_image: g.image }),
+  fromValues: (v) =>
+    v['app_id']
+      ? {
+          title: v['game_name'] || `App ${v['app_id']}`,
+          meta: `App ${v['app_id']}`,
+          // Widgets saved before the picker only hold app_id: fall back to the store capsule.
+          image: v['game_image'] || `https://cdn.cloudflare.steamstatic.com/steam/apps/${v['app_id']}/capsule_184x69.jpg`,
+        }
+      : null,
+};
+
+const weatherCity: Picker<CityCandidate> = {
+  queryKey: 'weather.city',
+  nouns: ['city', 'cities'],
+  placeholder: 'Search a city, for example Paris',
+  search: searchCities,
+  toOption: (c) => ({ title: c.name, subtitle: place(c.region, c.country), meta: coordinates(c.latitude, c.longitude) }),
+  keys: ['city', 'region', 'country', 'latitude', 'longitude'],
+  toValues: (c) => ({
+    city: c.name,
+    region: c.region ?? '',
+    country: c.country ?? '',
+    latitude: String(c.latitude),
+    longitude: String(c.longitude),
+  }),
+  fromValues: (v) =>
+    v['city']
+      ? {
+          title: v['city'],
+          subtitle: place(v['region'], v['country']),
+          meta: v['latitude'] && v['longitude'] ? coordinates(v['latitude'], v['longitude']) : undefined,
+        }
+      : null,
+};
+
+const youtubeChannel: Picker<ChannelCandidate> = {
+  queryKey: 'youtube.channel',
+  nouns: ['channel', 'channels'],
+  placeholder: 'Search a channel, for example Fireship',
+  search: searchChannels,
+  toOption: (c) => ({ title: c.title, meta: c.id, image: c.thumbnail }),
+  keys: ['channel_id', 'channel_title', 'channel_image'],
+  toValues: (c) => ({ channel_id: c.id, channel_title: c.title, channel_image: c.thumbnail ?? '' }),
+  fromValues: (v) =>
+    v['channel_id']
+      ? { title: v['channel_title'] || v['channel_id'], meta: v['channel_id'], image: v['channel_image'] || undefined }
+      : null,
+};
+
+/** Picker registry; each entry hands its picker to a generic callback so the candidate type stays checked. */
+const PICKERS: Record<string, <R>(use: <T>(picker: Picker<T>) => R) => R> = {
+  'steam.game': (use) => use(steamGame),
+  'weather.city': (use) => use(weatherCity),
+  'youtube.channel': (use) => use(youtubeChannel),
 };
 
 interface ParamFormProps {
@@ -68,20 +154,18 @@ interface ParamFormProps {
   onChange: (values: ParamValues) => void;
   /** Show every field's error (after a blocked Next), not only the ones already left. */
   showErrors?: boolean;
-  /** Results picked in `search` params, by param name; kept by the caller across steps. */
-  picks?: Record<string, SearchResult>;
-  onPickChange?: (name: string, result: SearchResult | null) => void;
 }
 
 /**
  * Form generated from a widget's ParamSpec[]: enum → select, integer → bounded number, string → pattern-checked text.
  * A field's error appears once it is left non-empty (or `showErrors`), then follows each keystroke.
  */
-export function ParamForm({ specs, values, onChange, showErrors = false, picks, onPickChange }: ParamFormProps) {
+export function ParamForm({ specs, values, onChange, showErrors = false }: ParamFormProps) {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   if (specs.length === 0) return <p className="text-muted-foreground">This widget has no settings.</p>;
 
-  return specs.map((spec) => {
+  return specs.filter((spec) => !spec.hidden).map((spec) => {
+    const withPicker = spec.search ? PICKERS[spec.search] : undefined;
     const id = `param-${spec.name}`;
     const value = values[spec.name] ?? '';
     const error = showErrors || touched[spec.name] ? validateParam(spec, value) : null;
@@ -100,18 +184,22 @@ export function ParamForm({ specs, values, onChange, showErrors = false, picks, 
             {hint}
           </span>
         )}
-        {spec.search ? (
+        {withPicker ? (
+          withPicker((picker) => (
           <SearchPicker
             id={id}
-            endpoint={spec.search}
-            noun={(spec.label ?? spec.name).toLowerCase()}
-            value={value}
-            onChange={set}
-            saved={picks?.[spec.name]}
-            onPick={(r) => onPickChange?.(spec.name, r)}
+            queryKey={picker.queryKey}
+            nouns={picker.nouns}
+            placeholder={picker.placeholder}
+            search={picker.search}
+            toOption={picker.toOption}
+            picked={picker.fromValues(values)}
+            onPick={(item) => onChange({ ...values, ...picker.toValues(item) })}
+            onClear={() => onChange({ ...values, ...Object.fromEntries(picker.keys.map((k) => [k, ''])) })}
             describedBy={describedBy}
             invalid={!!error}
           />
+          ))
         ) : spec.enum ? (
           <select
             id={id}

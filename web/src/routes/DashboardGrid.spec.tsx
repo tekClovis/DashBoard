@@ -46,6 +46,107 @@ describe('DashboardPage grid (md+)', () => {
     expect(screen.queryByText('Couldn’t load your widgets')).toBeNull();
   });
 
+  // The grid is mounted while widgets load and unmounted for the empty state; a measured node that
+  // is removed reports width 0 (a ~2px first widget) and the node mounted later is never observed.
+  it('keeps the measured grid container observed and attached when the dashboard is empty', async () => {
+    const observed = new Set<Element>();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = (el: Element) => void observed.add(el);
+        disconnect = () => observed.clear();
+        unobserve = () => undefined;
+      },
+    );
+    respondWhen(
+      (url) => url.endsWith('/widgets'),
+      () => new Response(JSON.stringify({ widgets: [] }), { status: 200 }),
+    );
+    renderPage();
+    await screen.findByText('Add your first widget');
+    expect(observed.size).toBe(1);
+    for (const el of observed) expect(el.isConnected).toBe(true);
+  });
+
+  // Covers adding the first widget, deleting all then adding one again: the grid appears after an empty state.
+  it('gives the grid the measured container width once widgets appear after an empty dashboard', async () => {
+    // Like a browser: the observed node reports its width once laid out, and 0 if it was removed.
+    const observed = new Set<Element>();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private cb: (entries: unknown[]) => void) {}
+        observe = (el: Element) => {
+          observed.add(el);
+          setTimeout(() => this.cb([{ contentRect: { width: el.isConnected ? 1200 : 0 } }]), 0);
+        };
+        disconnect = () => undefined;
+        unobserve = () => undefined;
+      },
+    );
+    gridProps.current = undefined;
+    let empty = true;
+    respondWhen(
+      (url, method) => url.endsWith('/widgets') && method === 'GET',
+      () =>
+        new Response(JSON.stringify({ widgets: empty ? [] : [instance] }), {
+          status: 200,
+        }),
+    );
+    renderPage();
+    await screen.findByText('Add your first widget');
+    empty = false;
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange', { bubbles: true }));
+    });
+    await vi.waitFor(() => expect(gridProps.current?.width).toBe(1200));
+    const grid = document.querySelector('[data-slot="grid-guides"]');
+    expect(grid).not.toBeNull();
+    expect([...observed].filter((el) => el.isConnected && el.contains(grid))).toHaveLength(1);
+  });
+
+  const stubObserver = () =>
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private cb: (entries: unknown[]) => void) {}
+        observe = (el: Element) => {
+          setTimeout(() => this.cb([{ contentRect: { width: el.isConnected ? 1200 : 0 } }]), 0);
+        };
+        disconnect = () => undefined;
+        unobserve = () => undefined;
+      },
+    );
+
+  it('measures the same width when the page loads with widgets already stored (reload)', async () => {
+    stubObserver();
+    gridProps.current = undefined;
+    renderPage();
+    await vi.waitFor(() => expect(gridProps.current?.width).toBe(1200));
+  });
+
+  it('lays out a second and third widget after the first one on a formerly empty dashboard', async () => {
+    stubObserver();
+    gridProps.current = undefined;
+    let widgets: unknown[] = [];
+    respondWhen(
+      (url, method) => url.endsWith('/widgets') && method === 'GET',
+      () => new Response(JSON.stringify({ widgets }), { status: 200 }),
+    );
+    renderPage();
+    await screen.findByText('Add your first widget');
+    const refetch = () => act(() => void document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+    const ids = (layouts: unknown) =>
+      (layouts as { lg: { i: string; w: number }[] }).lg.map((l) => `${l.i}:${l.w}`);
+    widgets = [instance];
+    refetch();
+    await vi.waitFor(() => expect(ids(gridProps.current?.layouts)).toEqual(['i1:4']));
+    widgets = [instance, { ...instance, id: 'i2', y: 5 }, { ...instance, id: 'i3', x: 0, y: 8 }];
+    refetch();
+    await vi.waitFor(() => expect(ids(gridProps.current?.layouts)).toEqual(['i1:4', 'i2:4', 'i3:4']));
+    expect((gridProps.current as Record<string, unknown> | undefined)?.width).toBe(1200);
+  });
+
   // One render: Radix menus in jsdom don't reopen reliably across separate renders.
   it('moves and resizes from the widget menu through the layout save, with a dismissible alert on failure', async () => {
     renderPage();

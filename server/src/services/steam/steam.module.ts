@@ -1,12 +1,14 @@
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthModule } from '../../auth/auth.module.js';
 import { CatalogModule } from '../../catalog/catalog.module.js';
 import { WidgetRegistryService } from '../../catalog/widget-registry.service.js';
+import { SteamController } from './steam.controller.js';
 import { createSteamWidgets } from './steam.widgets.js';
 
 // Registers the Steam service and its widgets — see docs/Architecture.md §3 and
 // features/steam-widgets/spec.md.
-@Module({ imports: [CatalogModule] })
+@Module({ imports: [AuthModule, CatalogModule], controllers: [SteamController] })
 export class SteamModule implements OnModuleInit {
   constructor(
     private readonly registry: WidgetRegistryService,

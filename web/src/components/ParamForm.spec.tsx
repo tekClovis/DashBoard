@@ -1,4 +1,5 @@
 import type { ParamSpec } from '@dashboard/shared';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -17,6 +18,39 @@ function Harness({ showErrors = false, list = specs }: { showErrors?: boolean; l
 }
 
 afterEach(cleanup);
+
+describe('search params', () => {
+  const city: ParamSpec = { name: 'city', type: 'string', required: true, label: 'City', search: 'weather.city' };
+
+  it('asks for a pick, not free text, when a required search param is empty', () => {
+    expect(validateParam(city, '')).toBe('Pick a city from the results.');
+    expect(validateParam(city, 'Paris')).toBeNull();
+  });
+
+  it('renders no field for hidden companion params', () => {
+    const list: ParamSpec[] = [
+      { name: 'latitude', type: 'string', hidden: true },
+      { name: 'note', type: 'string', label: 'Note' },
+    ];
+    render(<Harness list={list} />);
+
+    expect(screen.queryByLabelText(/latitude/)).toBeNull();
+    expect(screen.getByLabelText('Note (optional)')).toBeTruthy();
+  });
+
+  it('shows the store capsule for a game saved with only an app id', () => {
+    const game: ParamSpec = { name: 'app_id', type: 'integer', required: true, label: 'Game', search: 'steam.game' };
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ParamForm specs={[game]} values={{ app_id: '730' }} onChange={() => {}} showErrors={false} />
+      </QueryClientProvider>,
+    );
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      'https://cdn.cloudflare.steamstatic.com/steam/apps/730/capsule_184x69.jpg',
+    );
+  });
+});
 
 describe('ParamForm', () => {
   it('renders enum as select, integer as bounded number input with a range hint, pattern as text', () => {

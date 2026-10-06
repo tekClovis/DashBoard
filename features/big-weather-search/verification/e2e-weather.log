@@ -1,0 +1,34 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a0b642097639d860c/server
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32801"
+
+1 migration found in prisma/migrations
+
+Applying migration `20260914000000_init`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260914000000_init/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > 3/5. current_weather pushes real data: Celsius for metric, Fahrenheit for imperial 1035ms
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > 4. forecast with days: 5 returns 5 days 769ms
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > 6/8. instances of two users with the same city share one geo: key and one geocoding call; no :conn: suffix 1968ms
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > city search > 1. returns several candidates for "Paris", each with name, country and coordinates 49ms
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > city search > 5. an empty query or an unknown city answers 200 with no results 45ms
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > city search > requires a session 7ms
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > city search > 3/4. a widget saved with a picked candidate shows that place and never re-geocodes the name 896ms
+ ✓ test/weather.e2e-spec.ts > Weather widgets (e2e) > 7. an unresolvable city emits widget:error INVALID_PARAMS 1006ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  02:50:08
+   Duration  11.73s (transform 357ms, setup 0ms, import 888ms, tests 6.19s, environment 0ms)
+

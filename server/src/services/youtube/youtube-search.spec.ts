@@ -4,7 +4,6 @@ import type { TokenCipherService } from '../../connections/token-cipher.service.
 import type { PrismaService } from '../../core/prisma/prisma.service.js';
 import type { GoogleTokenRefresher } from './google-token-refresher.js';
 import { YoutubeSearchController } from './youtube-search.controller.js';
-import { CHANNEL_SEARCH_PATH } from './youtube-search.js';
 import { youtubeWidgets } from './youtube-widgets.js';
 
 const user = { id: 'u1' } as RequestUser;
@@ -91,9 +90,10 @@ describe('YoutubeSearchController', () => {
 });
 
 describe('channel param', () => {
-  it('is a search param pointing at the channel search endpoint, not a raw id field', () => {
+  it('is a youtube.channel search param with hidden title and image companions, not a raw id field', () => {
     for (const def of youtubeWidgets(vi.fn()).filter((d) => d.name !== 'trending_videos')) {
-      expect(def.params.find((p) => p.name === 'channel_id')).toMatchObject({ search: CHANNEL_SEARCH_PATH, label: 'Channel' });
+      expect(def.params.find((p) => p.name === 'channel_id')).toMatchObject({ search: 'youtube.channel', label: 'Channel' });
+      expect(def.params.filter((p) => p.hidden).map((p) => p.name)).toEqual(['channel_title', 'channel_image']);
     }
   });
 });

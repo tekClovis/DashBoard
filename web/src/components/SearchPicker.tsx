@@ -1,179 +1,244 @@
-import type { SearchResult } from '@dashboard/shared';
-import { Check, CircleAlert, Info, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { MIN_SEARCH_LENGTH, useSearch } from '@/api/search.js';
-import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { useQuery } from '@tanstack/react-query';
+import { CircleAlert, Info, RefreshCw, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
-import { Skeleton } from '@/components/ui/skeleton.js';
 
-const DEBOUNCE_MS = 300;
+const MIN_QUERY_LENGTH = 2;
+const DEBOUNCE_MS = 250;
 
-interface SearchPickerProps {
-  /** Id of the search input, so the field's label and focus handling reach it. */
+function Thumb({ src }: { src?: string }) {
+  return src ? <img src={src} alt="" loading="lazy" className="bg-muted h-9 w-[5.5rem] shrink-0 rounded-sm object-cover" /> : null;
+}
+
+/** How one candidate (or the chosen one) is shown. */
+export interface PickerOption {
+  title: string;
+  subtitle?: string;
+  meta?: string;
+  /** Thumbnail URL, shown before the text. */
+  image?: string;
+}
+
+interface SearchPickerProps<T> {
+  /** Id of the search input, so a field's label and error can point at it. */
   id: string;
-  /** API path of the search (a ParamSpec's `search`). */
-  endpoint: string;
-  /** What is searched for, singular and lower-case, e.g. "channel". */
-  noun: string;
-  /** Saved value: the picked result's id, or '' while nothing is picked. */
-  value: string;
-  onChange: (id: string) => void;
-  /** The result behind the saved id when the caller remembers it (e.g. after Back), instead of showing the bare id. */
-  saved?: SearchResult;
-  /** Called with the picked result, or null on Change, so the caller can show it later (e.g. the confirm step). */
-  onPick?: (result: SearchResult | null) => void;
+  /** Scopes cached results to one kind of search. */
+  queryKey: string;
+  search: (query: string) => Promise<T[]>;
+  toOption: (item: T) => PickerOption;
+  onPick: (item: T) => void;
+  /** The chosen candidate; when set, it replaces the search. */
+  picked: PickerOption | null;
+  onClear: () => void;
+  placeholder?: string;
+  /** Singular and plural name of what is searched, for the status copy. */
+  nouns: [string, string];
   describedBy?: string;
   invalid?: boolean;
 }
 
-function Avatar({ src, size }: { src?: string; size: number }) {
-  return (
-    <span
-      className="bg-muted relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full"
-      style={{ width: size, height: size }}
-    >
-      {src && <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover" />}
-    </span>
-  );
+function useDebounced(value: string, ms: number): string {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return debounced;
 }
 
 /**
- * Search-then-pick control for a ParamSpec with `search`: type to list matches (title + avatar), pick one
- * to save its id. Typing again after a pick is not possible until "Change", so the saved id always matches
- * what the user sees.
+ * Search input with a listbox of candidates; the chosen one collapses into a chip with a Change button.
+ * Reusable for any param whose value is picked from a server search (cities, channels, games).
  */
-export function SearchPicker({ id, endpoint, noun, value, onChange, saved, onPick, describedBy, invalid }: SearchPickerProps) {
+export function SearchPicker<T>({
+  id,
+  queryKey,
+  search,
+  toOption,
+  onPick,
+  picked,
+  onClear,
+  placeholder,
+  nouns: [singular, plural],
+  describedBy,
+  invalid,
+}: SearchPickerProps<T>) {
   const [text, setText] = useState('');
-  const [query, setQuery] = useState('');
-  const [chosen, setChosen] = useState<SearchResult | null>(null);
+  const [active, setActive] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const changeRef = useRef<HTMLButtonElement>(null);
+  const hadPicked = useRef(picked !== null);
 
+  const query = text.trim();
+  const settled = useDebounced(query, DEBOUNCE_MS);
+  const enabled = settled.length >= MIN_QUERY_LENGTH;
+  const { data, isError, isFetching, refetch } = useQuery({
+    queryKey: ['search', queryKey, settled],
+    queryFn: () => search(settled),
+    enabled,
+    retry: false,
+  });
+
+  // Focus follows the swap between search and chip, but never on first render.
+  const isPicked = picked !== null;
   useEffect(() => {
-    const timer = setTimeout(() => setQuery(text.trim()), DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [text]);
-
-  const search = useSearch(endpoint, query);
-  const typed = text.trim();
-  const settled = typed === query && query.length >= MIN_SEARCH_LENGTH;
-  const results = search.data?.results ?? [];
-
-  // A saved id with no result at hand (reconfiguring a widget) shows its remembered result, else the id.
-  const picked = value ? (chosen?.id === value ? chosen : saved?.id === value ? saved : { id: value, title: value }) : null;
+    if (hadPicked.current === isPicked) return;
+    hadPicked.current = isPicked;
+    (isPicked ? changeRef : inputRef).current?.focus();
+  }, [isPicked]);
 
   if (picked) {
     return (
-      <div className="grid gap-1.5">
-        <div className="border-foreground grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border px-3 py-2.5 shadow-[inset_0_0_0_1px_var(--foreground)]">
-          {picked.thumbnail && <Avatar src={picked.thumbnail} size={40} />}
-          <span className="grid min-w-0">
-            <b className="truncate text-[0.8125rem] font-[550]">{picked.title}</b>
-            <span className="text-muted-foreground truncate font-mono text-[0.6875rem]">{picked.id}</span>
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setChosen(null);
-              setText('');
-              setQuery('');
-              onChange('');
-              onPick?.(null);
-              // The search input mounts on the next render.
-              requestAnimationFrame(() => document.getElementById(id)?.focus());
-            }}
-          >
-            Change
-          </Button>
+      <div className="border-foreground flex items-center gap-3 rounded-md border p-2.5 shadow-[inset_0_0_0_1px_var(--foreground)]">
+        <Thumb src={picked.image} />
+        <div className="grid min-w-0 gap-0.5">
+          <b className="text-sm font-semibold">{picked.title}</b>
+          {picked.subtitle && <span className="text-muted-foreground text-xs">{picked.subtitle}</span>}
+          {picked.meta && <span className="text-muted-foreground font-mono text-xs">{picked.meta}</span>}
         </div>
-        <span role="status" className="text-muted-foreground flex items-center gap-2 text-xs">
-          <Check className="size-3.5" aria-hidden />
-          {`${noun[0]?.toUpperCase()}${noun.slice(1)} selected. Its ID is saved with the widget.`}
-        </span>
+        <Button ref={changeRef} type="button" variant="outline" size="sm" className="ml-auto" onClick={onClear}>
+          Change
+        </Button>
       </div>
     );
   }
 
-  const resultsId = `${id}-results`;
+  const results = enabled && settled === query && !isFetching && data ? data : [];
+  const loading = query.length >= MIN_QUERY_LENGTH && (settled !== query || isFetching) && !isError;
+  const showError = enabled && settled === query && !isFetching && isError;
+  const showEmpty = enabled && settled === query && !isFetching && !isError && data?.length === 0;
+  const helpId = `${id}-help`;
+
+  const pick = (item: T) => {
+    setText('');
+    setActive(-1);
+    onPick(item);
+  };
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (results.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive((a) => (a + 1) % results.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive((a) => (a <= 0 ? results.length - 1 : a - 1));
+    } else if (e.key === 'Enter' && active >= 0) {
+      e.preventDefault();
+      pick(results[active]);
+    }
+  }
+
   return (
-    <div className="grid gap-1.5">
+    <div className="grid gap-2">
       <div className="relative">
-        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" aria-hidden />
+        <Search
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+          aria-hidden
+        />
         <Input
+          ref={inputRef}
           id={id}
           type="search"
-          role="searchbox"
+          role="combobox"
+          aria-expanded={results.length > 0}
+          aria-controls={`${id}-list`}
+          aria-autocomplete="list"
+          aria-activedescendant={active >= 0 ? `${id}-opt-${active}` : undefined}
+          aria-describedby={[helpId, describedBy].filter(Boolean).join(' ')}
+          aria-invalid={invalid ? true : undefined}
           value={text}
+          placeholder={placeholder}
           autoComplete="off"
           spellCheck={false}
-          placeholder={`Search by ${noun} name`}
-          aria-invalid={invalid ? true : undefined}
-          aria-describedby={[describedBy, resultsId].filter(Boolean).join(' ')}
-          onChange={(e) => setText(e.target.value)}
           className="pl-8"
+          onChange={(e) => {
+            setText(e.target.value);
+            setActive(-1);
+          }}
+          onKeyDown={onKeyDown}
         />
       </div>
-      <div id={resultsId} aria-live="polite" className="grid gap-1.5">
-        {typed.length < MIN_SEARCH_LENGTH && (
-          <span className="text-muted-foreground text-xs">{`Type at least ${MIN_SEARCH_LENGTH} letters of a ${noun} name.`}</span>
-        )}
-        {typed.length >= MIN_SEARCH_LENGTH && (!settled || search.isFetching) && (
-          <>
-            <span role="status" className="text-muted-foreground text-xs">{`Searching for “${typed}”…`}</span>
-            <Skeleton className="h-12 w-full" />
-          </>
-        )}
-        {settled && search.isError && !search.isFetching && (
-          <Alert tone="destructive">
-            <CircleAlert aria-hidden />
-            <AlertContent>
-              <AlertTitle>{`Couldn’t search for ${noun}s`}</AlertTitle>
-              <AlertDescription>The search didn’t respond (quota or network). Try again in a moment.</AlertDescription>
-              <Button type="button" variant="link" size="sm" className="justify-self-start" onClick={() => void search.refetch()}>
-                Try again
-              </Button>
-            </AlertContent>
-          </Alert>
-        )}
-        {settled && search.isSuccess && !search.isFetching && results.length === 0 && (
-          <Alert tone="warning">
-            <Info aria-hidden />
-            <AlertContent>
-              <AlertTitle>{`No ${noun}s match “${query}”`}</AlertTitle>
-              <AlertDescription>Check the spelling or try a shorter name.</AlertDescription>
-            </AlertContent>
-          </Alert>
-        )}
-        {settled && search.isSuccess && !search.isFetching && results.length > 0 && (
-          <>
-            <span role="status" className="text-muted-foreground text-xs">
-              {`${results.length} ${noun}${results.length === 1 ? '' : 's'} found. Pick one.`}
-            </span>
-            <ul className="border-border divide-border divide-y overflow-hidden rounded-md border">
-              {results.map((r) => (
-                <li key={r.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setChosen(r);
-                      onChange(r.id);
-                      onPick?.(r);
-                    }}
-                    className="hover:bg-accent focus-visible:outline-ring grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-3 py-2 text-left focus-visible:outline-2 focus-visible:-outline-offset-2"
-                  >
-                    <Avatar src={r.thumbnail} size={32} />
-                    <span className="grid min-w-0">
-                      <b className="truncate text-[0.8125rem] font-[550]">{r.title}</b>
-                      <span className="text-muted-foreground truncate font-mono text-[0.6875rem]">{r.id}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+
+      {loading && (
+        <ul aria-busy="true" aria-label={`Searching ${plural}`} className="bg-popover rounded-md border">
+          {[0, 1, 2].map((i) => (
+            <li key={i} className="grid gap-1.5 border-t px-2.5 py-2 first:border-t-0">
+              <span className="bg-muted h-3 w-[90px] animate-pulse rounded-sm" />
+              <span className="bg-muted h-2.5 w-[150px] animate-pulse rounded-sm" />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {results.length > 0 && (
+        <ul
+          id={`${id}-list`}
+          role="listbox"
+          aria-label={`Matching ${plural}`}
+          className="bg-popover max-h-[264px] overflow-y-auto rounded-md border"
+        >
+          {results.map((item, i) => {
+            const o = toOption(item);
+            return (
+              <li
+                key={i}
+                id={`${id}-opt-${i}`}
+                role="option"
+                aria-selected={i === active}
+                onClick={() => pick(item)}
+                className="hover:bg-accent aria-selected:bg-accent aria-selected:shadow-[inset_2px_0_0_var(--foreground)] flex cursor-pointer items-center gap-3 border-t px-2.5 py-2 first:border-t-0"
+              >
+                <Thumb src={o.image} />
+                <div className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 max-sm:grid-cols-1">
+                <span className="col-start-1 text-[0.8125rem] font-[550]">{o.title}</span>
+                {o.subtitle && <span className="text-muted-foreground col-start-1 text-xs">{o.subtitle}</span>}
+                {o.meta && (
+                  <span className="text-muted-foreground font-mono text-[0.6875rem] sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:self-center">
+                    {o.meta}
+                  </span>
+                )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {showError ? (
+        <div role="alert" className="text-destructive border-destructive flex flex-wrap items-center gap-2 rounded-md border px-3 py-2.5 text-[0.8125rem]">
+          <CircleAlert className="size-3.5 shrink-0" aria-hidden />
+          <span id={helpId}>{`${cap(singular)} search is unavailable. Try again in a moment.`}</span>
+          <Button type="button" variant="outline" size="sm" className="ml-auto" onClick={() => void refetch()}>
+            <RefreshCw aria-hidden />
+            Retry
+          </Button>
+        </div>
+      ) : showEmpty ? (
+        <div id={helpId} className="text-muted-foreground flex items-start gap-2 rounded-md border border-dashed p-3 text-[0.8125rem]">
+          <Info className="mt-px size-3.5 shrink-0" aria-hidden />
+          <div>
+            <b className="text-foreground font-semibold">{`No ${plural} match “${query}”.`}</b>
+            <br />
+            Check the spelling, or try another {singular}.
+          </div>
+        </div>
+      ) : (
+        <span id={helpId} aria-live="polite" className="text-muted-foreground text-xs">
+          {loading
+            ? 'Searching…'
+            : results.length > 0
+              ? `${results.length} ${results.length === 1 ? singular : plural}. Pick one.`
+              : query.length === 1
+                ? `Keep typing: at least ${MIN_QUERY_LENGTH} characters.`
+                : `Type a ${singular} name to see matches.`}
+        </span>
+      )}
     </div>
   );
+}
+
+function cap(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }

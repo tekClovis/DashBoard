@@ -10,7 +10,7 @@ import type { DashboardEntry, LayoutUpdateEntry, ParamSpec, WidgetInstanceEntry 
 import { validateParams, type ValidatedParams } from '../catalog/param-validator.js';
 import { WidgetRegistryService } from '../catalog/widget-registry.service.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
-import type { WidgetInstance } from '../generated/prisma/client.js';
+import type { Prisma, WidgetInstance } from '../generated/prisma/client.js';
 import { DashboardEventsService } from './dashboard-events.js';
 
 export const MAX_REFRESH_SEC = 86400;
@@ -33,13 +33,18 @@ export class DashboardsService {
     return rows.map(toDashboardEntry);
   }
 
-  async create(userId: string, name: string): Promise<DashboardEntry> {
-    const last = await this.prisma.dashboard.findFirst({
+  /** `db` lets a caller (share accept) run the create inside its own transaction. */
+  async create(
+    userId: string,
+    name: string,
+    db: Pick<Prisma.TransactionClient, 'dashboard'> = this.prisma,
+  ): Promise<DashboardEntry> {
+    const last = await db.dashboard.findFirst({
       where: { userId },
       orderBy: { position: 'desc' },
       select: { position: true },
     });
-    const dashboard = await this.prisma.dashboard.create({
+    const dashboard = await db.dashboard.create({
       data: { userId, name, position: last ? last.position + 1 : 0 },
     });
     return toDashboardEntry(dashboard);

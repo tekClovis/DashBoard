@@ -1,136 +1,132 @@
-import type { SearchResult } from '@dashboard/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SearchPicker } from './SearchPicker.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SearchPicker, type PickerOption } from './SearchPicker.js';
 
-const RESULTS = [
-  { id: 'UC1', title: 'Telemetry Labs', thumbnail: 'https://img/1.jpg' },
-  { id: 'UC2', title: 'Tele Two' },
+interface Item {
+  name: string;
+  place: string;
+}
+
+const PARIS: Item[] = [
+  { name: 'Paris', place: 'Île-de-France, France' },
+  { name: 'Paris', place: 'Texas, United States' },
 ];
+const toOption = (i: Item): PickerOption => ({ title: i.name, subtitle: i.place });
 
-function Harness({
-  initial = '',
-  onValue,
-  onPick,
-  saved,
-}: {
-  initial?: string;
-  onValue?: (v: string) => void;
-  onPick?: (r: SearchResult | null) => void;
-  saved?: SearchResult;
-}) {
-  const [value, setValue] = useState(initial);
+function Harness({ search, initial = null }: { search: (q: string) => Promise<Item[]>; initial?: Item | null }) {
+  const [picked, setPicked] = useState<Item | null>(initial);
+  const [client] = useState(() => new QueryClient());
   return (
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={client}>
       <SearchPicker
-        id="param-channel_id"
-        endpoint="/youtube/channels/search"
-        noun="channel"
-        saved={saved}
-        onPick={onPick}
-        value={value}
-        onChange={(v) => {
-          setValue(v);
-          onValue?.(v);
-        }}
+        id="param-city"
+        queryKey="city"
+        search={search}
+        toOption={toOption}
+        picked={picked && toOption(picked)}
+        onPick={setPicked}
+        onClear={() => setPicked(null)}
+        placeholder="Search a city"
+        nouns={['city', 'cities']}
       />
     </QueryClientProvider>
   );
 }
 
-function respond(status: number, body: unknown) {
-  vi.mocked(fetch).mockImplementation(() => Promise.resolve(new Response(JSON.stringify(body), { status })));
-}
+const type = (value: string) => fireEvent.change(screen.getByRole('combobox'), { target: { value } });
 
-const type = (text: string) => fireEvent.change(screen.getByRole('searchbox'), { target: { value: text } });
-
-beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn());
-});
-
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-});
+afterEach(cleanup);
 
 describe('SearchPicker', () => {
-  it('searches the endpoint for the typed name and lists each match with its title, id and avatar', async () => {
-    respond(200, { results: RESULTS });
-    render(<Harness />);
-    expect(screen.getByText('Type at least 2 letters of a channel name.')).toBeTruthy();
+  it('lists every candidate with its disambiguating detail', async () => {
+    render(<Harness search={async () => PARIS} />);
 
-    type('tele');
+    type('Paris');
 
-    expect(await screen.findByText('2 channels found. Pick one.')).toBeTruthy();
-    expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual(['/api/youtube/channels/search?q=tele']);
-    expect(screen.getByText('Telemetry Labs')).toBeTruthy();
-    expect(screen.getByText('UC2')).toBeTruthy();
-    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://img/1.jpg');
+    const options = await screen.findAllByRole('option');
+    expect(options).toHaveLength(2);
+    expect(options[0].textContent).toContain('Île-de-France, France');
+    expect(options[1].textContent).toContain('Texas, United States');
+    expect(screen.getByText(/2 cities/)).toBeTruthy();
   });
 
-  it('does not search below 2 characters', async () => {
-    respond(200, { results: RESULTS });
-    render(<Harness />);
-    type('t');
-    await new Promise((r) => setTimeout(r, 400));
-    expect(fetch).not.toHaveBeenCalled();
+  it('shows skeleton rows and "Searching…" immediately, even while the debounce is pending', () => {
+    const search = vi.fn(() => new Promise<Item[]>(() => {}));
+    render(<Harness search={search} />);
+
+    type('Berlin');
+
+    expect(screen.getByText('Searching…')).toBeTruthy();
+    expect(screen.queryByText('Type a city name to see matches.')).toBeNull();
+    expect(screen.getByLabelText('Searching cities').getAttribute('aria-busy')).toBe('true');
   });
 
-  it('saves the picked id, shows the choice, and Change clears it and refocuses the search', async () => {
-    respond(200, { results: RESULTS });
-    const onValue = vi.fn();
-    const onPick = vi.fn();
-    render(<Harness onValue={onValue} onPick={onPick} />);
-    type('tele');
-    fireEvent.click(await screen.findByRole('button', { name: /Telemetry Labs/ }));
+  it('asks for more characters instead of searching on a one-character query', () => {
+    const search = vi.fn(async () => PARIS);
+    render(<Harness search={search} />);
 
-    expect(onValue).toHaveBeenLastCalledWith('UC1');
-    expect(onPick).toHaveBeenLastCalledWith(RESULTS[0]);
-    expect(screen.queryByRole('searchbox')).toBeNull();
-    expect(screen.getByText('Channel selected. Its ID is saved with the widget.')).toBeTruthy();
+    type('P');
+
+    expect(screen.getByText('Keep typing: at least 2 characters.')).toBeTruthy();
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  it('shows a clear empty state, not an error, when nothing matches', async () => {
+    render(<Harness search={async () => []} />);
+
+    type('Atlantis');
+
+    expect(await screen.findByText(/No cities match/)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('option')).toBeNull();
+  });
+
+  it('shows an error with Retry when the search fails, and recovers on retry', async () => {
+    const search = vi.fn<(q: string) => Promise<Item[]>>().mockRejectedValueOnce(new Error('boom')).mockResolvedValue(PARIS);
+    render(<Harness search={search} />);
+
+    type('Paris');
+    expect((await screen.findByRole('alert')).textContent).toContain('City search is unavailable');
+    fireEvent.click(screen.getByRole('button', { name: /Retry/ }));
+
+    expect(await screen.findAllByRole('option')).toHaveLength(2);
+  });
+
+  it('picks with the mouse: swaps the list for the chosen candidate and Change brings the search back', async () => {
+    render(<Harness search={async () => PARIS} />);
+    type('Paris');
+
+    fireEvent.click((await screen.findAllByRole('option'))[1]);
+
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.getByText('Texas, United States')).toBeTruthy();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Change' })));
 
     fireEvent.click(screen.getByRole('button', { name: 'Change' }));
-    expect(onValue).toHaveBeenLastCalledWith('');
-    expect(onPick).toHaveBeenLastCalledWith(null);
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('searchbox')));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('combobox')));
   });
 
-  it('shows an already-saved id as the picked channel', () => {
-    render(<Harness initial="UCsaved" />);
-    expect(screen.getAllByText('UCsaved').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Change' })).toBeTruthy();
+  it('picks with the keyboard: arrows move the active option, Enter picks it', async () => {
+    render(<Harness search={async () => PARIS} />);
+    type('Paris');
+    const input = screen.getByRole('combobox');
+    await screen.findAllByRole('option');
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(screen.getAllByRole('option')[1].getAttribute('aria-selected')).toBe('true');
+    expect(input.getAttribute('aria-activedescendant')).toBe(screen.getAllByRole('option')[1].id);
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(screen.getByText('Texas, United States')).toBeTruthy();
   });
 
-  it('shows the remembered title of a saved id', () => {
-    render(<Harness initial="UCsaved" saved={{ id: 'UCsaved', title: 'Telemetry Labs' }} />);
-    expect(screen.getByText('Telemetry Labs')).toBeTruthy();
-  });
+  it('starts on the chosen candidate when one is already picked', () => {
+    render(<Harness search={async () => PARIS} initial={PARIS[0]} />);
 
-  it('keeps the avatar of a remembered pick, so the card matches the one shown right after picking', () => {
-    const { container } = render(
-      <Harness initial="UCsaved" saved={{ id: 'UCsaved', title: 'Telemetry Labs', thumbnail: 'https://img/1.jpg' }} />,
-    );
-    expect(container.querySelector('img')?.getAttribute('src')).toBe('https://img/1.jpg');
-  });
-
-  it('says so when nothing matches', async () => {
-    respond(200, { results: [] });
-    render(<Harness />);
-    type('zzqxv');
-    expect(await screen.findByText('No channels match “zzqxv”')).toBeTruthy();
-  });
-
-  it('shows a clear error on an API failure, and Try again searches again', async () => {
-    respond(502, { error: 'UPSTREAM_ERROR' });
-    render(<Harness />);
-    type('tele');
-    expect(await screen.findByText('Couldn’t search for channels')).toBeTruthy();
-    expect(screen.getByRole('alert')).toBeTruthy();
-
-    respond(200, { results: RESULTS });
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByText('2 channels found. Pick one.')).toBeTruthy();
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.getByText('Île-de-France, France')).toBeTruthy();
   });
 });

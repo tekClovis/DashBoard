@@ -1,6 +1,6 @@
 import type { WidgetDataMap } from '@dashboard/shared';
 import { ago, WEEK_MS } from '@/lib/time.js';
-import { Channel, Empty, Meter, Row, RowMeta, Rows, RowTitle, Stat } from './parts.js';
+import { Channel, Empty, Meter, Row, RowMeta, Rows, RowTitle, Stat, Thumb } from './parts.js';
 import type { WidgetViewProps } from './registry.js';
 
 const hours = (minutes: number) => (minutes / 60).toFixed(1);
@@ -22,6 +22,7 @@ export function RecentlyPlayedView({ data, compact }: WidgetViewProps) {
           <Rows>
             {games.map((g) => (
               <Row key={g.appId}>
+                <Thumb src={g.imageUrl} width={64} height={30} />
                 <RowTitle>{g.name}</RowTitle>
                 <Meter share={top > 0 ? g.playtime2Weeks / top : 0} className="w-14" />
                 <RowMeta mono className="min-w-[6ch] text-right">
@@ -45,13 +46,17 @@ export function GameNewsView({ data, compact }: WidgetViewProps) {
       <Channel>
         <span className="font-mono">app_id={appId}</span>
       </Channel>
-      {!compact && <Stat value={week} label="posts in the last 7 days" />}
+      <div data-slot="game-id" className="flex items-end gap-3">
+        <Thumb src={items[0]?.imageUrl} width={128} height={60} />
+        {!compact && <Stat value={week} label="posts in the last 7 days" />}
+      </div>
       {items.length === 0 ? (
         <Empty>No news for this game.</Empty>
       ) : (
         <Rows>
           {items.map((item) => (
             <Row key={item.id}>
+              <Thumb src={item.imageUrl} width={64} height={30} />
               <RowTitle href={item.url}>{item.title}</RowTitle>
               <RowMeta className="@max-[420px]:hidden">{item.feedLabel}</RowMeta>
               <RowMeta mono>

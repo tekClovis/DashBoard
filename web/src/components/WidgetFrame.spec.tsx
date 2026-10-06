@@ -7,7 +7,7 @@ import { SocketContext, type SocketContextValue } from '@/realtime/SocketProvide
 import * as widgetData from '@/realtime/useWidgetData.js';
 import type { WidgetCacheEntry } from '@/realtime/useWidgetData.js';
 import type { ResizeDirection } from '@/lib/layout.js';
-import { WidgetFrame } from './WidgetFrame.js';
+import { ViewSkeleton, WidgetFrame } from './WidgetFrame.js';
 
 const instance: WidgetInstanceEntry = {
   id: 'i1',
@@ -136,6 +136,22 @@ describe('WidgetFrame states', () => {
     expect(screen.getByText('Waiting for the first update from GitHub.')).toBeTruthy();
   });
 
+  it('loading skeleton keeps the image-slot shapes of each view', () => {
+    const shapes = (kind: string) => {
+      const { container, unmount } = render(<ViewSkeleton kind={kind} />);
+      const out = [...container.querySelectorAll<HTMLElement>('[data-slot="skeleton"]')]
+        .filter((s) => s.style.width.endsWith('px'))
+        .map((s) => `${s.style.width}x${s.style.height}`);
+      unmount();
+      return [...new Set(out)];
+    };
+    expect(shapes('steam.recently_played')).toEqual(['64pxx30px']);
+    expect(shapes('steam.game_news')).toEqual(['128pxx60px']);
+    expect(shapes('youtube.latest_videos')).toEqual(['80pxx45px']);
+    expect(shapes('youtube.trending_videos')).toEqual(['80pxx45px']);
+    expect(shapes('youtube.channel_stats')).toEqual(['40pxx40px']);
+  });
+
   it('live: the view sits in the only aria-live region, with a green lamp and "updated … ago"', () => {
     const { container } = renderFrame({ data: commits, fetchedAt: secondsAgo(9), error: null });
 
@@ -189,6 +205,14 @@ describe('WidgetFrame states', () => {
     expect(screen.getByText('Last data from 14:05')).toBeTruthy();
     expect(screen.getByText('fix(grid): clamp resize')).toBeTruthy();
     expect(screen.queryByText('since the last commit')).toBeNull();
+  });
+
+  it('marks the earlier data under the band as past so its thumbnails grey out', () => {
+    const fetchedAt = new Date(2026, 9, 1, 14, 5).toISOString();
+    renderFrame({ data: commits, fetchedAt, error: { code: 'RATE_LIMITED', message: 'x' } });
+
+    const prev = screen.getByText('fix(grid): clamp resize').closest('[data-previous]');
+    expect(prev).not.toBeNull();
   });
 
   it('INVALID_PARAMS: red band whose Configure action opens the dialog', () => {

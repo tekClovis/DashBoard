@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CreateDashboardDto } from './create-dashboard.dto.js';
 import { CreateWidgetInstanceDto } from './create-widget-instance.dto.js';
 import { LayoutUpdateDto } from './layout-update.dto.js';
+import { ShareDashboardDto } from './share-dashboard.dto.js';
 import { UpdateDashboardDto } from './update-dashboard.dto.js';
 import { UpdateWidgetInstanceDto } from './update-widget-instance.dto.js';
 
@@ -132,5 +133,15 @@ describe('LayoutUpdateDto', () => {
     ['a numeric-string w', { w: '2' }, 'w'],
   ])('rejects %s', async (_label, override, property) => {
     expect(await invalidProperties(LayoutUpdateDto, { ...layoutEntry, ...override })).toEqual([property]);
+  });
+});
+
+describe('ShareDashboardDto', () => {
+  it('accepts an email', async () => {
+    expect(await invalidProperties(ShareDashboardDto, { email: 'grace@example.com' })).toEqual([]);
+  });
+
+  it.each([[{}], [{ email: 'grace' }], [{ email: 'a@b.co', extra: 1 }]])('rejects %j', async (body) => {
+    expect((await invalidProperties(ShareDashboardDto, body)).length).toBeGreaterThan(0);
   });
 });

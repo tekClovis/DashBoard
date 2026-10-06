@@ -50,7 +50,7 @@ function fakeYoutube(url: URL, token: string): Response {
     return Response.json({
       items: [
         {
-          snippet: { title: 'Known channel' },
+          snippet: { title: 'Known channel', thumbnails: { default: { url: 'https://yt3.ggpht.com/known=s88' } } },
           statistics: { subscriberCount: '2400000', hiddenSubscriberCount: false, viewCount: '180000000', videoCount: '412' },
           contentDetails: { relatedPlaylists: { uploads: 'UU_known' } },
         },
@@ -270,6 +270,7 @@ describe('YouTube widgets (e2e)', () => {
       subscribers: 2400000,
       views: 180000000,
       videos: 412,
+      imageUrl: 'https://yt3.ggpht.com/known=s88',
     });
   });
 

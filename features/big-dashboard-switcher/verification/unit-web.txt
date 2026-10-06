@@ -1,0 +1,18 @@
+
+> web@0.0.1 test
+> vitest run
+
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a89f08b70276af9af/web
+
+
+ Test Files  36 passed (36)
+      Tests  222 passed (222)
+   Start at  18:21:49
+   Duration  9.48s (environment 51%, tests 28%, import 12%, transform 8%, setup 1%, worker 1%)
+
+Environment  jsdom was created 36 times · 46.16s total, 51% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+
+exit 0
