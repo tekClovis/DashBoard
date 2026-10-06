@@ -6,4 +6,6 @@ dist/
 *.tsbuildinfo
 server/src/generated/
 server/public/
-web/dist/
+web/dist
+mocks
+features
