@@ -144,3 +144,123 @@ describe('Add widget dialog', () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: -80, behavior: 'smooth' });
   });
 });
+
+describe('Add widget dialog, city search', () => {
+  const candidate = (region: string, country: string, latitude: number, longitude: number) => ({
+    name: 'Paris',
+    region,
+    country,
+    latitude,
+    longitude,
+  });
+  const PARIS = [candidate('Île-de-France', 'France', 48.8534, 2.3488), candidate('Texas', 'United States', 33.6609, -95.5555)];
+
+  /** Serves the real weather ParamSpecs (city picker + hidden place params) and canned search results. */
+  function serveCitySearch(results: unknown[] = PARIS) {
+    const fallback = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (url === '/api/catalog') {
+        const spec = {
+          service: 'weather',
+          name: 'forecast',
+          description: 'Forecast',
+          minRefreshSec: 60,
+          params: [
+            { name: 'city', type: 'string', required: true, label: 'City', search: 'weather.city' },
+            { name: 'region', type: 'string', hidden: true },
+            { name: 'country', type: 'string', hidden: true },
+            { name: 'latitude', type: 'string', hidden: true },
+            { name: 'longitude', type: 'string', hidden: true },
+          ],
+        };
+        const body = { services: [{ name: 'weather', connection: 'none', connected: true, status: 'OK', widgets: [spec] }] };
+        return new Response(JSON.stringify(body));
+      }
+      if (typeof url === 'string' && url.startsWith('/api/weather/search')) {
+        calls.push({ url, method: 'GET' });
+        return new Response(JSON.stringify({ results }));
+      }
+      return fallback(url, init);
+    });
+  }
+
+  async function openSettings() {
+    fireEvent.click(await screen.findByRole('button', { name: 'Add widget' }));
+    fireEvent.click(await screen.findByRole('radio', { name: /Forecast/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    return screen.findByRole('combobox');
+  }
+
+  it('lists several candidates for "Paris" with region and country to tell them apart', async () => {
+    serveCitySearch();
+    renderPage();
+    const input = await openSettings();
+
+    fireEvent.change(input, { target: { value: 'Paris' } });
+
+    const options = await screen.findAllByRole('option');
+    expect(options).toHaveLength(2);
+    expect(options[0].textContent).toContain('Île-de-France, France');
+    expect(options[1].textContent).toContain('Texas, United States');
+    expect(calls.map((c) => c.url)).toContain('/api/weather/search?q=Paris');
+  });
+
+  it('saves the picked candidate’s own coordinates on the widget', async () => {
+    serveCitySearch();
+    renderPage();
+    const input = await openSettings();
+    fireEvent.change(input, { target: { value: 'Paris' } });
+
+    fireEvent.click((await screen.findAllByRole('option'))[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('city=Paris, Texas, United States')).toBeTruthy();
+    expect(screen.getByText('latitude=33.6609')).toBeTruthy();
+    expect(screen.getByText('longitude=-95.5555')).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({
+      widget: 'forecast',
+      params: { city: 'Paris', region: 'Texas', country: 'United States', latitude: '33.6609', longitude: '-95.5555' },
+    });
+  });
+
+  it('shows an empty state, not an error, when nothing matches', async () => {
+    serveCitySearch([]);
+    renderPage();
+    const input = await openSettings();
+
+    fireEvent.change(input, { target: { value: 'Atlantis' } });
+
+    expect(await screen.findByText(/No cities match/)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('blocks Next until a candidate is picked, saying so', async () => {
+    serveCitySearch();
+    renderPage();
+    const input = await openSettings();
+    fireEvent.change(input, { target: { value: 'Paris' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(screen.getByText('Pick a city from the results.')).toBeTruthy();
+    expect(screen.getByText('Step 2 of 4: Settings')).toBeTruthy();
+  });
+
+  it('reconfigures from the saved choice, not a fresh search', async () => {
+    serveCitySearch();
+    const saved = { ...instance, params: { city: 'Paris', region: 'Texas', country: 'United States', latitude: '33.6609', longitude: '-95.5555' } };
+    respondWhen(
+      (url) => url === '/api/dashboards/dash-1/widgets',
+      () => new Response(JSON.stringify({ widgets: [saved] })),
+    );
+    renderPage();
+
+    await openMenuItem('Configure');
+
+    expect(await screen.findByText('Texas, United States')).toBeTruthy();
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+});

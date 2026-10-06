@@ -122,7 +122,7 @@ describe('Connections (e2e)', () => {
         .set('Cookie', [cookie, `oauth_csrf=${csrfCookie}`])
         .expect(302);
 
-      expect(callbackRes.headers['location']).toContain('/connections?connected=github');
+      expect(callbackRes.headers['location']).toMatch(/\/d\/[^/?]+$/);
 
       const row = await prisma.serviceConnection.findUnique({ where: { userId_service: { userId, service: 'github' } } });
       expect(row).not.toBeNull();
@@ -282,7 +282,7 @@ describe('Connections (e2e)', () => {
         .set('Cookie', [cookie, `oauth_csrf=${csrfCookie}`, `oauth_state=${stateCookie}`])
         .expect(302);
 
-      expect(callbackRes.headers['location']).toContain('/connections?connected=steam');
+      expect(callbackRes.headers['location']).toMatch(/\/d\/[^/?]+$/);
 
       const row = await prisma.serviceConnection.findUnique({ where: { userId_service: { userId, service: 'steam' } } });
       expect(row).not.toBeNull();

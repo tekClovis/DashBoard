@@ -1,0 +1,24 @@
+$ GET /api/dashboards/ada0da64-57ab-4ac4-a1d2-9e735b96527a/widgets
+{
+  "widgets": [
+    {
+      "id": "52454485-eef5-44cd-8351-0a86534a8a5d",
+      "dashboardId": "ada0da64-57ab-4ac4-a1d2-9e735b96527a",
+      "service": "weather",
+      "widget": "current_weather",
+      "params": {
+        "city": "Paris",
+        "units": "metric",
+        "region": "Texas",
+        "country": "United States",
+        "latitude": "33.66094",
+        "longitude": "-95.55551"
+      },
+      "refreshRate": 300,
+      "x": 0,
+      "y": 0,
+      "w": 4,
+      "h": 3
+    }
+  ]
+}

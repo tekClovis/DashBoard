@@ -1,6 +1,7 @@
 // Open-Meteo HTTP client — see docs/Architecture.md §3 (widget catalog) and §7 (geo cache).
 // No API key needed.
 
+import type { CityCandidate } from '@dashboard/shared';
 import type { Redis } from 'ioredis';
 import { FetchError } from '../../timer/fetch-error.js';
 
@@ -27,6 +28,36 @@ async function getJson<T>(url: string, query: Record<string, string | number>): 
   if (res.status === 429) throw new FetchError('RATE_LIMITED', 'Open-Meteo rate limit reached.');
   if (!res.ok) throw new FetchError('UPSTREAM_ERROR', `Open-Meteo responded ${res.status}.`);
   return (await res.json()) as T;
+}
+
+const SEARCH_COUNT = 10;
+const MIN_QUERY_LENGTH = 2;
+
+interface GeocodingHit {
+  name: string;
+  admin1?: string;
+  country?: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** Candidate cities for a free-text query, for the add-widget city picker. Queries under 2 characters match nothing. */
+export async function searchCities(query: string): Promise<CityCandidate[]> {
+  const name = query.trim();
+  if (name.length < MIN_QUERY_LENGTH) return [];
+  const body = await getJson<{ results?: GeocodingHit[] }>(GEOCODING_URL, {
+    name,
+    count: SEARCH_COUNT,
+    language: 'en',
+    format: 'json',
+  });
+  return (body.results ?? []).map((hit) => ({
+    name: hit.name,
+    ...(hit.admin1 && { region: hit.admin1 }),
+    ...(hit.country && { country: hit.country }),
+    latitude: hit.latitude,
+    longitude: hit.longitude,
+  }));
 }
 
 /** "Paris" and " paris " normalize to the same name, so they share one cache entry and upstream query. */

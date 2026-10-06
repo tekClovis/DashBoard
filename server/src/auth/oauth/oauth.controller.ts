@@ -8,6 +8,7 @@ import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { ConnectionsService } from '../../connections/connections.service.js';
+import { DashboardsService } from '../../dashboards/dashboards.service.js';
 import { OAUTH_CSRF_COOKIE } from '../../connections/oauth-state.js';
 import type { ConnectProfileResult } from '../../connections/strategies/github-connect.strategy.js';
 import type { SteamConnectResult } from '../../connections/strategies/steam-connect.strategy.js';
@@ -26,6 +27,7 @@ export class OAuthController {
   constructor(
     private readonly oauthLogin: OAuthLoginService,
     private readonly connections: ConnectionsService,
+    private readonly dashboards: DashboardsService,
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
   ) {}
@@ -61,6 +63,12 @@ export class OAuthController {
     await this.handleCallback(req, res, 'steam');
   }
 
+  /** Where connect/link flows land: the user's first dashboard (same fallback as login). */
+  private async dashboardUrl(appUrl: string, userId: string): Promise<string> {
+    const [first] = await this.dashboards.list(userId);
+    return `${appUrl}/d/${first?.id ?? 'placeholder'}`;
+  }
+
   private async handleCallback(req: OAuthCallbackRequest, res: Response, provider: ConnectServiceProvider): Promise<void> {
     res.clearCookie(OAUTH_STATE_COOKIE, { path: '/api/oauth' });
     res.clearCookie(OAUTH_CSRF_COOKIE, { path: '/api/oauth' });
@@ -82,10 +90,11 @@ export class OAuthController {
             scopes: result.scopes,
           });
         }
-        res.redirect(`${appUrl}/connections?connected=${service}`);
       } catch {
         res.redirect(`${appUrl}/connections?error=CONNECT_FAILED`);
+        return;
       }
+      res.redirect(await this.dashboardUrl(appUrl, state.userId));
       return;
     }
 
@@ -98,7 +107,6 @@ export class OAuthController {
     if (state?.intent === 'link') {
       try {
         await this.oauthLogin.linkIdentity(state.userId, profile);
-        res.redirect(`${appUrl}/profile`);
       } catch (err) {
         if (err instanceof OAuthIdentityConflictError) {
           res.redirect(`${appUrl}/profile?error=IDENTITY_ALREADY_LINKED`);
@@ -106,6 +114,7 @@ export class OAuthController {
         }
         throw err;
       }
+      res.redirect(await this.dashboardUrl(appUrl, state.userId));
       return;
     }
 

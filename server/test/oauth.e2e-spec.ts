@@ -218,7 +218,7 @@ describe('OAuth login (e2e)', () => {
         .set('Cookie', cookie)
         .expect(302);
 
-      expect(callbackRes.headers['location']).toContain('/profile');
+      expect(callbackRes.headers['location']).toMatch(/\/d\/[^/?]+$/);
       expect(await prisma.authIdentity.count({ where: { userId: user.id } })).toBe(1);
 
       await request(app.getHttpServer())

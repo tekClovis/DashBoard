@@ -27,6 +27,8 @@ import { getWidgetMeta } from '@/widgets/registry.js';
 const MAX_REFRESH_SEC = 86400;
 const STEPS = ['Widget', 'Settings', 'Refresh', 'Confirm'];
 const PRESETS = [60, 300, 900, 3600];
+/** Picker companions already shown through the picked param's own line. */
+const CONFIRM_HIDDEN = new Set(['region', 'country', 'game_name', 'game_image']);
 
 interface AddWidgetDialogProps {
   dashboardId: string;
@@ -316,10 +318,14 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
               <dd>
                 {spec.params.length > 0 ? (
                   spec.params
-                    .filter((p) => !p.hidden)
-                    .map((p) => (
-                      <span key={p.name} className="block font-mono text-xs">{`${p.search && values.game_name ? `${values.game_name} ` : ''}${p.name}=${values[p.name] ?? ''}`}</span>
-                    ))
+                    .filter((p) => !p.hidden || (values[p.name] && !CONFIRM_HIDDEN.has(p.name)))
+                    .map((p) => {
+                      const value = [values[p.name] ?? '', ...(p.name === 'city' ? [values.region, values.country] : [])].filter(Boolean).join(', ');
+                      const prefix = p.search === 'steam.game' && values.game_name ? `${values.game_name} ` : '';
+                      return (
+                        <span key={p.name} className="block font-mono text-xs">{`${prefix}${p.name}=${value}`}</span>
+                      );
+                    })
                 ) : (
                   <span className="text-muted-foreground">None</span>
                 )}

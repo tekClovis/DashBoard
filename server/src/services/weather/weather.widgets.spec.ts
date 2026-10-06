@@ -56,6 +56,32 @@ describe('weather widgets', () => {
     expect(metricCall.searchParams.get('latitude')).toBe('48.85');
   });
 
+  it('uses the stored coordinates and place instead of re-resolving the city', async () => {
+    const fetchMock = stubOpenMeteo({ current: { temperature_2m: 20, weather_code: 0 } });
+
+    const data = await current.fetch(
+      { city: 'Paris', region: 'Texas', country: 'United States', latitude: '33.66094', longitude: '-95.55551', units: 'metric' },
+      { userId: 'u' },
+    );
+
+    expect(calls(fetchMock, 'geocoding')).toHaveLength(0);
+    const [call] = calls(fetchMock, 'api');
+    expect(call.searchParams.get('latitude')).toBe('33.66094');
+    expect(call.searchParams.get('longitude')).toBe('-95.55551');
+    expect(data.location).toBe('Paris, United States');
+  });
+
+  it('declares the picker param and the hidden coordinate params on both widgets', () => {
+    for (const def of [current, forecast]) {
+      expect(def.params.find((p) => p.name === 'city')).toMatchObject({ required: true, search: 'weather.city' });
+      for (const name of ['region', 'country', 'latitude', 'longitude']) {
+        const p = def.params.find((x) => x.name === name);
+        expect(p?.hidden).toBe(true);
+        expect(p?.required).toBeFalsy();
+      }
+    }
+  });
+
   it('forecast requests `days` days and maps each one', async () => {
     const fetchMock = stubOpenMeteo({
       daily: {
