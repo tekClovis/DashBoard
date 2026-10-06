@@ -93,7 +93,12 @@ const steamGame: Picker<GameCandidate> = {
   toValues: (g) => ({ app_id: String(g.appId), game_name: g.name, game_image: g.image }),
   fromValues: (v) =>
     v['app_id']
-      ? { title: v['game_name'] || `App ${v['app_id']}`, meta: `App ${v['app_id']}`, image: v['game_image'] || undefined }
+      ? {
+          title: v['game_name'] || `App ${v['app_id']}`,
+          meta: `App ${v['app_id']}`,
+          // Widgets saved before the picker only hold app_id: fall back to the store capsule.
+          image: v['game_image'] || `https://cdn.cloudflare.steamstatic.com/steam/apps/${v['app_id']}/capsule_184x69.jpg`,
+        }
       : null,
 };
 

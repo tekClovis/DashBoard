@@ -1,4 +1,5 @@
 import type { ParamSpec } from '@dashboard/shared';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -35,6 +36,19 @@ describe('search params', () => {
 
     expect(screen.queryByLabelText(/latitude/)).toBeNull();
     expect(screen.getByLabelText('Note (optional)')).toBeTruthy();
+  });
+
+  it('shows the store capsule for a game saved with only an app id', () => {
+    const game: ParamSpec = { name: 'app_id', type: 'integer', required: true, label: 'Game', search: 'steam.game' };
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ParamForm specs={[game]} values={{ app_id: '730' }} onChange={() => {}} showErrors={false} />
+      </QueryClientProvider>,
+    );
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      'https://cdn.cloudflare.steamstatic.com/steam/apps/730/capsule_184x69.jpg',
+    );
   });
 });
 
