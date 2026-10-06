@@ -101,7 +101,7 @@ describe('AuthController', () => {
       ).rejects.toMatchObject({ response: { error: 'EMAIL_IN_USE' } });
     });
 
-    it('treats an unverified local account as an implicit resend', async () => {
+    it('treats an unverified local account as an implicit resend and replaces its password hash', async () => {
       const { controller, prisma, verification, mail } = makeDeps();
       prisma.user.findUnique.mockResolvedValue({ id: 'u1', emailVerifiedAt: null, passwordHash: 'x' });
 
@@ -109,6 +109,10 @@ describe('AuthController', () => {
 
       expect(res).toEqual({ ok: true });
       expect(prisma.user.create).not.toHaveBeenCalled();
+      const data = prisma.user.update.mock.calls[0][0].data;
+      expect(prisma.user.update.mock.calls[0][0].where).toEqual({ id: 'u1' });
+      expect(data.tokenVersion).toEqual({ increment: 1 });
+      expect(await bcrypt.compare('abc12345!', data.passwordHash)).toBe(true);
       expect(verification.issueToken).toHaveBeenCalledWith('u1');
       expect(mail.sendConfirmationEmail).toHaveBeenCalled();
     });
