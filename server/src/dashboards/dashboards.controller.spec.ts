@@ -16,11 +16,21 @@ function makeController() {
     addWidgetInstance: vi.fn().mockResolvedValue(instance),
     updateLayout: vi.fn().mockResolvedValue([instance]),
   };
-  const shares = { share: vi.fn().mockResolvedValue(undefined) };
+  const shares = {
+    share: vi.fn().mockResolvedValue(undefined),
+    listSent: vi.fn().mockResolvedValue([{ id: 's1', toEmail: 'g@e.co', status: 'PENDING' }]),
+  };
   return { controller: new DashboardsController(dashboards as never, shares as never), dashboards, shares };
 }
 
 describe('DashboardsController', () => {
+  it('wraps the shares sent from a dashboard in { shares }', async () => {
+    const { controller, shares } = makeController();
+
+    expect(await controller.sentShares('d1', user)).toEqual({ shares: [{ id: 's1', toEmail: 'g@e.co', status: 'PENDING' }] });
+    expect(shares.listSent).toHaveBeenCalledExactlyOnceWith('u1', 'd1');
+  });
+
   it('shares the dashboard named by the route id with the dto email as the session user', async () => {
     const { controller, shares } = makeController();
 

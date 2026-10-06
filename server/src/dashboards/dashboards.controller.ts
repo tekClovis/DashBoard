@@ -2,7 +2,7 @@
 // features/dashboards-api/spec.md and docs/Architecture.md §8.
 
 import { Body, Controller, Delete, Get, Param, ParseArrayPipe, Patch, Post, UseGuards } from '@nestjs/common';
-import type { DashboardEntry, DashboardsResponse, WidgetInstanceEntry, WidgetsResponse } from '@dashboard/shared';
+import type { DashboardEntry, DashboardsResponse, SentSharesResponse, WidgetInstanceEntry, WidgetsResponse } from '@dashboard/shared';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtGuard } from '../auth/jwt.guard.js';
 import type { RequestUser } from '../auth/types.js';
@@ -55,6 +55,11 @@ export class DashboardsController {
   ): Promise<{ ok: true }> {
     await this.shares.share(user.id, id, dto.email);
     return { ok: true };
+  }
+
+  @Get(':id/shares')
+  async sentShares(@Param('id') id: string, @CurrentUser() user: RequestUser): Promise<SentSharesResponse> {
+    return { shares: await this.shares.listSent(user.id, id) };
   }
 
   @Get(':id/widgets')

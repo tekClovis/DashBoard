@@ -136,6 +136,20 @@ export interface IncomingShareEntry {
   createdAt: string;
 }
 
+export type ShareStatus = 'PENDING' | 'ADDED' | 'DECLINED';
+
+/** One row of GET /api/dashboards/{id}/shares: who a dashboard was sent to and their answer. */
+export interface SentShareEntry {
+  id: string;
+  toEmail: string;
+  status: ShareStatus;
+}
+
+/** GET /api/dashboards/{id}/shares */
+export interface SentSharesResponse {
+  shares: SentShareEntry[];
+}
+
 /** GET /api/shares/incoming */
 export interface IncomingSharesResponse {
   shares: IncomingShareEntry[];

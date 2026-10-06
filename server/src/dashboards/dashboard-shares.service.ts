@@ -1,12 +1,12 @@
 // Share a dashboard with another user; the recipient accepts (a personal copy) or declines — see
 // docs/Architecture.md §4, §8 and features/big-dashboard-share/spec.md.
 //
-// A DashboardShare row is a pending offer and is deleted on accept/decline. Recipient-side lookups
+// A DashboardShare row is an offer; accept/decline keep it with the new status for the sender. Recipient-side lookups
 // are scoped by toUserId in the query itself, so someone else's share is a 404, like the rest of
 // the dashboards API.
 
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { DashboardEntry, IncomingShareEntry } from '@dashboard/shared';
+import type { DashboardEntry, IncomingShareEntry, SentShareEntry } from '@dashboard/shared';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { DashboardsService } from './dashboards.service.js';
@@ -29,13 +29,33 @@ export class DashboardShareService {
     const pending = await this.prisma.dashboardShare.findUnique({
       where: { dashboardId_toUserId: { dashboardId, toUserId: recipient.id } },
     });
-    if (pending) throw new ConflictException({ error: 'ALREADY_SHARED' });
+    if (pending?.status === 'PENDING') throw new ConflictException({ error: 'ALREADY_SHARED' });
+    // An answered share can be offered again: reopen the same row (unique per dashboard + recipient).
+    if (pending) {
+      await this.prisma.dashboardShare.update({
+        where: { id: pending.id },
+        data: { status: 'PENDING', fromUserId: userId, createdAt: new Date() },
+      });
+      return;
+    }
     await this.prisma.dashboardShare.create({ data: { dashboardId, fromUserId: userId, toUserId: recipient.id } });
+  }
+
+  /** Who the dashboard was sent to and their answer, oldest first. */
+  async listSent(userId: string, dashboardId: string): Promise<SentShareEntry[]> {
+    const dashboard = await this.prisma.dashboard.findFirst({ where: { id: dashboardId, userId } });
+    if (!dashboard) throw new NotFoundException();
+    const rows = await this.prisma.dashboardShare.findMany({
+      where: { dashboardId },
+      orderBy: { createdAt: 'asc' },
+      include: { toUser: { select: { email: true } } },
+    });
+    return rows.map((row) => ({ id: row.id, toEmail: row.toUser.email, status: row.status }));
   }
 
   async listIncoming(userId: string): Promise<IncomingShareEntry[]> {
     const rows = await this.prisma.dashboardShare.findMany({
-      where: { toUserId: userId },
+      where: { toUserId: userId, status: 'PENDING' },
       orderBy: { createdAt: 'desc' },
       include: { fromUser: { select: { email: true } }, dashboard: { include: { widgets: { select: { id: true } } } } },
     });
@@ -48,11 +68,11 @@ export class DashboardShareService {
     }));
   }
 
-  /** Clones the dashboard and its widgets (new ids) into the recipient's account and consumes the share. */
+  /** Clones the dashboard and its widgets (new ids) into the recipient's account and marks the share ADDED. */
   async accept(userId: string, shareId: string): Promise<DashboardEntry> {
     return this.prisma.$transaction(async (tx) => {
       const share = await tx.dashboardShare.findFirst({
-        where: { id: shareId, toUserId: userId },
+        where: { id: shareId, toUserId: userId, status: 'PENDING' },
         include: { dashboard: { include: { widgets: true } } },
       });
       if (!share) throw new NotFoundException();
@@ -71,13 +91,16 @@ export class DashboardShareService {
           h: w.h,
         })),
       });
-      await tx.dashboardShare.delete({ where: { id: shareId } });
+      await tx.dashboardShare.update({ where: { id: shareId }, data: { status: 'ADDED' } });
       return copy;
     });
   }
 
   async decline(userId: string, shareId: string): Promise<void> {
-    const { count } = await this.prisma.dashboardShare.deleteMany({ where: { id: shareId, toUserId: userId } });
+    const { count } = await this.prisma.dashboardShare.updateMany({
+      where: { id: shareId, toUserId: userId, status: 'PENDING' },
+      data: { status: 'DECLINED' },
+    });
     if (count === 0) throw new NotFoundException();
   }
 }

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DashboardSwitcher } from './DashboardSwitcher.js';
+import { InboxButton, ShareButton } from './DashboardShare.js';
 
 interface Share {
   id: string;
@@ -14,6 +14,7 @@ interface Share {
 let dashboards: { id: string; name: string; position: number }[];
 let shares: Share[];
 let calls: { url: string; method: string; body?: unknown }[];
+let sent: { id: string; toEmail: string; status: string }[];
 let shareError: string | null;
 let acceptStatus: number;
 
@@ -22,6 +23,7 @@ beforeEach(() => {
   shares = [{ id: 's1', dashboardName: 'Game night', fromEmail: 'grace@example.com', widgetCount: 3, createdAt: '2026-10-05T10:00:00Z' }];
   calls = [];
   shareError = null;
+  sent = [{ id: 'x1', toEmail: 'lin@example.com', status: 'PENDING' }];
   acceptStatus = 201;
   vi.stubGlobal(
     'fetch',
@@ -31,6 +33,7 @@ beforeEach(() => {
       const json = (data: unknown, status = 200) =>
         Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(data) });
       if (url === '/api/shares/incoming') return json({ shares });
+      if (url === '/api/dashboards/a/shares') return json({ shares: sent });
       if (url.endsWith('/share')) return shareError ? json({ error: shareError }, shareError === 'ALREADY_SHARED' ? 409 : 400) : json({ ok: true }, 201);
       if (url === '/api/shares/s1/accept') {
         if (acceptStatus === 404) {
@@ -63,7 +66,8 @@ function renderSwitcher() {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={['/d/a']}>
-        <DashboardSwitcher />
+        <ShareButton dashboardId="a" />
+        <InboxButton />
         <Routes>
           <Route path="*" element={<Path />} />
         </Routes>
@@ -72,15 +76,11 @@ function renderSwitcher() {
   );
 }
 
-async function openMenu() {
-  fireEvent.click(await screen.findByRole('button', { name: /Switch dashboard/ }));
-  return within(await screen.findByRole('dialog', { name: 'Dashboards' }));
-}
-
 describe('sharing a dashboard', () => {
   async function openShare() {
-    const menu = await openMenu();
-    fireEvent.click(menu.getByRole('button', { name: 'Share Home' }));
+    const button = await screen.findByRole('button', { name: 'Share' });
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(button);
     return await screen.findByLabelText('Recipient email');
   }
 
@@ -89,7 +89,31 @@ describe('sharing a dashboard', () => {
     fireEvent.change(await openShare(), { target: { value: ' Ada@Example.com ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByText(/Sent to ada@example\.com/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
     expect(calls).toContainEqual({ url: '/api/dashboards/a/share', method: 'POST', body: { email: 'ada@example.com' } });
+  });
+
+  it('lists who it was shared with and their answer', async () => {
+    sent = [
+      { id: 'x1', toEmail: 'lin@example.com', status: 'PENDING' },
+      { id: 'x2', toEmail: 'eve@example.com', status: 'ADDED' },
+      { id: 'x3', toEmail: 'bob@example.com', status: 'DECLINED' },
+    ];
+    renderSwitcher();
+    await openShare();
+    const list = within(await screen.findByRole('list'));
+    expect(list.getByText('lin@example.com').nextSibling?.textContent).toBe('Waiting');
+    expect(list.getByText('eve@example.com').nextSibling?.textContent).toBe('Added a copy');
+    expect(list.getByText('bob@example.com').nextSibling?.textContent).toBe('Declined');
+  });
+
+  it('"Share with someone else" returns to an empty form', async () => {
+    renderSwitcher();
+    fireEvent.change(await openShare(), { target: { value: 'ada@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Share with someone else' }));
+    expect((screen.getByLabelText('Recipient email') as HTMLInputElement).value).toBe('');
+    expect(screen.queryByText(/Sent to/)).toBeNull();
   });
 
   it('rejects an empty email without calling the API', async () => {
@@ -114,6 +138,19 @@ describe('sharing a dashboard', () => {
     fireEvent.change(await openShare(), { target: { value: 'lin@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByText(/Already shared with lin@example\.com/)).toBeTruthy();
+    expect(screen.queryByText(/Sent to/)).toBeNull();
+  });
+
+  it('clears the earlier success message when the next send fails', async () => {
+    renderSwitcher();
+    fireEvent.change(await openShare(), { target: { value: 'ada@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Share with someone else' }));
+    shareError = 'ALREADY_SHARED';
+    fireEvent.change(screen.getByLabelText('Recipient email'), { target: { value: 'lin@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    expect(await screen.findByText(/Already shared with/)).toBeTruthy();
+    expect(screen.queryByText(/Sent to/)).toBeNull();
   });
 
   it('shows an error when sharing with yourself', async () => {
@@ -127,17 +164,14 @@ describe('sharing a dashboard', () => {
 
 describe('incoming shares', () => {
   async function openInbox() {
-    const menu = await openMenu();
-    fireEvent.click(await menu.findByRole('button', { name: /Shared with you/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Shared with you/ }));
     return within(await screen.findByRole('dialog', { name: 'Shared with you' }));
   }
 
-  it('shows the pending count in the menu and lists dashboard name and sender', async () => {
+  it('shows the pending count on the top-bar button and lists dashboard name and sender', async () => {
     renderSwitcher();
-    const menu = await openMenu();
-    expect((await menu.findByRole('button', { name: /Shared with you/ })).textContent).toContain('1');
-    fireEvent.click(menu.getByRole('button', { name: /Shared with you/ }));
-    const inbox = within(await screen.findByRole('dialog', { name: 'Shared with you' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Shared with you/ }).textContent).toContain('1'));
+    const inbox = await openInbox();
     expect(inbox.getByText('Game night')).toBeTruthy();
     expect(inbox.getByText(/grace@example\.com/)).toBeTruthy();
   });
@@ -148,7 +182,7 @@ describe('incoming shares', () => {
     fireEvent.click(inbox.getByRole('button', { name: 'Add to my dashboards' }));
     await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/d/new'));
     expect(calls).toContainEqual({ url: '/api/shares/s1/accept', method: 'POST', body: undefined });
-    expect(await screen.findByRole('button', { name: 'Switch dashboard, current: Game night' })).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Shared with you' })).toBeNull());
   });
 
   it('declining removes the share without creating a dashboard', async () => {

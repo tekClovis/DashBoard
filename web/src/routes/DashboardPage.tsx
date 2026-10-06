@@ -15,6 +15,7 @@ import { Link, useParams } from 'react-router';
 import { useDashboards } from '@/api/dashboards.js';
 import { useDeleteWidget, useUpdateLayout, useWidgets } from '@/api/widgets.js';
 import { AddWidgetDialog } from '@/components/AddWidgetDialog.js';
+import { ShareButton } from '@/components/DashboardShare.js';
 import { frameState, type FrameState } from '@/components/frame-state.js';
 import { PageHead } from '@/components/page-head.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
@@ -343,12 +344,15 @@ function DashboardView({ dashboardId }: { dashboardId: string }) {
         className="items-center"
         sub={empty ? 'No widgets on this dashboard.' : data && <DashboardCounters widgets={widgets} />}
       >
-        {!empty && (
-          <Button ref={addRef} onClick={openAdd}>
-            <Plus />
-            Add <span className="max-md:hidden">widget</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ShareButton dashboardId={dashboardId} />
+          {!empty && (
+            <Button ref={addRef} onClick={openAdd}>
+              <Plus />
+              Add <span className="max-md:hidden">widget</span>
+            </Button>
+          )}
+        </div>
       </PageHead>
 
       {saveError && (

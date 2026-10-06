@@ -129,6 +129,28 @@ describe('Dashboard sharing (e2e)', () => {
     expect(await prisma.widgetInstance.count({ where: { dashboardId: copy.id } })).toBe(1);
   });
 
+  it('sender sees Waiting/Added/Declined per recipient and can re-share after an answer', async () => {
+    const { owner, recipient, other, dashboard } = await seed();
+    await share(owner.cookie, dashboard.id, 'recipient@example.com').expect(201);
+    await share(owner.cookie, dashboard.id, 'other@example.com').expect(201);
+    const sent = () =>
+      request(app.getHttpServer()).get(`/api/dashboards/${dashboard.id}/shares`).set('Cookie', owner.cookie);
+    const statuses = async () =>
+      Object.fromEntries((await sent().expect(200)).body.shares.map((s: { toEmail: string; status: string }) => [s.toEmail, s.status]));
+    expect(await statuses()).toEqual({ 'recipient@example.com': 'PENDING', 'other@example.com': 'PENDING' });
+
+    const [{ id: rId }] = (await incoming(recipient.cookie)).body.shares;
+    await request(app.getHttpServer()).post(`/api/shares/${rId}/accept`).set('Cookie', recipient.cookie).expect(201);
+    const [{ id: oId }] = (await incoming(other.cookie)).body.shares;
+    await request(app.getHttpServer()).delete(`/api/shares/${oId}`).set('Cookie', other.cookie).expect(200);
+    expect(await statuses()).toEqual({ 'recipient@example.com': 'ADDED', 'other@example.com': 'DECLINED' });
+
+    await share(owner.cookie, dashboard.id, 'other@example.com').expect(201);
+    expect((await statuses())['other@example.com']).toBe('PENDING');
+    expect((await incoming(other.cookie)).body.shares).toHaveLength(1);
+    await request(app.getHttpServer()).get(`/api/dashboards/${dashboard.id}/shares`).set('Cookie', other.cookie).expect(404);
+  });
+
   it('5. non-recipients cannot accept or decline a share (404) and it stays pending', async () => {
     const { owner, recipient, other, dashboard } = await seed();
     await share(owner.cookie, dashboard.id, 'recipient@example.com').expect(201);

@@ -1,5 +1,5 @@
 import type { DashboardEntry } from '@dashboard/shared';
-import { Check, ChevronDown, Inbox, LayoutGrid, Pencil, Plus, Share2, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, LayoutGrid, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMatch, useNavigate } from 'react-router';
 import {
@@ -8,8 +8,6 @@ import {
   useDeleteDashboard,
   useRenameDashboard,
 } from '@/api/dashboards.js';
-import { useIncomingShares } from '@/api/shares.js';
-import { IncomingSharesDialog, ShareDialog } from '@/components/DashboardShare.js';
 import { FieldError } from '@/components/ParamForm.js';
 import { Button } from '@/components/ui/button.js';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog.js';
@@ -19,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton.js';
 
 const MAX_NAME = 100;
 
-type Dialogs = { kind: 'create' } | { kind: 'rename'; dashboard: DashboardEntry } | { kind: 'delete'; dashboard: DashboardEntry } | { kind: 'only'; dashboard: DashboardEntry } | { kind: 'share'; dashboard: DashboardEntry } | { kind: 'inbox' };
+type Dialogs = { kind: 'create' } | { kind: 'rename'; dashboard: DashboardEntry } | { kind: 'delete'; dashboard: DashboardEntry } | { kind: 'only'; dashboard: DashboardEntry };
 
 function NameDialog({
   dialog,
@@ -149,7 +147,6 @@ export function DashboardSwitcher() {
   const { data, isPending, isError, refetch } = useDashboards();
   const activeId = useMatch('/d/:dashboardId')?.params.dashboardId;
   const navigate = useNavigate();
-  const incomingCount = useIncomingShares().data?.shares.length ?? 0;
   const [open, setOpen] = useState(false);
   const [dialog, setDialog] = useState<Dialogs | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -242,14 +239,6 @@ export function DashboardSwitcher() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`Share ${d.name}`}
-                    onClick={() => openDialog({ kind: 'share', dashboard: d })}
-                  >
-                    <Share2 className="size-3.5" strokeWidth={1.75} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
                     aria-label={`Delete ${d.name}`}
                     aria-disabled={dashboards.length === 1 || undefined}
                     title={dashboards.length === 1 ? 'This is your only dashboard' : undefined}
@@ -270,19 +259,6 @@ export function DashboardSwitcher() {
             >
               <Plus className="size-3.5" strokeWidth={1.75} aria-hidden />
               New dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => openDialog({ kind: 'inbox' })}
-              className="hover:bg-accent flex h-8 w-full items-center gap-2 rounded-sm px-2 text-[0.8125rem]"
-            >
-              <Inbox className="size-3.5" strokeWidth={1.75} aria-hidden />
-              Shared with you
-              {incomingCount > 0 && (
-                <span className="bg-primary text-primary-foreground ml-auto rounded-sm px-1.5 font-mono text-[0.6875rem]">
-                  {incomingCount}
-                </span>
-              )}
             </button>
           </div>
         </div>
@@ -312,10 +288,6 @@ export function DashboardSwitcher() {
               activeId={activeId}
               onClose={() => setDialog(null)}
             />
-          ) : dialog?.kind === 'share' ? (
-            <ShareDialog dashboard={dialog.dashboard} />
-          ) : dialog?.kind === 'inbox' ? (
-            <IncomingSharesDialog onClose={() => setDialog(null)} />
           ) : (
             dialog && <NameDialog dialog={dialog} dashboards={dashboards} onClose={() => setDialog(null)} />
           )}

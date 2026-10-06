@@ -159,7 +159,7 @@ erDiagram
 | `ServiceConnection` | id, userId, service, externalAccountId, accessTokenEnc?, refreshTokenEnc?, expiresAt?, scopes, status (`OK`\|`REAUTH`) | unique(userId, service). **Widget credentials only.** |
 | `Dashboard` | id, userId, name, position, createdAt | Several per user. The first one is created on signup. |
 | `WidgetInstance` | id, dashboardId, service, widget, params JSONB, refreshRate int (s), x, y, w, h, createdAt, updatedAt | Grid layout lives on the instance, so deleting an instance cannot leave an orphaned layout entry. |
-| `DashboardShare` | id, dashboardId, fromUserId, toUserId, createdAt | unique(dashboardId, toUserId). A row is a pending offer; accepting clones the dashboard and its widgets (new ids, no connections copied) and deletes the row, declining just deletes it. No live link to the original. |
+| `DashboardShare` | id, dashboardId, fromUserId, toUserId, status (`PENDING`\|`ADDED`\|`DECLINED`), createdAt | unique(dashboardId, toUserId). Accepting clones the dashboard and its widgets (new ids, no connections copied) and sets `ADDED`; declining sets `DECLINED`. The sender sees the status; sharing again reopens the row as `PENDING`. No live link to the original. |
 
 `AuthIdentity` and `ServiceConnection` are separate on purpose. Logging in with GitHub never grants widget scopes. Connecting GitHub never changes how you log in.
 
@@ -319,6 +319,7 @@ All routes are under `/api` and require the JWT cookie unless marked public. Bod
 | POST | `/dashboards/{id}/widgets` | Add instance `{ service, widget, params, refreshRate, x, y, w, h }` |
 | PATCH | `/dashboards/{id}/layout` | Bulk `[{ id, x, y, w, h }]` after a drag or resize |
 | POST | `/dashboards/{id}/share` | Share with another user `{ email }`; unknown email is 400 `UNKNOWN_USER`, an already-pending share is 409 `ALREADY_SHARED` |
+| GET | `/dashboards/{id}/shares` | Shares sent from my dashboard `{ shares: [{ id, toEmail, status }] }` |
 | GET | `/shares/incoming` | Pending shares sent to me `{ shares: [{ id, dashboardName, fromEmail, widgetCount, createdAt }] }` |
 | POST / DELETE | `/shares/{id}/accept`, `/shares/{id}` | Add a personal copy (returns the new dashboard) / decline. Only the recipient; anyone else gets 404 |
 | PATCH / DELETE | `/widgets/{id}` | Reconfigure (`params`, `refreshRate`) / delete |

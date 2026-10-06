@@ -1,4 +1,4 @@
-import type { DashboardEntry, IncomingSharesResponse } from '@dashboard/shared';
+import type { DashboardEntry, IncomingSharesResponse, SentSharesResponse } from '@dashboard/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client.js';
 
@@ -10,9 +10,19 @@ export function useIncomingShares() {
   });
 }
 
+/** GET /api/dashboards/{id}/shares: who it was sent to and their answer. */
+export function useSentShares(dashboardId: string) {
+  return useQuery({
+    queryKey: ['shares', 'sent', dashboardId],
+    queryFn: () => apiFetch<SentSharesResponse>(`/dashboards/${dashboardId}/shares`),
+  });
+}
+
 /** POST /api/dashboards/{id}/share. */
 export function useShareDashboard() {
+  const queryClient = useQueryClient();
   return useMutation({
+    onSuccess: (_, { id }) => queryClient.invalidateQueries({ queryKey: ['shares', 'sent', id] }),
     mutationFn: ({ id, email }: { id: string; email: string }) =>
       apiFetch<{ ok: true }>(`/dashboards/${id}/share`, { method: 'POST', body: JSON.stringify({ email }) }),
   });

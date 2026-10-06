@@ -7,7 +7,7 @@ import { DashboardsService } from './dashboards.service.js';
 interface UserRow { id: string; email: string; bannedAt: Date | null }
 interface DashRow { id: string; userId: string; name: string; position: number }
 interface WidgetRow { id: string; dashboardId: string; service: string; widget: string; params: unknown; refreshRate: number; x: number; y: number; w: number; h: number }
-interface ShareRow { id: string; dashboardId: string; fromUserId: string; toUserId: string; createdAt: Date }
+interface ShareRow { id: string; dashboardId: string; fromUserId: string; toUserId: string; status: 'PENDING' | 'ADDED' | 'DECLINED'; createdAt: Date }
 
 /** In-memory slice of PrismaService honouring the `where` it is given. */
 function makeFake() {
@@ -52,31 +52,31 @@ function makeFake() {
         const key = where.dashboardId_toUserId;
         return shares.find((s) => s.dashboardId === key.dashboardId && s.toUserId === key.toUserId) ?? null;
       },
-      create: async ({ data }: { data: Omit<ShareRow, 'id' | 'createdAt'> }) => {
-        const row = { id: id('s'), createdAt: new Date(), ...data };
+      create: async ({ data }: { data: Omit<ShareRow, 'id' | 'createdAt' | 'status'> }) => {
+        const row: ShareRow = { id: id('s'), createdAt: new Date(), status: 'PENDING', ...data };
         shares.push(row);
         return row;
       },
-      findMany: async ({ where }: { where: { toUserId: string } }) =>
+      update: async ({ where, data }: { where: { id: string }; data: Partial<ShareRow> }) =>
+        Object.assign(shares.find((x) => x.id === where.id)!, data),
+      findMany: async ({ where }: { where: { toUserId?: string; dashboardId?: string; status?: string } }) =>
         shares
-          .filter((s) => s.toUserId === where.toUserId)
+          .filter((s) => (!where.toUserId || s.toUserId === where.toUserId) && (!where.dashboardId || s.dashboardId === where.dashboardId) && (!where.status || s.status === where.status))
           .map((s) => ({
             ...s,
             fromUser: users.find((u) => u.id === s.fromUserId)!,
+            toUser: users.find((u) => u.id === s.toUserId)!,
             dashboard: { ...dashboards.find((d) => d.id === s.dashboardId)!, widgets: widgets.filter((w) => w.dashboardId === s.dashboardId) },
           })),
-      findFirst: async ({ where }: { where: { id: string; toUserId: string } }) => {
-        const s = shares.find((x) => x.id === where.id && x.toUserId === where.toUserId);
+      findFirst: async ({ where }: { where: { id: string; toUserId: string; status: string } }) => {
+        const s = shares.find((x) => x.id === where.id && x.toUserId === where.toUserId && x.status === where.status);
         if (!s) return null;
         return { ...s, dashboard: { ...dashboards.find((d) => d.id === s.dashboardId)!, widgets: widgets.filter((w) => w.dashboardId === s.dashboardId) } };
       },
-      deleteMany: async ({ where }: { where: { id: string; toUserId: string } }) => {
-        const i = shares.findIndex((x) => x.id === where.id && x.toUserId === where.toUserId);
-        if (i >= 0) shares.splice(i, 1);
-        return { count: i >= 0 ? 1 : 0 };
-      },
-      delete: async ({ where }: { where: { id: string } }) => {
-        shares.splice(shares.findIndex((x) => x.id === where.id), 1);
+      updateMany: async ({ where, data }: { where: { id: string; toUserId: string; status: string }; data: Partial<ShareRow> }) => {
+        const s = shares.find((x) => x.id === where.id && x.toUserId === where.toUserId && x.status === where.status);
+        if (s) Object.assign(s, data);
+        return { count: s ? 1 : 0 };
       },
     },
     $transaction: async <T>(fn: (tx: unknown) => Promise<T>) => fn(prisma),
@@ -125,6 +125,32 @@ describe('DashboardShareService', () => {
     });
   });
 
+  describe('re-sharing', () => {
+    it('after a decline or an accept, the same dashboard can be offered again as PENDING', async () => {
+      const { service, shares } = makeFake();
+      await service.share('u1', 'd1', 'grace@example.com');
+      await service.decline('u2', shares[0].id);
+      await service.share('u1', 'd1', 'grace@example.com');
+      expect(shares).toMatchObject([{ status: 'PENDING' }]);
+      expect(await service.listIncoming('u2')).toHaveLength(1);
+    });
+  });
+
+  describe('listSent', () => {
+    it('lists who the dashboard went to with their status, only for its owner', async () => {
+      const { service } = makeFake();
+      await service.share('u1', 'd1', 'grace@example.com');
+      await service.share('u1', 'd1', 'eve@example.com');
+      const [graceShare] = await service.listIncoming('u2');
+      await service.decline('u2', graceShare.id);
+      expect(await service.listSent('u1', 'd1')).toEqual([
+        { id: expect.any(String), toEmail: 'grace@example.com', status: 'DECLINED' },
+        { id: expect.any(String), toEmail: 'eve@example.com', status: 'PENDING' },
+      ]);
+      await expect(service.listSent('u2', 'd1')).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
   describe('listIncoming', () => {
     it('lists only the recipient\'s shares with dashboard name, sender and widget count', async () => {
       const { service } = makeFake();
@@ -153,7 +179,8 @@ describe('DashboardShareService', () => {
       expect(cloned.map((w) => w.id)).not.toContain('w1');
       expect(cloned.map((w) => w.id)).not.toContain('w2');
       expect(widgets.filter((w) => w.dashboardId === 'd1')).toHaveLength(2);
-      expect(shares).toHaveLength(0);
+      expect(shares).toMatchObject([{ status: 'ADDED' }]);
+      await expect(service.accept('u2', shareId)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('404s for anyone but the recipient and leaves the share intact', async () => {
@@ -169,13 +196,15 @@ describe('DashboardShareService', () => {
   });
 
   describe('decline', () => {
-    it('removes the share for the recipient only', async () => {
+    it('marks the share DECLINED for the recipient only, and it leaves their incoming list', async () => {
       const { service, shares } = makeFake();
       await service.share('u1', 'd1', 'grace@example.com');
       const shareId = shares[0].id;
       await expect(service.decline('u3', shareId)).rejects.toBeInstanceOf(NotFoundException);
       await service.decline('u2', shareId);
-      expect(shares).toHaveLength(0);
+      expect(shares).toMatchObject([{ status: 'DECLINED' }]);
+      expect(await service.listIncoming('u2')).toEqual([]);
+      await expect(service.decline('u2', shareId)).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

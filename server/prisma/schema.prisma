@@ -20,6 +20,12 @@ enum AuthProvider {
   GOOGLE
 }
 
+enum ShareStatus {
+  PENDING
+  ADDED
+  DECLINED
+}
+
 enum ConnectionStatus {
   OK
   REAUTH
@@ -126,14 +132,15 @@ model WidgetInstance {
   @@index([dashboardId])
 }
 
-/// A pending offer of a copy of `dashboard` to `toUser`. Deleted on accept or decline, so a row
-/// always means "waiting for an answer". No live link: accepting clones the dashboard.
+/// An offer of a copy of `dashboard` to `toUser`. Accept or decline keeps the row with its new
+/// status so the sender can see the answer. No live link: accepting clones the dashboard.
 model DashboardShare {
-  id          String   @id @default(uuid()) @db.Uuid
-  dashboardId String   @db.Uuid
-  fromUserId  String   @db.Uuid
-  toUserId    String   @db.Uuid
-  createdAt   DateTime @default(now())
+  id          String      @id @default(uuid()) @db.Uuid
+  dashboardId String      @db.Uuid
+  fromUserId  String      @db.Uuid
+  toUserId    String      @db.Uuid
+  status      ShareStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
 
   dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
   fromUser  User      @relation("ShareSender", fields: [fromUserId], references: [id], onDelete: Cascade)

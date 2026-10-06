@@ -1,14 +1,36 @@
-import type { DashboardEntry, IncomingShareEntry } from '@dashboard/shared';
+import type { DashboardEntry, IncomingShareEntry, ShareStatus } from '@dashboard/shared';
+import { Inbox, Share2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { useAcceptShare, useDeclineShare, useIncomingShares, useShareDashboard } from '@/api/shares.js';
+import { useDashboards } from '@/api/dashboards.js';
+import { useAcceptShare, useDeclineShare, useIncomingShares, useSentShares, useShareDashboard } from '@/api/shares.js';
 import { ApiError } from '@/api/client.js';
 import { FieldError } from '@/components/ParamForm.js';
 import { Button } from '@/components/ui/button.js';
-import { DialogClose, DialogDescription, DialogTitle } from '@/components/ui/dialog.js';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import { Skeleton } from '@/components/ui/skeleton.js';
+
+const STATUS_LABEL: Record<ShareStatus, string> = { PENDING: 'Waiting', ADDED: 'Added a copy', DECLINED: 'Declined' };
+
+function SentList({ dashboardId }: { dashboardId: string }) {
+  const shares = useSentShares(dashboardId).data?.shares ?? [];
+  if (shares.length === 0) return null;
+  return (
+    <div>
+      <p className="text-muted-foreground mb-1 text-xs">Shared from this dashboard</p>
+      <ul role="list" className="grid gap-1">
+        {shares.map((s) => (
+          <li key={s.id} className="flex items-center justify-between gap-2 text-[0.8125rem]">
+            <span className="truncate font-mono">{s.toEmail}</span>
+            <span className="text-muted-foreground shrink-0 text-xs">{STATUS_LABEL[s.status]}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function shareErrorMessage(error: unknown, email: string): string {
   const code = error instanceof ApiError ? error.code : null;
@@ -18,7 +40,7 @@ function shareErrorMessage(error: unknown, email: string): string {
   return 'Couldn’t send the dashboard. Try again.';
 }
 
-/** Dialog body: send a copy of `dashboard` to another user by email. */
+/** Dialog body: send a copy of `dashboard` to another user by email, then see who has answered. */
 export function ShareDialog({ dashboard }: { dashboard: DashboardEntry }) {
   const share = useShareDashboard();
   const [email, setEmail] = useState('');
@@ -28,6 +50,7 @@ export function ShareDialog({ dashboard }: { dashboard: DashboardEntry }) {
   function submit(e: FormEvent) {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
+    setSentTo(null);
     if (!trimmed) return setError('Enter an email address.');
     setError(null);
     share.mutate(
@@ -40,46 +63,110 @@ export function ShareDialog({ dashboard }: { dashboard: DashboardEntry }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-4">
+    <div className="grid gap-4">
       <div>
         <DialogTitle className="text-base font-semibold">Share “{dashboard.name}”</DialogTitle>
         <DialogDescription className="text-muted-foreground mt-0.5 text-[0.8125rem]">
           They get a copy to add to their dashboards. Later changes aren’t synced.
         </DialogDescription>
       </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="share-email">Recipient email</Label>
-        <Input
-          id="share-email"
-          type="email"
-          value={email}
-          autoComplete="off"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? 'share-email-err' : undefined}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setError(null);
-            setSentTo(null);
-          }}
-        />
-        {error && <FieldError id="share-email-err">{error}</FieldError>}
-        {sentTo && (
-          <p role="status" className="text-success text-xs">
-            Sent to {sentTo}. It shows up in their “Shared with you” list.
-          </p>
+      {sentTo ? (
+        <p role="status" className="text-success text-[0.8125rem]">
+          Sent to {sentTo}. It shows up in their “Shared with you” list.
+        </p>
+      ) : (
+        <form id="share-form" onSubmit={submit} noValidate className="grid gap-1.5">
+          <Label htmlFor="share-email">Recipient email</Label>
+          <Input
+            id="share-email"
+            type="email"
+            value={email}
+            autoComplete="off"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'share-email-err' : undefined}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError(null);
+            }}
+          />
+          {error && <FieldError id="share-email-err">{error}</FieldError>}
+        </form>
+      )}
+      <SentList dashboardId={dashboard.id} />
+      <div className="flex justify-end gap-2">
+        {sentTo ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSentTo(null);
+                setEmail('');
+              }}
+            >
+              Share with someone else
+            </Button>
+            <DialogClose asChild>
+              <Button type="button">Done</Button>
+            </DialogClose>
+          </>
+        ) : (
+          <>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Close
+              </Button>
+            </DialogClose>
+            <Button type="submit" form="share-form" disabled={share.isPending}>
+              {share.isPending ? 'Sending…' : 'Send'}
+            </Button>
+          </>
         )}
       </div>
-      <div className="flex justify-end gap-2">
-        <DialogClose asChild>
-          <Button type="button" variant="outline">
-            Close
-          </Button>
-        </DialogClose>
-        <Button type="submit" disabled={share.isPending}>
-          {share.isPending ? 'Sending…' : 'Send'}
-        </Button>
-      </div>
-    </form>
+    </div>
+  );
+}
+
+/** Dashboard header action: opens the share dialog for `dashboardId`. */
+export function ShareButton({ dashboardId }: { dashboardId: string }) {
+  const [open, setOpen] = useState(false);
+  const dashboard = useDashboards().data?.dashboards.find((d) => d.id === dashboardId);
+  return (
+    <>
+      <Button variant="outline" disabled={!dashboard} onClick={() => setOpen(true)}>
+        <Share2 />
+        Share
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="w-[min(420px,calc(100vw-2rem))]">
+          {dashboard && <ShareDialog dashboard={dashboard} />}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/** Top-bar action: "Shared with you" with the pending count; opens the incoming-shares dialog. */
+export function InboxButton() {
+  const [open, setOpen] = useState(false);
+  const count = useIncomingShares().data?.shares.length ?? 0;
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Inbox strokeWidth={1.75} />
+        <span className="max-md:sr-only">Shared with you</span>
+        {count > 0 && (
+          <span className="bg-primary text-primary-foreground rounded-sm px-1.5 font-mono text-[0.6875rem]">
+            {count}
+          </span>
+        )}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="w-[min(520px,calc(100vw-2rem))]">
+          <IncomingSharesDialog onClose={() => setOpen(false)} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

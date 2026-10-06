@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout, useMe } from '@/api/auth.js';
 import { useDashboards } from '@/api/dashboards.js';
 import { ThemeToggle } from '@/components/theme-toggle.js';
+import { InboxButton } from '@/components/DashboardShare.js';
 import { DashboardSwitcher } from '@/components/DashboardSwitcher.js';
 import { Alert } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
@@ -274,6 +275,7 @@ function ShellHeader() {
         ))}
       </nav>
       <div className="ml-auto flex items-center gap-2">
+        <InboxButton />
         <ConnectionChip />
         <ThemeToggle />
         {me && <AccountMenu email={me.email} />}
