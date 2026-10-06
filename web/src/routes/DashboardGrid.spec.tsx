@@ -46,6 +46,28 @@ describe('DashboardPage grid (md+)', () => {
     expect(screen.queryByText('Couldn’t load your widgets')).toBeNull();
   });
 
+  // The grid is mounted while widgets load and unmounted for the empty state; a measured node that
+  // is removed reports width 0 (a ~2px first widget) and the node mounted later is never observed.
+  it('keeps the measured grid container observed and attached when the dashboard is empty', async () => {
+    const observed = new Set<Element>();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = (el: Element) => void observed.add(el);
+        disconnect = () => observed.clear();
+        unobserve = () => undefined;
+      },
+    );
+    respondWhen(
+      (url) => url.endsWith('/widgets'),
+      () => new Response(JSON.stringify({ widgets: [] }), { status: 200 }),
+    );
+    renderPage();
+    await screen.findByText('Add your first widget');
+    expect(observed.size).toBe(1);
+    for (const el of observed) expect(el.isConnected).toBe(true);
+  });
+
   // One render: Radix menus in jsdom don't reopen reliably across separate renders.
   it('moves and resizes from the widget menu through the layout save, with a dismissible alert on failure', async () => {
     renderPage();
