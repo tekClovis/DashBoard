@@ -1,0 +1,13 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a169b64d49dbad9e0/server
+
+[31m[Nest] 628489  - [39m10/07/2026, 11:00:14 PM [31m  ERROR[39m [38;5;3m[TimerService] [39m[31mFailed to mark connection REAUTH: db down[39m
+[33m[Nest] 628691  - [39m10/07/2026, 11:00:14 PM [33m   WARN[39m [38;5;3m[AdminSeedService] [39m[33mADMIN_EMAIL admin@b.com matches an existing user; refusing to overwrite it. Skipping admin boot-seed.[39m
+[32m[Nest] 628691  - [39m10/07/2026, 11:00:14 PM [32m    LOG[39m [38;5;3m[AdminSeedService] [39m[32mSeeded admin user admin@b.com[39m
+
+ Test Files  66 passed (66)
+      Tests  728 passed (728)
+   Start at  23:00:11
+   Duration  4.76s (transform 5.39s, setup 0ms, import 29.26s, tests 5.36s, environment 15ms)
+

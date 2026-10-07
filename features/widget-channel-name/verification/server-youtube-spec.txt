@@ -1,0 +1,51 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a169b64d49dbad9e0/server
+
+ ✓ src/services/youtube/youtube-widgets.spec.ts > YoutubeModule > registers the youtube oauth service with its three connection-scoped widgets 3ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > accepts region FR 1ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > accepts region US 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region fr 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region FRA 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region F 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region 1A 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects region FR&x=1 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects number 0 outside 1–10 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube param specs > rejects number 11 outside 1–10 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats requests the channel with Bearer auth and returns its counts 2ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats reports a missing subscriber count as null, not NaN 1ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats reports a hidden subscriber count as null 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats reports a missing avatar as a null imageUrl 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > an unknown channel_id is INVALID_PARAMS 1ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > latest_videos reads `number` items of the uploads playlist, most recent first, with built watch URLs 2ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > latest_videos reports a missing channel title as null 1ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps the best available snippet.thumbnails size to imageUrl, null when there are none 1ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > trending_videos asks for the mostPopular chart of the region 1ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > on a 401, refreshes the token once and retries the request with it 2ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > keeps the refreshed token for later requests of the same run, and refreshes only once 1ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > a 401 after a successful refresh is REAUTH_REQUIRED 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > propagates a failed refresh unchanged, without retrying the request 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > refreshes up front when the connection has no access token 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > refreshes up front when the stored expiry has passed, without a doomed request 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > uses the stored token while its expiry is still ahead 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 403 { error: { errors: [ { reason: 'quotaExceeded' } ] } } to RATE_LIMITED 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 403 { error: { errors: [ { reason: 'rateLimitExceeded' } ] } } to RATE_LIMITED 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 429 {} to RATE_LIMITED 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 400 { error: { errors: [ { reason: 'invalidRegionCode' } ] } } to INVALID_PARAMS 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 404 { error: { errors: [ { reason: 'playlistNotFound' } ] } } to INVALID_PARAMS 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 403 { error: { errors: [ { reason: 'forbidden' } ] } } to UPSTREAM_ERROR 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps HTTP 500 {} to UPSTREAM_ERROR 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > trending_videos maps a 200 with { region: 'FR', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats maps a 200 with { channel_id: 'UC_x5', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > channel_stats maps a 200 with { channel_id: 'UC_x5', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > trending_videos maps a 200 with { region: 'FR', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > latest_videos maps a 200 with { channel_id: 'UC_x5', number: 5 } to UPSTREAM_ERROR with a fixed message 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > latest_videos maps a channel without contentDetails to UPSTREAM_ERROR, without requesting a playlist 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > maps a network failure to UPSTREAM_ERROR 0ms
+ ✓ src/services/youtube/youtube-widgets.spec.ts > youtube widgets fetch() > never puts a fetch error's text (which can quote the Authorization header) in the client message 1ms
+
+ Test Files  1 passed (1)
+      Tests  41 passed (41)
+   Start at  23:00:27
+   Duration  762ms (transform 228ms, setup 0ms, import 631ms, tests 25ms, environment 0ms)
+
