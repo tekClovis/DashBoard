@@ -1,0 +1,47 @@
+
+> dashboard@0.0.1 test:e2e
+> npm run test:e2e -w server
+
+
+> server@0.0.1 test:e2e
+> vitest run --config ./vitest.config.e2e.ts
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-forgot-password/server
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32861"
+
+4 migrations found in prisma/migrations
+
+Applying migration `20260914000000_init`
+Applying migration `20261006000000_dashboard_share`
+Applying migration `20261006120000_dashboard_share_status`
+Applying migration `20261007000000_password_reset_token`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260914000000_init/
+    └─ migration.sql
+  └─ 20261006000000_dashboard_share/
+    └─ migration.sql
+  └─ 20261006120000_dashboard_share_status/
+    └─ migration.sql
+  └─ 20261007000000_password_reset_token/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+[31m[Nest] 1227358  - [39m10/07/2026, 9:23:02 AM [31m  ERROR[39m [38;5;3m[MailService] [39m[31mFailed to send confirmation email to signup-362b45f4-1da7-4c7e-a02d-e762015180bd@example.com[39m
+Error: getaddrinfo EAI_AGAIN mailpit
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)
+
+ Test Files  14 passed (14)
+      Tests  139 passed (139)
+   Start at  09:21:56
+   Duration  71.76s (transform 441ms, setup 0ms, import 7.00s, tests 59.71s, environment 1ms)
+
+exit 0

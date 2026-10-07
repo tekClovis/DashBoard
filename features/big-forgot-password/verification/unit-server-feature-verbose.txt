@@ -1,0 +1,51 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-forgot-password/server
+
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendConfirmationEmail > sends a confirmation message carrying the link in text and html 2ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendConfirmationEmail > swallows a transport failure and logs it with the recipient and stack 4ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendConfirmationEmail > logs a non-Error rejection value as-is 1ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendPasswordResetEmail > sends a reset message carrying the link in text and html 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendPasswordResetEmail > never throws when the transport fails 1ms
+ ✓ src/auth/password-reset.service.spec.ts > PasswordResetService > issueToken > invalidates prior live tokens, stores only the hash with a 1 h TTL, returns the raw token 5ms
+ ✓ src/auth/password-reset.service.spec.ts > PasswordResetService > reset > sets the hash, bumps tokenVersion, verifies the email, burns the token and the others 1ms
+ ✓ src/auth/password-reset.service.spec.ts > PasswordResetService > reset > rejects an unknown token with 400 and changes nothing 1ms
+ ✓ src/auth/password-reset.service.spec.ts > PasswordResetService > reset > rejects an expired token with 400 and changes nothing 0ms
+ ✓ src/auth/password-reset.service.spec.ts > PasswordResetService > reset > rejects an used token with 400 and changes nothing 0ms
+ ✓ src/auth/password-reset.service.spec.ts > PasswordResetService > reset > rejects when a concurrent request already consumed the token 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > creates a fresh user and its default dashboard atomically, issues a token, and sends mail 186ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > rejects a verified existing user without creating anything 1ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > rejects an OIDC-only existing user (null passwordHash) 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > treats an unverified local account as an implicit resend and replaces its password hash 353ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > 429s once the per-IP rate limit is exceeded 883ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > confirm > delegates to VerificationService 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > confirm > confirms with an empty string when no token query param is given 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > never leaks whether the account exists 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > resends for an unverified user within limits 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > does not resend for an already-verified user 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > silently no-ops over the 1/60s limit 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > answers ok and sends no mail for an unknown email 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > answers ok and sends no mail for an OAuth-only account 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > mails a reset link for a password account, normalizing the email 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > sends nothing but still answers ok within 60 s of the previous request 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > caps at 5 mails a day per email 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resetPassword > hashes the new password and delegates to the service 350ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resetPassword > propagates the service rejection 178ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > sets the session cookie and returns ok on correct credentials for a verified user 3ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > rejects a wrong password with a generic 401 3ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > rejects an unknown email with the same generic 401 (no enumeration) 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > returns 403 EMAIL_NOT_CONFIRMED for correct credentials on an unverified user 3ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > returns 403 ACCOUNT_BANNED for correct credentials on a banned user, and sets no cookie 2ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > rejects an OIDC-only user (null passwordHash) with the generic 401 1ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > 429s once the per-IP rate limit is exceeded 1ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > me > returns the current user plus linked identities 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > logout > clears the session cookie 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > logout > revokes the token jti so the old cookie cannot be reused 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > logoutAll > bumps tokenVersion and clears the session cookie 1ms
+
+ Test Files  3 passed (3)
+      Tests  40 passed (40)
+   Start at  09:23:45
+   Duration  2.48s (transform 225ms, setup 0ms, import 798ms, tests 1.99s, environment 0ms)
+
+exit 0
