@@ -96,3 +96,12 @@ function useEndSession(path: "/auth/logout" | "/auth/logout-all") {
 
 export const useLogout = () => useEndSession("/auth/logout");
 export const useLogoutAll = () => useEndSession("/auth/logout-all");
+
+/** Permanently deletes the caller's account (DELETE /users/me); clears the cache since the session is gone. */
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<void>("/users/me", { method: "DELETE" }),
+    onSuccess: () => queryClient.clear(),
+  });
+}
