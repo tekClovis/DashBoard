@@ -38,13 +38,13 @@ export function RecentlyPlayedView({ data, compact }: WidgetViewProps) {
 }
 
 export function GameNewsView({ data, compact }: WidgetViewProps) {
-  const { appId, items } = data as WidgetDataMap['steam.game_news'];
+  const { gameName, items } = data as WidgetDataMap['steam.game_news'];
   const now = Date.now();
   const week = items.filter((i) => now - Date.parse(i.date) < WEEK_MS).length;
   return (
     <>
       <Channel>
-        <span className="font-mono">app_id={appId}</span>
+        <span>{gameName}</span>
       </Channel>
       <div data-slot="game-id" className="flex items-end gap-3">
         <Thumb src={items[0]?.imageUrl} width={128} height={60} />

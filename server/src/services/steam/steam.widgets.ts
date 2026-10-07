@@ -10,6 +10,7 @@ import type { FetchContext, WidgetDefinition } from '../../catalog/widget-defini
 import { FetchError } from '../../timer/fetch-error.js';
 
 const STEAM_API = 'https://api.steampowered.com';
+const STEAM_STORE_DETAILS = 'https://store.steampowered.com/api/appdetails';
 const STEAM_STORE_SEARCH = 'https://store.steampowered.com/api/storesearch/';
 const FETCH_TIMEOUT_MS = 10_000;
 const headerImage = (appId: number) => `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
@@ -30,6 +31,16 @@ interface NewsResponse {
 export function createSteamWidgets(
   apiKey: string | undefined,
 ): [WidgetDefinition<'steam.recently_played'>, WidgetDefinition<'steam.game_news'>] {
+  // Names of apps looked up in the store (widgets saved before the picker stored `game_name`). Only hits are cached.
+  const names = new Map<number, string>();
+  const resolveName = async (appId: number, stored: unknown): Promise<string> => {
+    if (typeof stored === 'string' && stored.trim()) return stored;
+    const cached = names.get(appId);
+    if (cached) return cached;
+    const name = await lookupGameName(appId);
+    if (name) names.set(appId, name);
+    return name ?? `App ${appId}`;
+  };
   return [
     {
       service: 'steam',
@@ -87,6 +98,7 @@ export function createSteamWidgets(
         if (!Array.isArray(items)) throw malformed();
         return {
           appId,
+          gameName: await resolveName(appId, params['game_name']),
           // Drop items whose link isn't http(s): the url reaches an <a href> in the web view.
           items: items.filter((item) => isHttpUrl(item.url)).slice(0, count).map(
             (item): SteamNewsItem => ({
@@ -127,6 +139,20 @@ export async function searchGames(query: string): Promise<GameCandidate[]> {
     name: item.name,
     image: item.tiny_image ?? `https://cdn.cloudflare.steamstatic.com/steam/apps/${item.id}/capsule_184x69.jpg`,
   }));
+}
+
+/** The store's name for an app, or undefined when it can't be resolved (never throws). */
+async function lookupGameName(appId: number): Promise<string | undefined> {
+  try {
+    const url = `${STEAM_STORE_DETAILS}?${new URLSearchParams({ appids: String(appId), filters: 'basic' })}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    if (!res.ok) return undefined;
+    const body = (await res.json()) as Record<string, { success?: boolean; data?: { name?: unknown } } | undefined>;
+    const name = body[String(appId)]?.data?.name;
+    return typeof name === 'string' && name ? name : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function steamId(ctx: FetchContext): string {
