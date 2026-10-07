@@ -7,7 +7,6 @@ import { AdminPage } from '@/routes/AdminPage.js';
 import { AppShell } from '@/routes/AppShell.js';
 import { ConfirmPage } from '@/routes/ConfirmPage.js';
 import { ConnectionsPage } from '@/routes/ConnectionsPage.js';
-import { DashboardPage } from '@/routes/DashboardPage.js';
 import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage.js';
 import { LoginPage } from '@/routes/LoginPage.js';
 import { ProfilePage } from '@/routes/ProfilePage.js';
@@ -33,7 +32,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
-              <Route path="/d/:dashboardId" element={<DashboardPage />} />
+              <Route path="/d/:dashboardId" />
               <Route path="/services" element={<ConnectionsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/admin" element={<AdminPage />} />

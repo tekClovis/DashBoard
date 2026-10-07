@@ -1,0 +1,45 @@
+$ (server) npx vitest run src/users --reporter=verbose
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-delete-account/server
+
+ ✓ src/users/users.service.spec.ts > UsersService.deleteSelf > deletes the caller and disconnects their sockets 3ms
+ ✓ src/users/users.service.spec.ts > UsersService.deleteSelf > lets an admin delete themself when another admin remains 0ms
+ ✓ src/users/users.service.spec.ts > UsersService.deleteSelf > refuses with 409 LAST_ADMIN when the caller is the only admin 1ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  00:57:35
+   Duration  287ms (transform 54ms, setup 0ms, import 190ms, tests 5ms, environment 0ms)
+
+exit 0
+
+$ (web) npx vitest run src/routes/ProfilePage.spec.tsx src/routes/LoginPage.spec.tsx --reporter=verbose
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/big-delete-account/web
+
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > shows the current user email and role 39ms
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > disables Unlink for the sole remaining login method 85ms
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > allows unlinking a non-sole identity 15ms
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > logs out on Log out click 16ms
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > delete account > opens a dialog and cancelling does not delete 59ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > renders the branded panel with labelled fields and OAuth links 131ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > navigates home after a successful login 50ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > shows wrong credentials as an alert linked to both fields 35ms
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > delete account > keeps confirm disabled until the typed text matches the email exactly 44ms
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > delete account > deletes on confirm and goes to the login page 32ms
+ ✓ src/routes/ProfilePage.spec.tsx > ProfilePage > delete account > shows the only-admin error on LAST_ADMIN 33ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > shows the error alert without calling the API when the input is invalid 24ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > offers a new confirmation link when the email is not confirmed 48ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > prefills the email carried over from register 6ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > confirms an account deletion carried in the location state 8ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > shows no deletion notice on a plain visit 4ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > explains the account-linking refusal from the OAuth callback 8ms
+ ✓ src/routes/LoginPage.spec.tsx > LoginPage > explains that OAuth cannot create an account 8ms
+
+ Test Files  2 passed (2)
+      Tests  18 passed (18)
+   Start at  00:57:36
+   Duration  1.13s (environment 44%, tests 32%, import 14%, transform 8%, setup 1%, worker 1%)
+
+exit 0

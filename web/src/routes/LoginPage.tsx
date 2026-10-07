@@ -1,4 +1,4 @@
-import { Check, Mail, OctagonX, TriangleAlert } from 'lucide-react';
+import { Check, CircleCheck, Mail, OctagonX, TriangleAlert } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { oauthStartUrl, useLogin, useResend } from '@/api/auth.js';
@@ -10,9 +10,14 @@ import { Label } from '@/components/ui/label.js';
 import { isValidEmail } from '@/lib/validation.js';
 import { AuthFooter, AuthFooterLink, AuthLayout, RESENT_MESSAGE } from './AuthLayout.js';
 
+/** Set by ProfilePage's navigate('/login', { state }) after a successful account deletion. */
+const isAccountDeleted = (state: unknown): boolean =>
+  !!state && typeof state === 'object' && 'accountDeleted' in state && state.accountDeleted === true;
+
 export function LoginPage() {
   // "Log in instead" on register carries the typed email over in the location state.
   const carried: unknown = useLocation().state;
+  const accountDeleted = isAccountDeleted(carried);
   const [email, setEmail] = useState(() =>
     carried && typeof carried === 'object' && 'email' in carried && typeof carried.email === 'string'
       ? carried.email
@@ -63,6 +68,17 @@ export function LoginPage() {
           <AlertContent>
             <AlertTitle>Password updated</AlertTitle>
             <AlertDescription>Log in with your new password. Any other device was logged out.</AlertDescription>
+          </AlertContent>
+        </Alert>
+      )}
+      {accountDeleted && (
+        <Alert tone="success">
+          <CircleCheck strokeWidth={1.75} aria-hidden />
+          <AlertContent>
+            <AlertTitle>Your account was deleted</AlertTitle>
+            <AlertDescription>
+              Your dashboards, widgets and connections are gone. You can register again any time.
+            </AlertDescription>
           </AlertContent>
         </Alert>
       )}
