@@ -14,6 +14,11 @@ import { AuthFooter, AuthFooterLink, AuthLayout, RESENT_MESSAGE } from './AuthLa
 const isAccountDeleted = (state: unknown): boolean =>
   !!state && typeof state === 'object' && 'accountDeleted' in state && state.accountDeleted === true;
 
+/**
+ * Email/password login with GitHub and Google entry points.
+ * Reads location state (`email`, `passwordReset`, `accountDeleted`) and the `error` query param
+ * (`EMAIL_LINK_REQUIRED`, `OAUTH_NO_ACCOUNT`) to show context alerts; navigates to `/` on success.
+ */
 export function LoginPage() {
   // "Log in instead" on register carries the typed email over in the location state.
   const carried: unknown = useLocation().state;

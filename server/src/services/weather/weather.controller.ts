@@ -6,6 +6,7 @@ import { JwtGuard } from '../../auth/jwt.guard.js';
 import { FetchError } from '../../timer/fetch-error.js';
 import { searchCities } from './open-meteo.js';
 
+/** City search for the picker; upstream failures surface as 502 with the {@link FetchError} code. */
 @Controller('weather')
 @UseGuards(JwtGuard)
 export class WeatherController {

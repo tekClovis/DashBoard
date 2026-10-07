@@ -10,6 +10,7 @@ export interface JwtPayload {
   role: Role;
   tv: number;
   jti: string;
+  /** Expiry as Unix seconds. */
   exp: number;
 }
 
@@ -21,6 +22,7 @@ export interface JwtPayload {
 export class JwtService {
   constructor(private readonly config: ConfigService) {}
 
+  /** Signs the claims with a fresh `jti` and an expiry of {@link SESSION_TTL_SEC} from now. */
   sign(claims: Omit<JwtPayload, 'exp' | 'jti'>): string {
     const payload: JwtPayload = {
       ...claims,

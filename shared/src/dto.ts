@@ -147,6 +147,7 @@ export interface IncomingShareEntry {
   createdAt: string;
 }
 
+/** Answer state of a sent share. */
 export type ShareStatus = 'PENDING' | 'ADDED' | 'DECLINED';
 
 /** One row of GET /api/dashboards/{id}/shares: who a dashboard was sent to and their answer. */

@@ -20,6 +20,7 @@ export const OAUTH_CSRF_COOKIE = 'oauth_csrf';
 export const OAUTH_STATE_COOKIE = 'oauth_state';
 const STATE_TTL_MS = 10 * 60 * 1000;
 
+/** Providers that support the connect flow. */
 export type ConnectProvider = 'github' | 'google' | 'steam';
 
 export interface ConnectStatePayload {
@@ -37,6 +38,7 @@ export function generateCsrfToken(): string {
   return randomBytes(24).toString('base64url');
 }
 
+/** Build a signed `state` for the `start` leg; `csrfToken` is the raw cookie value, only its hash enters the payload. Expires after 10 minutes. */
 export function signConnectState(
   params: { provider: ConnectProvider; userId: string; csrfToken: string },
   secret: string,
@@ -55,6 +57,7 @@ export function signConnectState(
   return `${payloadB64}.${mac}`;
 }
 
+/** Raised by {@link verifyConnectState} for any invalid state. */
 export class InvalidStateError extends Error {}
 
 /** Verifies signature, expiry, provider match, and CSRF cookie binding. Throws InvalidStateError on any failure. */

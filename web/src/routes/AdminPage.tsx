@@ -12,12 +12,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   USER_NOT_FOUND: 'That user no longer exists.',
 };
 
+/** Maps an admin mutation failure to a user-facing message, by `ApiError.code` when known. */
 function describeError(err: unknown): string {
   if (err instanceof ApiError) return ERROR_MESSAGES[err.code] ?? `Request failed (${err.status}).`;
   return 'Request failed.';
 }
 
-/** Matches features/admin-ui/mock.html. Client gate is UX only — every /api/admin/* route enforces ADMIN server-side. */
+/**
+ * Admin page: searchable, paginated user table with ban, role and delete actions.
+ *
+ * Renders nothing until the current user loads, and a 403 message for non-admins. This client gate is
+ * UX only: every /api/admin/* route enforces ADMIN server-side.
+ */
 export function AdminPage() {
   const { data: me } = useMe();
 

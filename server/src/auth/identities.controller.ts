@@ -21,6 +21,10 @@ import type { RequestUser } from './types.js';
 export class IdentitiesController {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Unlinks the caller's identity for the given provider slug.
+   * @throws {@link NotFoundException} with `NOT_LINKED`; {@link BadRequestException} with `LAST_LOGIN_METHOD` when it is the only login method left.
+   */
   @Delete(':provider')
   async unlink(@Param('provider') providerParam: string, @CurrentUser() currentUser: RequestUser): Promise<OkResponse> {
     const provider = parseProviderSlug(providerParam);

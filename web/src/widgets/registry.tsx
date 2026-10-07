@@ -17,6 +17,7 @@ import { PullRequestsView, RecentCommitsView, SecurityAlertsView } from './githu
 import { CurrentWeatherView, ForecastView } from './weather.js';
 import { ChannelStatsView, LatestVideosView, TrendingVideosView } from './youtube.js';
 
+/** Props shared by every widget view; `data` is the unvalidated payload, each view casts it to its own type. */
 export interface WidgetViewProps {
   data: unknown;
   /** When this payload arrived (ISO), for client-side history such as sparklines and deltas. */
@@ -59,6 +60,7 @@ const widgets: Record<string, WidgetEntry> = {
   'youtube.trending_videos': { View: TrendingVideosView, label: 'Trending videos', icon: Play },
 };
 
+/** Returns the view registered for `service.widget`, or a raw JSON view when none is. */
 export function getView(service: string, widget: string): ComponentType<WidgetViewProps> {
   return widgets[`${service}.${widget}`]?.View ?? JsonView;
 }

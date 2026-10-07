@@ -42,6 +42,7 @@ export function Delta({ children }: { children: ReactNode }) {
   return <span className="text-muted-foreground font-mono text-[0.6875rem]">{children}</span>;
 }
 
+/** Muted message shown in place of the detail rows when there is nothing to list. */
 export function Empty({ children }: { children: string }) {
   return <p className="text-muted-foreground">{children}</p>;
 }
@@ -122,7 +123,7 @@ export function RowMeta({ children, mono, className }: { children: ReactNode; mo
   return <span className={cn('text-muted-foreground flex-none text-xs', mono && 'font-mono', className)}>{children}</span>;
 }
 
-/** Horizontal share bar, one hue for magnitude. */
+/** Horizontal share bar, one hue for magnitude; `share` is a fraction from 0 to 1. */
 export function Meter({ share, className }: { share: number; className?: string }) {
   return (
     <span data-slot="meter" aria-hidden="true" className={cn('bg-muted relative h-1 flex-none self-center overflow-hidden rounded-xs', className)}>
@@ -131,6 +132,7 @@ export function Meter({ share, className }: { share: number; className?: string 
   );
 }
 
+/** One cached push reduced to a value; `at` is its ISO fetch time when known. */
 export interface TrailPoint<T> {
   at: string | null | undefined;
   value: T;
@@ -155,7 +157,11 @@ export function pushTrail<D, T>(
 
 const SPARK_H = 40;
 
-/** Inline SVG trend of numeric pushes; the latest point is the live dot. Screen readers get a table. */
+/**
+ * Inline SVG trend of numeric pushes; the latest point is the live dot. Screen readers get a table.
+ * @param points - At least two points: with one, the x position divides by zero.
+ * @param unit - Suffix appended to values in the tooltip and table.
+ */
 export function Sparkline({ points, label, unit }: { points: TrailPoint<number>[]; label: string; unit: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const values = points.map((p) => p.value);

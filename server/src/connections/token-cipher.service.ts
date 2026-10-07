@@ -21,6 +21,7 @@ export class TokenCipherService {
     this.key = Buffer.from(config.getOrThrow<string>('TOKEN_ENC_KEY'), 'base64');
   }
 
+  /** Encrypt with a fresh random IV; returns `iv:tag:ciphertext`, each base64. */
   encrypt(plaintext: string): string {
     const iv = randomBytes(IV_LENGTH);
     const cipher = createCipheriv(ALGORITHM, this.key, iv);
@@ -29,6 +30,10 @@ export class TokenCipherService {
     return `${iv.toString('base64')}:${tag.toString('base64')}:${ciphertext.toString('base64')}`;
   }
 
+  /**
+   * Decrypt a value produced by {@link TokenCipherService.encrypt}.
+   * @throws Error when the value is malformed or fails GCM authentication (wrong key or tampering).
+   */
   decrypt(stored: string): string {
     const [ivB64, tagB64, ciphertextB64] = stored.split(':');
     if (!ivB64 || !tagB64 || !ciphertextB64) {

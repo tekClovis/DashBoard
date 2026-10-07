@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton.js';
 import { isValidEmail } from '@/lib/validation.js';
 import { AuthLayout, FieldError, ResentNotice } from './AuthLayout.js';
 
+/** Email form that requests a new confirmation link; swaps to {@link ResentNotice} on success. */
 function ResendForm() {
   const resend = useResend();
   const [email, setEmail] = useState('');
@@ -67,6 +68,7 @@ function LinkProblem({ title, alertTitle, description }: { title: string; alertT
   );
 }
 
+/** Email confirmation page: confirms the `token` query param on mount; a missing or rejected token offers a resend form. */
 export function ConfirmPage() {
   const [params] = useSearchParams();
   const token = params.get('token');

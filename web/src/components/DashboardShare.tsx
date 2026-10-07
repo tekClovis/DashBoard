@@ -32,6 +32,7 @@ function SentList({ dashboardId }: { dashboardId: string }) {
   );
 }
 
+/** Maps an API error code from sharing to user-facing copy; unknown errors get a generic message. */
 function shareErrorMessage(error: unknown, email: string): string {
   const code = error instanceof ApiError ? error.code : null;
   if (code === 'UNKNOWN_USER') return `No user found for “${email}”. Check the spelling and try again.`;

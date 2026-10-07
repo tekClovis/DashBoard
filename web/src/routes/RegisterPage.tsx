@@ -42,6 +42,7 @@ function SentState({ email }: { email: string }) {
   );
 }
 
+/** Account creation form; on success shows a "check your email" view instead of logging in. */
 export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

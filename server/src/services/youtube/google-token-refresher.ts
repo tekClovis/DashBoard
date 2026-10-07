@@ -42,6 +42,7 @@ function parseTokenResponse(body: unknown): TokenResponse | null {
   return { access_token, expiresAt, refresh_token };
 }
 
+/** Refreshes a user's Google access token from the stored refresh token; see the file header for the concurrency rules. */
 @Injectable()
 export class GoogleTokenRefresher {
   private readonly client: { clientID: string; clientSecret: string };

@@ -30,6 +30,7 @@ async function locate(geocoder: Geocoder, params: Params): Promise<GeoLocation> 
   return geocoder.resolve(String(city));
 }
 
+/** Builds the weather widget definitions; both resolve their location through `geocoder`. */
 export function weatherWidgets(geocoder: Geocoder): [
   WidgetDefinition<'weather.current_weather'>,
   WidgetDefinition<'weather.forecast'>,

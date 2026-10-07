@@ -22,6 +22,7 @@ import type { NormalizedOAuthProfile } from './normalized-profile.js';
 const CONNECT_PROVIDER_TO_SERVICE = { github: 'github', google: 'youtube', steam: 'steam' } as const;
 type ConnectServiceProvider = keyof typeof CONNECT_PROVIDER_TO_SERVICE;
 
+/** Start and callback routes for GitHub, Google and Steam; the callback dispatches on the verified state's intent. */
 @Controller('oauth')
 export class OAuthController {
   constructor(

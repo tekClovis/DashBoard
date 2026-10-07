@@ -30,6 +30,7 @@ function LinkInvalid() {
   );
 }
 
+/** Sets a new password from the `token` query param; on success goes to `/login` with `state.passwordReset`. */
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
   const token = params.get('token');

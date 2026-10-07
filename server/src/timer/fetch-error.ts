@@ -4,6 +4,7 @@
 
 import type { WidgetErrorCode } from '@dashboard/shared';
 
+/** Error carrying the realtime error code the Timer should emit and act on. */
 export class FetchError extends Error {
   constructor(
     public readonly code: WidgetErrorCode,

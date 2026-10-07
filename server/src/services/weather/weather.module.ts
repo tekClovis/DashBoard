@@ -11,6 +11,7 @@ import { Geocoder } from './open-meteo.js';
 import { WeatherController } from './weather.controller.js';
 import { weatherWidgets } from './weather.widgets.js';
 
+/** Registers the weather service and its widgets, sharing one {@link Geocoder} backed by Redis. */
 @Module({ imports: [AuthModule, CatalogModule], controllers: [WeatherController] })
 export class WeatherModule implements OnModuleInit {
   constructor(

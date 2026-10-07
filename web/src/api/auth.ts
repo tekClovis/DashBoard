@@ -10,6 +10,7 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "./client.js";
 
+/** Identity providers usable for OAuth login and linking. */
 export type OAuthProvider = "github" | "google";
 
 export function useRegister() {
@@ -22,6 +23,7 @@ export function useRegister() {
   });
 }
 
+/** POST /api/auth/login; refreshes the `me` query on success. */
 export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,6 +36,7 @@ export function useLogin() {
   });
 }
 
+/** GET /api/auth/confirm for an email token; stays disabled while `token` is null and never retries. */
 export function useConfirm(token: string | null) {
   return useQuery({
     queryKey: ["auth", "confirm", token],
@@ -74,6 +77,7 @@ export function useResetPassword() {
   });
 }
 
+/** GET /api/auth/me; no retry, so a 401 surfaces at once. Fresh for 60 s. */
 export function useMe() {
   return useQuery({
     queryKey: ["me"],
@@ -96,6 +100,7 @@ export function oauthStartUrl(
   return `/api/oauth/${provider}/start?intent=${intent}`;
 }
 
+/** DELETE /api/auth/identities/{provider}; refreshes the `me` query on success. */
 export function useUnlinkIdentity() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -116,7 +121,9 @@ function useEndSession(path: "/auth/logout" | "/auth/logout-all") {
   });
 }
 
+/** POST /api/auth/logout. */
 export const useLogout = () => useEndSession("/auth/logout");
+/** POST /api/auth/logout-all. */
 export const useLogoutAll = () => useEndSession("/auth/logout-all");
 
 /** Permanently deletes the caller's account (DELETE /users/me); clears the cache since the session is gone. */

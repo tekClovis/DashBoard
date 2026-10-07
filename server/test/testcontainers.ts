@@ -14,6 +14,10 @@ import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redi
 let postgres: StartedPostgreSqlContainer;
 let redis: StartedRedisContainer;
 
+/**
+ * Start Postgres 16 and Redis 7 containers, set the env vars the app validates, and apply migrations.
+ * @throws when `prisma migrate deploy` exits non-zero (stdio is inherited).
+ */
 export async function setup(): Promise<void> {
   [postgres, redis] = await Promise.all([
     new PostgreSqlContainer('postgres:16-alpine').start(),
@@ -43,6 +47,7 @@ export async function setup(): Promise<void> {
   });
 }
 
+/** Stop both containers; safe if `setup` failed before they started. */
 export async function teardown(): Promise<void> {
   await Promise.all([postgres?.stop(), redis?.stop()]);
 }

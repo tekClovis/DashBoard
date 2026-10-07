@@ -10,6 +10,7 @@ import { TokenCipherService } from './token-cipher.service.js';
 export const CONNECTABLE_SERVICES = ['github', 'steam', 'youtube'] as const;
 export type ConnectableService = (typeof CONNECTABLE_SERVICES)[number];
 
+/** Token material from a completed OAuth connect handshake. */
 export interface OAuthTokenResult {
   externalAccountId: string;
   accessToken: string;
@@ -25,6 +26,7 @@ export class ConnectionsService {
     private readonly cipher: TokenCipherService,
   ) {}
 
+  /** Return one entry per service; `weather` is always connected, others reflect the stored row (status defaults to `OK` when absent). */
   async list(userId: string): Promise<ConnectionsResponse> {
     const rows = await this.prisma.serviceConnection.findMany({
       where: { userId },
@@ -48,6 +50,7 @@ export class ConnectionsService {
     await this.prisma.serviceConnection.deleteMany({ where: { userId, service } });
   }
 
+  /** Fetch the decrypted access token for revocation; `null` when no row exists, `accessToken` is `null` for token-less connections (Steam). */
   async findForRevoke(userId: string, service: string): Promise<{ accessToken: string | null } | null> {
     const row = await this.prisma.serviceConnection.findUnique({
       where: { userId_service: { userId, service } },

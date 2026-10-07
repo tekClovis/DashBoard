@@ -8,13 +8,16 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'node:events';
 import type { WidgetInstanceEntry } from '@dashboard/shared';
 
+/** Lifecycle event of a WidgetInstance; `type` is also the emitted event name. */
 export type DashboardEvent =
   | { type: 'instance.created'; instance: WidgetInstanceEntry }
   | { type: 'instance.updated'; instance: WidgetInstanceEntry }
   | { type: 'instance.deleted'; instanceId: string };
 
+/** In-process event bus for WidgetInstance changes; listeners subscribe by event type. */
 @Injectable()
 export class DashboardEventsService extends EventEmitter {
+  /** Emits `event` synchronously under the name `event.type`. */
   emitEvent(event: DashboardEvent): void {
     this.emit(event.type, event);
   }

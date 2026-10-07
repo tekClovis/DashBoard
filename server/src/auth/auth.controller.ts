@@ -43,7 +43,7 @@ import { VerificationService } from './verification.service.js';
 
 const BCRYPT_COST = 12;
 
-/** POST /api/auth/register, GET /api/auth/confirm, POST /api/auth/resend — see docs/auth/specs.md. */
+/** Email/password auth routes under `/api/auth`: register, confirm, resend, forgot/reset-password, login, me, logout, logout-all. */
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -57,6 +57,10 @@ export class AuthController {
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
+  /**
+   * Creates an unverified user with its default Dashboard and mails a confirmation link.
+   * @throws {@link ConflictException} with `EMAIL_IN_USE` when the email belongs to a verified or OAuth-only account.
+   */
   @Post('register')
   @HttpCode(201)
   async register(@Body() dto: RegisterDto, @Req() req: Request): Promise<{ ok: true }> {
@@ -100,6 +104,7 @@ export class AuthController {
     return { ok: true };
   }
 
+  /** Always 200, whether or not the account exists or the rate limit was hit, so it reveals nothing. */
   @Post('resend')
   @HttpCode(200)
   async resend(@Body() dto: ResendDto): Promise<{ ok: true }> {
@@ -151,6 +156,10 @@ export class AuthController {
     return { ok: true };
   }
 
+  /**
+   * Verifies credentials and sets the session cookie.
+   * @throws {@link UnauthorizedException} with `INVALID_CREDENTIALS`; {@link ForbiddenException} with `EMAIL_NOT_CONFIRMED` or `ACCOUNT_BANNED`.
+   */
   @Post('login')
   @HttpCode(200)
   async login(
@@ -198,6 +207,7 @@ export class AuthController {
     };
   }
 
+  /** Revokes this session's token only (by `jti`) and clears the cookie. */
   @Post('logout')
   @HttpCode(200)
   @UseGuards(JwtGuard)
@@ -211,6 +221,7 @@ export class AuthController {
     return { ok: true };
   }
 
+  /** Invalidates every session of the user by bumping `tokenVersion`, and clears the cookie. */
   @Post('logout-all')
   @HttpCode(200)
   @UseGuards(JwtGuard)

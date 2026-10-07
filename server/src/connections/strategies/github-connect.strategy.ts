@@ -10,6 +10,7 @@ import { Strategy, type Profile } from 'passport-github2';
 
 export const GITHUB_CONNECT_SCOPES = ['repo', 'security_events'];
 
+/** Value returned by the GitHub and Google connect strategies' `validate`. */
 export interface ConnectProfileResult {
   externalAccountId: string;
   accessToken: string;

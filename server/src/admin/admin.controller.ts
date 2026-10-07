@@ -11,6 +11,7 @@ import { AdminService } from './admin.service.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
+/** ADMIN-only REST endpoints under `/admin/users`. */
 @Controller('admin/users')
 @UseGuards(JwtGuard, RolesGuard)
 @Roles('ADMIN')

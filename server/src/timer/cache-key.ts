@@ -8,6 +8,11 @@
 
 import { createHash } from 'node:crypto';
 
+/**
+ * Build the Redis key under which a widget fetch result is cached.
+ * @param connectionId - Appends the `:conn:` suffix when set; pass it only for connection-scoped widgets.
+ * @returns The key; identical for params that differ only in property order.
+ */
 export function widgetCacheKey(
   service: string,
   widget: string,

@@ -13,6 +13,7 @@ import { PrismaService } from '../core/prisma/prisma.service.js';
 import type { Prisma, WidgetInstance } from '../generated/prisma/client.js';
 import { DashboardEventsService } from './dashboard-events.js';
 
+/** Upper bound, in seconds, of a widget instance's refreshRate. */
 export const MAX_REFRESH_SEC = 86400;
 export const DEFAULT_DASHBOARD_NAME = 'My Dashboard';
 export const DEFAULT_DASHBOARD_POSITION = 0;
@@ -25,6 +26,7 @@ export class DashboardsService {
     private readonly events: DashboardEventsService,
   ) {}
 
+  /** The user's dashboards ordered by position. */
   async list(userId: string): Promise<DashboardEntry[]> {
     const rows = await this.prisma.dashboard.findMany({
       where: { userId },
@@ -33,7 +35,10 @@ export class DashboardsService {
     return rows.map(toDashboardEntry);
   }
 
-  /** `db` lets a caller (share accept) run the create inside its own transaction. */
+  /**
+   * Create a dashboard appended after the user's last one.
+   * @param db - Lets a caller (share accept) run the create inside its own transaction.
+   */
   async create(
     userId: string,
     name: string,
@@ -50,9 +55,12 @@ export class DashboardsService {
     return toDashboardEntry(dashboard);
   }
 
-  /** Not called by signup: AuthController.register creates the default Dashboard row
-   *  directly inside its User-creating transaction instead, so the two rows are always atomic. Kept for non-signup callers that need the
-   *  same default-Dashboard shape without that transactional requirement. */
+  /**
+   * Create the default dashboard ({@link DEFAULT_DASHBOARD_NAME}) for a user.
+   *
+   * Not called by signup: AuthController.register creates the default row inside its
+   * User-creating transaction so both rows are atomic. This is for callers without that requirement.
+   */
   async createDefault(userId: string): Promise<DashboardEntry> {
     const dashboard = await this.prisma.dashboard.create({
       data: { userId, name: DEFAULT_DASHBOARD_NAME, position: DEFAULT_DASHBOARD_POSITION },
@@ -60,6 +68,7 @@ export class DashboardsService {
     return toDashboardEntry(dashboard);
   }
 
+  /** @throws {@link NotFoundException} when the dashboard isn't owned by `userId`. */
   async update(userId: string, id: string, data: { name?: string; position?: number }): Promise<DashboardEntry> {
     const existing = await this.prisma.dashboard.findFirst({ where: { id, userId } });
     if (!existing) throw new NotFoundException();
@@ -68,11 +77,13 @@ export class DashboardsService {
     return toDashboardEntry(dashboard);
   }
 
+  /** @throws {@link NotFoundException} when the dashboard isn't owned by `userId`. */
   async remove(userId: string, id: string): Promise<void> {
     const { count } = await this.prisma.dashboard.deleteMany({ where: { id, userId } });
     if (count === 0) throw new NotFoundException();
   }
 
+  /** @throws {@link NotFoundException} when the dashboard isn't owned by `userId`. */
   async listWidgets(userId: string, dashboardId: string): Promise<WidgetInstanceEntry[]> {
     const dashboard = await this.prisma.dashboard.findFirst({
       where: { id: dashboardId, userId },
@@ -82,6 +93,11 @@ export class DashboardsService {
     return dashboard.widgets.map(toWidgetInstanceEntry);
   }
 
+  /**
+   * Validate and create a widget instance on a dashboard, then emit `instance.created`.
+   * @throws {@link NotFoundException} when the dashboard isn't owned by `userId`.
+   * @throws {@link BadRequestException} with `UNKNOWN_WIDGET`, `INVALID_PARAMS` or `INVALID_REFRESH_RATE`.
+   */
   async addWidgetInstance(
     userId: string,
     dashboardId: string,
@@ -124,6 +140,11 @@ export class DashboardsService {
     return entry;
   }
 
+  /**
+   * Change an instance's params and/or refreshRate (each only if given), then emit `instance.updated`.
+   * @throws {@link NotFoundException} when the instance isn't on one of the user's dashboards.
+   * @throws {@link BadRequestException} with `UNKNOWN_WIDGET`, `INVALID_PARAMS` or `INVALID_REFRESH_RATE`.
+   */
   async updateWidgetInstance(
     userId: string,
     instanceId: string,
@@ -155,6 +176,10 @@ export class DashboardsService {
     return entry;
   }
 
+  /**
+   * Delete an instance and emit `instance.deleted`.
+   * @throws {@link NotFoundException} when the instance isn't on one of the user's dashboards.
+   */
   async removeWidgetInstance(userId: string, instanceId: string): Promise<void> {
     const { count } = await this.prisma.widgetInstance.deleteMany({
       where: { id: instanceId, dashboard: { userId } },

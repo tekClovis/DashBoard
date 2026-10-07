@@ -34,6 +34,7 @@ interface TimerEntry {
   inFlight: boolean;
 }
 
+/** Ticks every second and fetches each active widget instance when due, emitting `widget:data` / `widget:error` to its room. */
 @Injectable()
 export class TimerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TimerService.name);
@@ -60,7 +61,7 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
     this.server = server;
   }
 
-  /** Adds the instance to the active set on its first subscriber. A no-op if already active. */
+  /** Adds the instance to the active set, due immediately. A no-op if already active or if the widget is not in the registry. */
   activate(instance: ActivateRequest): void {
     if (this.active.has(instance.id)) return;
 
@@ -78,6 +79,7 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /** Remove the instance from the active set; a no-op if absent. */
   deactivate(instanceId: string): void {
     this.active.delete(instanceId);
   }
@@ -121,6 +123,10 @@ export class TimerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * RATE_LIMITED / UPSTREAM_ERROR back off exponentially (refreshRate * 2^failures, capped at 15 min) and emit `retryAt`;
+   * other codes deactivate the entry, and REAUTH_REQUIRED also marks the user's connection REAUTH.
+   */
   private async handleFailure(instanceId: string, entry: TimerEntry, err: unknown): Promise<void> {
     const code = err instanceof FetchError ? err.code : 'UPSTREAM_ERROR';
     const message = err instanceof Error ? err.message : 'Unknown fetch error.';

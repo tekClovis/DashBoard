@@ -28,6 +28,10 @@ interface NewsResponse {
   };
 }
 
+/**
+ * Builds the Steam widget definitions, closing over the Web API key.
+ * @param apiKey - `STEAM_API_KEY`; when absent the widgets still exist but every fetch fails with UPSTREAM_ERROR.
+ */
 export function createSteamWidgets(
   apiKey: string | undefined,
 ): [WidgetDefinition<'steam.recently_played'>, WidgetDefinition<'steam.game_news'>] {
@@ -173,6 +177,7 @@ function malformed(): FetchError {
   return new FetchError('UPSTREAM_ERROR', 'Malformed Steam API response.');
 }
 
+/** GETs a Steam Web API path as JSON; `on403` supplies the error for a 403 (otherwise any non-2xx is UPSTREAM_ERROR). */
 async function steamGet<T>(
   apiKey: string | undefined,
   path: string,

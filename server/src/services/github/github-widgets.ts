@@ -101,4 +101,5 @@ const securityAlerts: WidgetDefinition<'github.security_alerts'> = {
   },
 };
 
+/** The github widget definitions registered by the github module: recent commits, pull requests, security alerts. */
 export const githubWidgets = [recentCommits, pullRequests, securityAlerts];

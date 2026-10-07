@@ -4,6 +4,7 @@
 import { plainToInstance } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
 
+/** Shape of the environment the server accepts; optional fields have defaults or disable a feature. */
 export class EnvironmentVariables {
   @IsUrl({ require_tld: false })
   APP_URL!: string;
@@ -64,6 +65,11 @@ export class EnvironmentVariables {
   GOOGLE_CLIENT_SECRET?: string;
 }
 
+/**
+ * Validate and coerce the raw environment for `ConfigModule`.
+ * @returns The typed config, with defaults applied.
+ * @throws {@link Error} when a field fails validation or `TOKEN_ENC_KEY` does not decode to 32 bytes.
+ */
 export function validate(config: Record<string, unknown>): EnvironmentVariables {
   const validated = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,

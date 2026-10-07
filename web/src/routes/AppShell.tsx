@@ -320,7 +320,11 @@ function KeptDashboard() {
   );
 }
 
-/** Authenticated app shell: nav header + realtime socket connection, per docs/Architecture.md §9. */
+/**
+ * Authenticated app shell: nav header, connection banner and the routed page, inside the realtime {@link SocketProvider}.
+ *
+ * The last-visited dashboard is rendered here (not by the router) so it can stay mounted; see docs/Architecture.md §9.
+ */
 export function AppShell() {
   return (
     <SocketProvider>

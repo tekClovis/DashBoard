@@ -18,11 +18,18 @@ export class ConnectionsController {
     private readonly config: ConfigService,
   ) {}
 
+  /** List the caller's connection status for every widget service. */
   @Get()
   async list(@CurrentUser() user: RequestUser): Promise<ConnectionsResponse> {
     return this.connections.list(user.id);
   }
 
+  /**
+   * Delete the caller's connection, then revoke the token at the provider.
+   *
+   * Revocation is best-effort and runs after the row is deleted; it never fails the request.
+   * Succeeds even when no connection exists.
+   */
   @Delete(':service')
   async disconnect(@Param('service') service: string, @CurrentUser() user: RequestUser): Promise<OkResponse> {
     const existing = await this.connections.findForRevoke(user.id, service);

@@ -2,6 +2,7 @@ import type { AdminUserEntry, AdminUserPatch, AdminUsersResponse, OkResponse } f
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client.js';
 
+/** Page size sent as `pageSize` by {@link useAdminUsers}. */
 export const ADMIN_PAGE_SIZE = 20;
 
 /** GET /api/admin/users — only mount for an admin (AdminPage gates), so a non-admin never fires the request. */
@@ -23,6 +24,7 @@ function useInvalidateUsers() {
   return () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
 }
 
+/** PATCH /api/admin/users/{id}. */
 export function useUpdateAdminUser() {
   const invalidate = useInvalidateUsers();
   return useMutation({
@@ -32,6 +34,7 @@ export function useUpdateAdminUser() {
   });
 }
 
+/** DELETE /api/admin/users/{id}. */
 export function useDeleteAdminUser() {
   const invalidate = useInvalidateUsers();
   return useMutation({

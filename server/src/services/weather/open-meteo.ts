@@ -65,6 +65,7 @@ function normalizeCity(city: string): string {
   return city.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+/** Redis key of a city's cached {@link GeoLocation}. */
 export function geoCacheKey(city: string): string {
   return `geo:${normalizeCity(city)}`;
 }
@@ -78,6 +79,7 @@ export class Geocoder {
 
   constructor(private readonly redis: Redis) {}
 
+  /** @throws {@link FetchError} INVALID_PARAMS when the city cannot be resolved. */
   resolve(city: string): Promise<GeoLocation> {
     const key = geoCacheKey(city);
     const existing = this.inFlight.get(key);
@@ -117,6 +119,7 @@ export interface DailyResponse {
   daily: { time: string[]; weather_code: number[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
 }
 
+/** GETs the Open-Meteo forecast for a location; `query` adds to (and may override) the coordinates and `timezone=auto`. */
 export function getForecast<T>(geo: GeoLocation, query: Record<string, string | number>): Promise<T> {
   return getJson<T>(FORECAST_URL, { latitude: geo.latitude, longitude: geo.longitude, timezone: 'auto', ...query });
 }
@@ -153,6 +156,7 @@ const WMO_CONDITIONS: Record<number, string> = {
   99: 'Thunderstorm with heavy hail',
 };
 
+/** Human-readable condition for a WMO code, or `Unknown` for a code not in the table. */
 export function conditionFor(code: number): string {
   return WMO_CONDITIONS[code] ?? 'Unknown';
 }

@@ -62,6 +62,7 @@ function toVideo(id: string, snippet: RawVideoSnippet): YoutubeVideo {
   };
 }
 
+/** Builds the youtube widget definitions; `refresh` renews the user's access token on expiry or 401. */
 export function youtubeWidgets(refresh: TokenRefresher): [
   WidgetDefinition<'youtube.channel_stats'>,
   WidgetDefinition<'youtube.latest_videos'>,

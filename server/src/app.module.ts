@@ -17,6 +17,7 @@ import { GithubModule } from './services/github/github.module.js';
 import { WeatherModule } from './services/weather/weather.module.js';
 import { YoutubeModule } from './services/youtube/youtube.module.js';
 
+/** Root module: loads and validates env config, serves the built SPA, and wires every feature module. */
 @Module({
   imports: [
     ConfigModule.forRoot({

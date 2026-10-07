@@ -5,8 +5,8 @@ import { PrismaService } from './prisma/prisma.service.js';
 import { REDIS, redisProvider } from './redis/redis.provider.js';
 
 /**
- * Config, Prisma, Redis, and Mail — everything else in the app reads these
- * without re-importing. See docs/Architecture.md §2.
+ * Global module exposing {@link PrismaService}, the {@link REDIS} client and {@link MailService}.
+ * Closes the Redis connection on shutdown.
  */
 @Global()
 @Module({

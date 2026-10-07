@@ -15,6 +15,7 @@ export interface FetchContext {
   externalAccountId?: string;
 }
 
+/** A widget as registered server-side: its public spec plus the `fetch` that produces its data. */
 export interface WidgetDefinition<K extends keyof WidgetDataMap = keyof WidgetDataMap> {
   service: string;
   name: string;

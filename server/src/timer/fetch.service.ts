@@ -12,6 +12,7 @@ import { TokenCipherService } from '../connections/token-cipher.service.js';
 import { widgetCacheKey } from './cache-key.js';
 import { FetchError } from './fetch-error.js';
 
+/** Fetches widget data through a Redis cache with in-flight dedupe. */
 @Injectable()
 export class FetchService {
   // Keyed by cache key, not instanceId, so two due instances with identical
@@ -24,6 +25,11 @@ export class FetchService {
     private readonly cipher: TokenCipherService,
   ) {}
 
+  /**
+   * Return the widget data from Redis if cached, else fetch it upstream and cache it for `def.minRefreshSec` seconds.
+   * Concurrent calls with the same cache key share one fetch.
+   * @throws {@link FetchError} with `NOT_CONNECTED` when the widget needs a connection the user lacks; errors from `def.fetch` propagate unchanged.
+   */
   async get(def: WidgetDefinition, params: Params, userId: string): Promise<unknown> {
     if (def.auth === 'connection') {
       return this.getConnectionScoped(def, params, userId);
