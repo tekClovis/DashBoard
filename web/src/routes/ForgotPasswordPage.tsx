@@ -35,7 +35,11 @@ export function ForgotPasswordPage() {
         <p className="text-muted-foreground text-[0.8125rem]">
           Nothing after a few minutes? Check spam, or try again in a minute.
         </p>
-        <Button type="button" variant="outline" className="w-full" onClick={() => forgot.reset()}>
+        <Button type="button" variant="outline" className="w-full" onClick={() => {
+            forgot.reset();
+            setEmail('');
+            setInvalid(false);
+          }}>
           Use another email
         </Button>
         <AuthFooter>

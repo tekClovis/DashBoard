@@ -47,5 +47,6 @@ describe('ForgotPasswordPage', () => {
     submit('ada@example.com');
     fireEvent.click(await screen.findByRole('button', { name: 'Use another email' }));
     expect(await screen.findByRole('button', { name: 'Send reset link' })).toBeTruthy();
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('');
   });
 });
