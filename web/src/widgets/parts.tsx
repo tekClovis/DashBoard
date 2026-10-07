@@ -215,7 +215,6 @@ export function Sparkline({ points, label, unit }: { points: TrailPoint<number>[
         </span>
       )}
       <table className="sr-only">
-        <caption>{label}</caption>
         <thead>
           <tr>
             <th scope="col">Time</th>
