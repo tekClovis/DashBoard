@@ -1,0 +1,6 @@
+
+> @dashboard/shared@0.0.1 build
+> tsc
+
+exit=0
+27:        gameName: string;

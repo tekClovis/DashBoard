@@ -33,6 +33,7 @@ describe('steam views', () => {
     vi.useFakeTimers({ now: new Date('2026-09-10T12:00:00Z'), toFake: ['Date'] });
     const data: WidgetDataMap['steam.game_news'] = {
       appId: 620,
+      gameName: 'Portal 2',
       items: [
         { id: 'n1', title: 'Patch notes 1.12', url: 'https://x/n1', feedLabel: 'Community', date: '2026-09-01T12:00:00Z', imageUrl: 'https://cdn/620.jpg' },
         { id: 'n2', title: 'Sale', url: 'https://x/n2', feedLabel: 'Steam', date: '2026-09-10T07:00:00Z', imageUrl: 'https://cdn/620.jpg' },
@@ -41,7 +42,7 @@ describe('steam views', () => {
     const View = getView('steam', 'game_news');
     const { container } = render(<View data={data} />);
 
-    expect(channel(container)?.textContent).toBe('app_id=620');
+    expect(channel(container)?.textContent).toBe('Portal 2');
     expect(stat(container)?.textContent).toBe('1posts in the last 7 days');
     expect(screen.getByRole('link', { name: 'Patch notes 1.12' }).getAttribute('href')).toBe('https://x/n1');
     expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
@@ -50,9 +51,26 @@ describe('steam views', () => {
     ]);
   });
 
+  it('game_news: shows the server fallback "App <id>" header and still renders news', () => {
+    const View = getView('steam', 'game_news');
+    const items = [
+      { id: 'n1', title: 'Patch', url: 'https://x/n1', feedLabel: 'Steam', date: '2026-09-01T12:00:00Z', imageUrl: 'https://cdn/9.jpg' },
+    ];
+    const { container } = render(<View data={{ appId: 9, gameName: 'App 9', items }} />);
+    expect(channel(container)?.textContent).toBe('App 9');
+    expect(screen.getByRole('link', { name: 'Patch' })).toBeTruthy();
+  });
+
+  it('game_news: a payload cached before gameName existed falls back to "App <id>"', () => {
+    const View = getView('steam', 'game_news');
+    const { container } = render(<View data={{ appId: 620, items: [] }} />);
+    expect(channel(container)?.textContent).toBe('App 620');
+  });
+
   it('renders a non-http(s) news url as plain text, not a link', () => {
     const data: WidgetDataMap['steam.game_news'] = {
       appId: 620,
+      gameName: 'Portal 2',
       items: [
         { id: 'n1', title: 'Evil', url: 'javascript:alert(1)', feedLabel: 'Community', date: '2026-09-01T12:00:00Z', imageUrl: 'https://cdn/620.jpg' },
       ],
@@ -85,7 +103,7 @@ describe('steam views', () => {
     const items = [
       { id: 'n1', title: 'Patch', url: 'https://x/1', feedLabel: 'Community', date: '2026-09-01T12:00:00Z', imageUrl: 'https://cdn/620.jpg' },
     ];
-    const { container } = render(<News data={{ appId: 620, items }} />);
+    const { container } = render(<News data={{ appId: 620, gameName: 'Portal 2', items }} />);
     const header = container.querySelector<HTMLElement>('[data-slot="game-id"] [data-slot="thumb"]')!;
     expect([header.style.width, header.style.height]).toEqual(['128px', '60px']);
     expect(header.querySelector('img')?.getAttribute('src')).toBe('https://cdn/620.jpg');

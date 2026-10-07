@@ -108,14 +108,16 @@ describe('steam widgets', () => {
         },
       });
 
-      const data = await gameNews.fetch({ app_id: 620, number: 1 }, ctx);
+      const data = await gameNews.fetch({ app_id: 620, number: 1, game_name: 'Portal 2' }, ctx);
 
+      expect(fetchMock).toHaveBeenCalledTimes(1);
       const url = requestedUrl(fetchMock);
       expect(url.pathname).toBe('/ISteamNews/GetNewsForApp/v2/');
       expect(url.searchParams.get('appid')).toBe('620');
       expect(url.searchParams.get('count')).toBe('1');
       expect(data).toEqual({
         appId: 620,
+        gameName: 'Portal 2',
         items: [
           {
             id: '1',
@@ -126,6 +128,49 @@ describe('steam widgets', () => {
             imageUrl: header(620),
           },
         ],
+      });
+    });
+
+    describe('game name', () => {
+      const news = { appnews: { newsitems: [] } };
+      const routed = (details: () => Response) => {
+        const fetchMock = vi.fn(async (input: string) =>
+          input.includes('appdetails') ? details() : new Response(JSON.stringify(news), { status: 200 }),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        return fetchMock;
+      };
+      const detailsCalls = (fetchMock: ReturnType<typeof vi.fn>) =>
+        fetchMock.mock.calls.filter(([url]) => String(url).includes('appdetails'));
+
+      it('looks the name up in the store when the stored params have none, and caches it', async () => {
+        const fetchMock = routed(() => new Response(JSON.stringify({ '730': { success: true, data: { name: 'Counter-Strike 2' } } })));
+
+        const first = await gameNews.fetch({ app_id: 730, number: 5 }, ctx);
+        const second = await gameNews.fetch({ app_id: 730, number: 5 }, ctx);
+
+        expect(first.gameName).toBe('Counter-Strike 2');
+        expect(second.gameName).toBe('Counter-Strike 2');
+        expect(detailsCalls(fetchMock)).toHaveLength(1);
+      });
+
+      it('falls back to "App <id>" when the lookup fails, and still returns news', async () => {
+        routed(() => new Response('{}', { status: 500 }));
+        const data = await gameNews.fetch({ app_id: 731, number: 5 }, ctx);
+        expect(data).toEqual({ appId: 731, gameName: 'App 731', items: [] });
+      });
+
+      it('falls back to "App <id>" when the store does not know the app', async () => {
+        routed(() => new Response(JSON.stringify({ '732': { success: false } })));
+        const data = await gameNews.fetch({ app_id: 732, number: 5 }, ctx);
+        expect(data.gameName).toBe('App 732');
+      });
+
+      it('does not cache a failed lookup', async () => {
+        const fetchMock = routed(() => new Response('{}', { status: 500 }));
+        await gameNews.fetch({ app_id: 733, number: 5 }, ctx);
+        await gameNews.fetch({ app_id: 733, number: 5 }, ctx);
+        expect(detailsCalls(fetchMock)).toHaveLength(2);
       });
     });
 
@@ -142,7 +187,7 @@ describe('steam widgets', () => {
         },
       });
 
-      const data = await gameNews.fetch({ app_id: 620, number: 2 }, ctx);
+      const data = await gameNews.fetch({ app_id: 620, number: 2, game_name: 'Portal 2' }, ctx);
 
       expect(data.items.map((item) => item.url)).toEqual(['http://x/4', 'https://x/5']);
     });

@@ -27,7 +27,7 @@ export interface SteamNewsItem {
 
 export interface WidgetDataMap {
   'steam.recently_played': { games: SteamRecentGame[] };
-  'steam.game_news': { appId: number; items: SteamNewsItem[] };
+  'steam.game_news': { appId: number; /** Resolved server-side; `App <id>` when unknown. */ gameName: string; items: SteamNewsItem[] };
   'github.recent_commits': { repo: string; commits: GithubCommit[] };
   'github.pull_requests': { repo: string; state: 'open' | 'closed' | 'all'; pulls: GithubPullRequest[] };
   'github.security_alerts': { repo: string; alerts: GithubSecurityAlert[] };

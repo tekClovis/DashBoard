@@ -1,0 +1,17 @@
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a1946c3e8829df57d/web
+
+ ✓ src/widgets/steam.spec.tsx > steam views > recently_played: "Last 2 weeks" channel, total hours stat, game/meter/hours rows 121ms
+ ✓ src/widgets/steam.spec.tsx > steam views > game_news: app_id channel, posts in the last 7 days, title/feed/age rows 26ms
+ ✓ src/widgets/steam.spec.tsx > steam views > game_news: shows the server fallback "App <id>" header and still renders news 7ms
+ ✓ src/widgets/steam.spec.tsx > steam views > game_news: a payload cached before gameName existed falls back to "App <id>" 4ms
+ ✓ src/widgets/steam.spec.tsx > steam views > renders a non-http(s) news url as plain text, not a link 5ms
+ ✓ src/widgets/steam.spec.tsx > steam views > shows an empty state instead of an empty list 1ms
+ ✓ src/widgets/steam.spec.tsx > steam views > recently_played rows show their game image and game_news shows a header image plus one per row; a failed image leaves the text 13ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  22:54:03
+   Duration  1.09s (environment 53%, tests 18%, import 16%, transform 11%, worker 1%)
+
+exit=0
