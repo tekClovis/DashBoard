@@ -77,6 +77,7 @@ describe('RegisterPage', () => {
     );
     type('Email', 'ada@example.com');
     type('Password', 'correct-horse-1!');
+    type('Confirm your password', 'correct-horse-1!');
     submit();
 
     const alert = await screen.findByRole('alert');
@@ -95,6 +96,7 @@ describe('RegisterPage', () => {
     renderAt('/register', '/register', <RegisterPage />);
     type('Email', 'grace@example.com');
     type('Password', 'correct-horse-1!');
+    type('Confirm your password', 'correct-horse-1!');
     submit();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Check your email' })).toBeTruthy();
@@ -106,5 +108,50 @@ describe('RegisterPage', () => {
     expect(await screen.findByText('If that account needs a new link, it’s on its way.')).toBeTruthy();
     expect(calls.at(-1)).toMatchObject({ url: '/api/auth/resend', body: { email: 'grace@example.com' } });
     expect((screen.getByRole('button', { name: 'Send a new link' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('has a new-password confirm field directly under the password field', () => {
+    stubAuthApi();
+    renderAt('/register', '/register', <RegisterPage />);
+    const confirm = screen.getByLabelText('Confirm your password') as HTMLInputElement;
+    expect(confirm.type).toBe('password');
+    expect(confirm.autocomplete).toBe('new-password');
+    const pw = screen.getByLabelText('Password');
+    expect(pw.parentElement?.nextElementSibling).toBe(confirm.parentElement);
+  });
+
+  it.each([
+    ['differs', 'correct-horse-2!'],
+    ['is empty', ''],
+  ])('blocks submit and focuses the confirm field when it %s', (_name, value) => {
+    stubAuthApi();
+    renderAt('/register', '/register', <RegisterPage />);
+    type('Email', 'ada@example.com');
+    type('Password', 'correct-horse-1!');
+    type('Confirm your password', value);
+    submit();
+
+    const confirm = screen.getByLabelText('Confirm your password');
+    expect(confirm.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(confirm.getAttribute('aria-describedby')!)?.textContent).toBe(
+      'Passwords do not match.',
+    );
+    expect(document.activeElement).toBe(confirm);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('registers with only email and password when the passwords match', async () => {
+    stubAuthApi();
+    renderAt('/register', '/register', <RegisterPage />);
+    type('Email', 'ada@example.com');
+    type('Password', 'correct-horse-1!');
+    type('Confirm your password', 'correct-horse-1!');
+    submit();
+    await screen.findByRole('heading', { level: 1, name: 'Check your email' });
+    expect(calls.at(-1)).toMatchObject({
+      url: '/api/auth/register',
+      body: { email: 'ada@example.com', password: 'correct-horse-1!' },
+    });
+    expect(Object.keys(calls.at(-1)!.body as object).sort()).toEqual(['email', 'password']);
   });
 });
