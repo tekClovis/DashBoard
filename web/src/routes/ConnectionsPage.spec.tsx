@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as clientApi from '@/api/client.js';
 import * as connectionsApi from '@/api/connections.js';
 import { ConnectionsPage } from './ConnectionsPage.js';
 
@@ -163,6 +164,31 @@ describe('ConnectionsPage', () => {
           }) as HTMLButtonElement
         ).disabled,
       ).toBe(false);
+    });
+
+    it('still starts connect when another service is disconnected while the reauth is pending', async () => {
+      vi.restoreAllMocks();
+      const pending = new Map<string, () => void>();
+      vi.spyOn(clientApi, 'apiFetch').mockImplementation((path: string) => {
+        if (path === '/connections') {
+          return Promise.resolve({
+            connections: [
+              { service: 'github', connected: true, status: 'REAUTH' },
+              { service: 'steam', connected: true, status: 'OK' },
+            ],
+          });
+        }
+        return new Promise((resolve) => pending.set(path, () => resolve({ ok: true })));
+      });
+      const startConnect = vi.spyOn(connectionsApi, 'startConnect').mockImplementation(() => {});
+      renderPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Reauthenticate' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      expect(await screen.findByRole('button', { name: 'Disconnecting…' })).toBeTruthy();
+      await act(async () => pending.get('/connections/github')!());
+
+      await waitFor(() => expect(startConnect).toHaveBeenCalledWith('github'));
     });
   });
 });

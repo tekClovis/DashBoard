@@ -16,6 +16,8 @@ const SERVICE_NAMES: Record<string, string> = {
 export function ConnectionsPage() {
   const { data, isPending } = useConnections();
   const disconnect = useDisconnect();
+  // Own mutation: react-query only runs the per-mutate callbacks of a mutation's latest mutate() call.
+  const reauthDisconnect = useDisconnect();
   const [reauthing, setReauthing] = useState<{ service: string; redirecting: boolean } | null>(null);
   const [reauthError, setReauthError] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ export function ConnectionsPage() {
     setReauthError(null);
     // Stay in the redirecting state after success: startConnect is a full-page redirect, and the
     // refetched connection list already shows the service as not connected.
-    disconnect.mutate(service, {
+    reauthDisconnect.mutate(service, {
       onSuccess: () => {
         setReauthing({ service, redirecting: true });
         startConnect(service);
@@ -51,7 +53,7 @@ export function ConnectionsPage() {
             entry={entry}
             isLast={i === data.connections.length - 1}
             onDisconnect={() => disconnect.mutate(entry.service)}
-            disconnecting={disconnect.isPending && disconnect.variables === entry.service && reauthing === null}
+            disconnecting={disconnect.isPending && disconnect.variables === entry.service}
             onReauth={() => reauth(entry.service)}
             reauthPhase={
               reauthing?.service === entry.service ? (reauthing.redirecting ? 'redirecting' : 'pending') : 'idle'
