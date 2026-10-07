@@ -35,13 +35,19 @@ describe('Password reset (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     await app.init();
     prisma = app.get(PrismaService);
+    await clearLoginBucket();
   });
 
-  afterAll(async () => {
-    // The per-IP login bucket lives in the Redis shared by every e2e file: hand it back empty.
+  // The per-IP login bucket (10/h) lives in the Redis shared by every e2e file: earlier files
+  // (auth-session) leave it nearly full, so start from empty and hand it back empty.
+  async function clearLoginBucket() {
     const redis = app.get<Redis>(REDIS);
     const keys = await redis.keys('login:*');
     if (keys.length > 0) await redis.del(...keys);
+  }
+
+  afterAll(async () => {
+    await clearLoginBucket();
     await app.close();
   });
 
