@@ -34,7 +34,7 @@ export interface WidgetDataMap {
   'weather.current_weather': CurrentWeatherData;
   'weather.forecast': ForecastData;
   'youtube.channel_stats': YoutubeChannelStats;
-  'youtube.latest_videos': { channelId: string; videos: YoutubeVideo[] };
+  'youtube.latest_videos': { channelId: string; /** null when YouTube sent no title; views then show the id. */ channelTitle: string | null; videos: YoutubeVideo[] };
   'youtube.trending_videos': { region: string; videos: YoutubeVideo[] };
 }
 

@@ -26,7 +26,7 @@ const video = (id: string, title: string, publishedAt: string, url = `https://ww
 });
 
 describe('youtube widget views', () => {
-  it('channel_stats: title + id channel, subscribers stat, views and videos rows', () => {
+  it('channel_stats: title (not the id) channel, subscribers stat, views and videos rows', () => {
     const data: WidgetDataMap['youtube.channel_stats'] = {
       channelId: 'UC_x5',
       title: 'Google for Developers',
@@ -37,9 +37,14 @@ describe('youtube widget views', () => {
     };
     const { container } = renderView('channel_stats', data);
 
-    expect(channel(container)?.textContent).toBe('Google for DevelopersUC_x5');
+    expect(channel(container)?.textContent).toBe('Google for Developers');
     expect(stat(container)?.textContent).toBe('2.4Msubscribers');
     expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Views180M', 'Videos412']);
+  });
+
+  it('channel_stats: falls back to the channel id when there is no title', () => {
+    const { container } = renderView('channel_stats', { channelId: 'UC_x5', title: '', subscribers: 1, views: 2, videos: 3, imageUrl: null });
+    expect(channel(container)?.textContent).toBe('UC_x5');
   });
 
   it('channel_stats: leads with views when subscribers are hidden, and says so', () => {
@@ -53,18 +58,24 @@ describe('youtube widget views', () => {
     ]);
   });
 
-  it('latest_videos: channel id, time since the last upload, linked title/age rows', () => {
+  it('latest_videos: channel title, time since the last upload, linked title/age rows', () => {
     vi.useFakeTimers({ now: new Date('2026-09-23T12:00:00Z'), toFake: ['Date'] });
     const data: WidgetDataMap['youtube.latest_videos'] = {
       channelId: 'UC_x5',
+      channelTitle: 'Google for Developers',
       videos: [video('b', 'Just out', '2026-09-23T07:00:00Z'), video('a', 'Building a Timer', '2026-09-21T10:00:00Z')],
     };
     const { container } = renderView('latest_videos', data);
 
-    expect(channel(container)?.textContent).toBe('UC_x5');
+    expect(channel(container)?.textContent).toBe('Google for Developers');
     expect(stat(container)?.textContent).toBe('5hsince the last upload');
     expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Just out5h', 'Building a Timer2d']);
     expect(screen.getByRole('link', { name: 'Building a Timer' }).getAttribute('href')).toBe('https://www.youtube.com/watch?v=a');
+  });
+
+  it('latest_videos: falls back to the channel id when there is no title', () => {
+    const { container } = renderView('latest_videos', { channelId: 'UC_x5', channelTitle: null, videos: [] });
+    expect(channel(container)?.textContent).toBe('UC_x5');
   });
 
   it('trending_videos: region channel, ranked rows, and an empty state', () => {
@@ -91,7 +102,7 @@ describe('youtube widget views', () => {
   it('latest_videos and trending_videos: every row shows its thumbnail', () => {
     const videos = [video('a', 'A', '2026-09-21T10:00:00Z'), video('b', 'B', '2026-09-20T10:00:00Z')];
     for (const [widget, data] of [
-      ['latest_videos', { channelId: 'UC', videos }],
+      ['latest_videos', { channelId: 'UC', channelTitle: null, videos }],
       ['trending_videos', { region: 'FR', videos }],
     ] as const) {
       const { container, unmount } = renderView(widget, data);
@@ -102,7 +113,7 @@ describe('youtube widget views', () => {
 
   it('a thumbnail that fails to load or is missing leaves the row text', () => {
     const videos = [video('a', 'Broken', '2026-09-21T10:00:00Z'), { ...video('b', 'None', '2026-09-20T10:00:00Z'), imageUrl: null }];
-    const { container } = renderView('latest_videos', { channelId: 'UC', videos });
+    const { container } = renderView('latest_videos', { channelId: 'UC', channelTitle: null, videos });
     expect(container.querySelectorAll('li img')).toHaveLength(1);
     fireEvent.error(container.querySelector('li img')!);
     expect(container.querySelectorAll('li img')).toHaveLength(0);

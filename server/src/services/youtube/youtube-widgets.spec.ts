@@ -136,13 +136,23 @@ describe('youtube widgets fetch()', () => {
     expect(url.pathname).toBe('/youtube/v3/playlistItems');
     expect(url.searchParams.get('playlistId')).toBe('UUuploads');
     expect(url.searchParams.get('maxResults')).toBe('2');
+    expect(call(fetchMock, 0).url.searchParams.get('part')).toBe('snippet,contentDetails');
     expect(data).toEqual({
       channelId: 'UC_x5',
+      channelTitle: 'Google for Developers',
       videos: [
         { id: 'v2', title: 'Newer', channel: 'Chan', publishedAt: '2026-09-20T00:00:00Z', url: 'https://www.youtube.com/watch?v=v2', imageUrl: thumbnails.medium.url },
         { id: 'v1', title: 'Older', channel: 'Chan', publishedAt: '2026-09-10T00:00:00Z', url: 'https://www.youtube.com/watch?v=v1', imageUrl: thumbnails.medium.url },
       ],
     });
+  });
+
+  it('latest_videos reports a missing channel title as null', async () => {
+    stubFetch(
+      () => Response.json({ items: [{ ...CHANNEL, snippet: undefined }] }),
+      () => Response.json({ items: [] }),
+    );
+    await expect(widget('latest_videos').fetch({ channel_id: 'UC_x5', number: 1 }, ctx)).resolves.toMatchObject({ channelTitle: null });
   });
 
   it('maps the best available snippet.thumbnails size to imageUrl, null when there are none', async () => {
