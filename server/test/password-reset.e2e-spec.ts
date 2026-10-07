@@ -35,6 +35,10 @@ describe('Password reset (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     await app.init();
     prisma = app.get(PrismaService);
+    // Earlier files (auth-session logs in 10x) leave the per-IP login bucket near its cap: start empty.
+    const redis = app.get<Redis>(REDIS);
+    const keys = await redis.keys('login:*');
+    if (keys.length > 0) await redis.del(...keys);
   });
 
   afterAll(async () => {
