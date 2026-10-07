@@ -29,6 +29,7 @@ export function CurrentWeatherView({ data, fetchedAt, history, compact }: Widget
     (d: CurrentWeather) => `${d.location} ${d.unit}`,
     (d) => d.temperature,
   );
+  const values = trail.map((p) => p.value);
   const delta = trail[trail.length - 1].value - trail[0].value;
   return (
     <>
@@ -47,12 +48,34 @@ export function CurrentWeatherView({ data, fetchedAt, history, compact }: Widget
           }
         />
       )}
-      {trail.length > 1 && (
+      {trail.length > 1 ? (
         <div className="grid gap-1">
           <Sparkline points={trail} label={`Temperature, last ${trail.length} updates, ${unit}`} unit="°" />
+          <div
+            aria-label="Temperature range"
+            className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[0.6875rem]"
+          >
+            <span>
+              Now <b className="text-foreground font-medium">{temperature.toFixed(1)}°</b>
+            </span>
+            <span>
+              Min <b className="text-foreground font-medium">{Math.min(...values).toFixed(1)}°</b>
+            </span>
+            <span>
+              Max <b className="text-foreground font-medium">{Math.max(...values).toFixed(1)}°</b>
+            </span>
+          </div>
           <Delta>
             {delta >= 0 ? '↑' : '↓'} {Math.abs(delta).toFixed(1)}° since {trail[0].at ? hhmm(trail[0].at) : ''}
           </Delta>
+        </div>
+      ) : (
+        <div className="grid gap-1 border-t pt-2">
+          <span className="font-mono text-[0.8125rem]">
+            Now {temperature.toFixed(1)}
+            {unit}
+          </span>
+          <span className="text-muted-foreground text-xs">Trend available after the next update</span>
         </div>
       )}
     </>
