@@ -41,6 +41,13 @@ describe('weather views', () => {
     expect(screen.getAllByText(/Trend available/)).toHaveLength(1);
   });
 
+  it('current_weather: the trend text is visually hidden (still read) in the narrowest widgets so it cannot overflow', () => {
+    const View = getView('weather', 'current_weather');
+    render(<View data={now} fetchedAt={new Date().toISOString()} />);
+
+    expect(screen.getByText('Now 17.6°C').parentElement?.className).toContain('@max-[260px]:sr-only');
+  });
+
   it('current_weather: sparkline of the cached pushes, with a delta since the first one', () => {
     const View = getView('weather', 'current_weather');
     const t = (m: number) => new Date(2026, 9, 1, 13, m).toISOString();

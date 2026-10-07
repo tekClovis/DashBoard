@@ -70,7 +70,7 @@ export function CurrentWeatherView({ data, fetchedAt, history, compact }: Widget
           </Delta>
         </div>
       ) : (
-        <div className="grid gap-1 border-t pt-2">
+        <div className="mt-auto grid gap-1 border-t pt-2 @max-[260px]:sr-only">
           <span className="font-mono text-[0.8125rem]">
             Now {temperature.toFixed(1)}
             {unit}
