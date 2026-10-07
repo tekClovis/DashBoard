@@ -45,21 +45,27 @@ function SentState({ email }: { email: string }) {
 export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [touched, setTouched] = useState(false);
   const register = useRegister();
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
 
   const emailBad = touched && !isValidEmail(email);
   const passwordBad = touched && !isValidPassword(password);
+  const mismatch = touched && !emailBad && !passwordBad && password !== confirm;
   const emailInUse = register.error instanceof ApiError && register.error.code === 'EMAIL_IN_USE';
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const valid = isValidEmail(email) && isValidPassword(password);
+    const badPassword = !isValidPassword(password);
+    const badConfirm = !badPassword && password !== confirm;
+    const valid = isValidEmail(email) && !badPassword && !badConfirm;
     setTouched(!valid);
     if (valid) register.mutate({ email, password });
-    else (isValidEmail(email) ? passwordRef : emailRef).current?.focus();
+    else if (!isValidEmail(email)) emailRef.current?.focus();
+    else (badPassword ? passwordRef : confirmRef).current?.focus();
   }
 
   if (register.isSuccess) return <SentState email={email} />;
@@ -109,6 +115,21 @@ export function RegisterPage() {
             aria-describedby={passwordBad ? 'password-rules password-err' : 'password-rules'}
           />
           {passwordBad && <FieldError id="password-err">Meet every rule above.</FieldError>}
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="confirm">Confirm your password</Label>
+          <Input
+            id="confirm"
+            ref={confirmRef}
+            type="password"
+            autoComplete="new-password"
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            aria-invalid={mismatch || undefined}
+            aria-describedby={mismatch ? 'confirm-err' : undefined}
+          />
+          {mismatch && <FieldError id="confirm-err">Passwords do not match.</FieldError>}
         </div>
         {register.isError && (
           <Alert tone="destructive" id="register-err">
