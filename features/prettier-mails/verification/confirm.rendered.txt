@@ -1,0 +1,8 @@
+Confirm your email
+---
+Confirm your email
+
+Thanks for signing up. Confirm your email address to activate your account.
+http://localhost:8080/confirm?token=Qm9vX3Rva2VuX2V4YW1wbGVfZm9yX3Jldmlld19vbmx5X2Fh
+
+You received this email because someone signed up with this address. If it wasn't you, ignore it.

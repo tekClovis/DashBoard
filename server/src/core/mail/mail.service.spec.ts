@@ -14,6 +14,14 @@ const config = {
 
 const URL = 'http://localhost:8080/confirm?token=abc123';
 
+function expectBrandedHtml(html: string, url: string): void {
+  expect(html).toContain('Dashboard</td>'); // header
+  expect(html).toMatch(/<h1 style="[^"]+">/); // heading
+  expect(html).toContain(`<a href="${url}" style="`); // CTA button, href unchanged
+  expect(html).toContain('border-top:1px solid'); // footer
+  expect(html).not.toMatch(/<link|<style|<img|<script|url\(/i); // inline CSS only, no remote assets
+}
+
 describe('MailService.sendConfirmationEmail', () => {
   beforeEach(() => {
     sendMail.mockReset();
@@ -30,13 +38,12 @@ describe('MailService.sendConfirmationEmail', () => {
     await service.sendConfirmationEmail('user@example.com', URL);
 
     expect(sendMail).toHaveBeenCalledTimes(1);
-    expect(sendMail.mock.calls[0][0]).toEqual({
-      from: 'Dashboard <no-reply@dashboard.local>',
-      to: 'user@example.com',
-      subject: 'Confirm your email',
-      text: `Confirm your email: ${URL}`,
-      html: `<p>Confirm your email: <a href="${URL}">${URL}</a></p>`,
-    });
+    const msg = sendMail.mock.calls[0][0];
+    expect(msg.from).toBe('Dashboard <no-reply@dashboard.local>');
+    expect(msg.to).toBe('user@example.com');
+    expect(msg.subject).toBe('Confirm your email');
+    expect(msg.text).toContain(URL);
+    expectBrandedHtml(msg.html, URL);
   });
 
   it('swallows a transport failure and logs it with the recipient and stack', async () => {
@@ -76,7 +83,16 @@ describe('MailService.sendPasswordResetEmail', () => {
     expect(msg.to).toBe('user@example.com');
     expect(msg.subject).toBe('Reset your password');
     expect(msg.text).toContain(url);
-    expect(msg.html).toContain(`<a href="${url}">`);
+    expect(msg.text).toContain('works once and for 1 hour');
+    expectBrandedHtml(msg.html, url);
+  });
+
+  it('escapes the url in the html href', async () => {
+    sendMail.mockResolvedValue({});
+
+    await new MailService(config).sendPasswordResetEmail('u@example.com', 'http://x/?a=1&b="2"');
+
+    expect(sendMail.mock.calls[0][0].html).toContain('href="http://x/?a=1&amp;b=&quot;2&quot;"');
   });
 
   it('never throws when the transport fails', async () => {
