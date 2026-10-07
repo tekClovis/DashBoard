@@ -61,6 +61,12 @@ describe('steam views', () => {
     expect(screen.getByRole('link', { name: 'Patch' })).toBeTruthy();
   });
 
+  it('game_news: a payload cached before gameName existed falls back to "App <id>"', () => {
+    const View = getView('steam', 'game_news');
+    const { container } = render(<View data={{ appId: 620, items: [] }} />);
+    expect(channel(container)?.textContent).toBe('App 620');
+  });
+
   it('renders a non-http(s) news url as plain text, not a link', () => {
     const data: WidgetDataMap['steam.game_news'] = {
       appId: 620,
