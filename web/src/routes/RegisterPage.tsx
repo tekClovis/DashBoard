@@ -54,7 +54,7 @@ export function RegisterPage() {
 
   const emailBad = touched && !isValidEmail(email);
   const passwordBad = touched && !isValidPassword(password);
-  const mismatch = touched && !passwordBad && password !== confirm;
+  const mismatch = touched && !emailBad && !passwordBad && password !== confirm;
   const emailInUse = register.error instanceof ApiError && register.error.code === 'EMAIL_IN_USE';
 
   function onSubmit(e: React.FormEvent) {

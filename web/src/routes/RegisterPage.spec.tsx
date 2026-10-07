@@ -154,4 +154,19 @@ describe('RegisterPage', () => {
     });
     expect(Object.keys(calls.at(-1)!.body as object).sort()).toEqual(['email', 'password']);
   });
+
+  it('shows only the email error when the email is invalid and the confirm differs', () => {
+    stubAuthApi();
+    renderAt('/register', '/register', <RegisterPage />);
+    type('Email', 'ada@example');
+    type('Password', 'correct-horse-1!');
+    type('Confirm your password', 'correct-horse-2!');
+    submit();
+
+    expect(screen.getByLabelText('Email').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText('Confirm your password').getAttribute('aria-invalid')).toBeNull();
+    expect(screen.queryByText('Passwords do not match.')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByLabelText('Email'));
+    expect(calls).toHaveLength(0);
+  });
 });
