@@ -286,7 +286,7 @@ function ShellHeader() {
 }
 
 /**
- * Keep-alive for the last-visited dashboard (docs/Architecture.md §9): it stays mounted, hidden and
+ * Keep-alive for the last-visited dashboard (docs/Architecture.md §5.9): it stays mounted, hidden and
  * inert, while Services / Profile / Admin show, so its widgets, subscriptions, grid and scroll survive.
  * Only one dashboard is kept; a different one replaces it. It lives and dies with the shell (logout
  * unmounts it), and a deleted dashboard renders nothing, which drops its subscriptions.
@@ -323,7 +323,7 @@ function KeptDashboard() {
 /**
  * Authenticated app shell: nav header, connection banner and the routed page, inside the realtime {@link SocketProvider}.
  *
- * The last-visited dashboard is rendered here (not by the router) so it can stay mounted; see docs/Architecture.md §9.
+ * The last-visited dashboard is rendered here (not by the router) so it can stay mounted; see docs/Architecture.md §5.9.
  */
 export function AppShell() {
   return (

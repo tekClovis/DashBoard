@@ -1,5 +1,5 @@
 // ServiceConnection CRUD + OAuth/OpenID connect upserts — see
-// docs/Architecture.md §5.2 and features/connections-api/spec.md.
+// docs/Architecture.md §8.3 and features/connections-api/spec.md.
 
 import { Injectable } from '@nestjs/common';
 import type { ConnectionEntry, ConnectionsResponse } from '@dashboard/shared';

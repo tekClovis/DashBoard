@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Role } from '../generated/prisma/enums.js';
 import { SESSION_TTL_SEC } from './session.constants.js';
 
-/** `sub`/`role`/`tv` (tokenVersion)/`jti` (per-token id, for logout revocation) claims — see docs/Architecture.md §5.1. */
+/** `sub`/`role`/`tv` (tokenVersion)/`jti` (per-token id, for logout revocation) claims — see docs/Architecture.md §8.3. */
 export interface JwtPayload {
   sub: string;
   role: Role;

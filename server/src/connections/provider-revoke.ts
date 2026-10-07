@@ -1,5 +1,5 @@
 // Best-effort provider-side token revocation on disconnect — see
-// docs/Architecture.md §5.2 ("Disconnecting ... revokes the token at the
+// docs/Architecture.md §8.3 ("Disconnecting ... revokes the token at the
 // provider where an API allows it"). Steam has no token to revoke.
 
 import { ConfigService } from '@nestjs/config';

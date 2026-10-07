@@ -1,5 +1,5 @@
-// OAuth `state` param for the `login`/`link` intents — see docs/Architecture.md §5.2: "The
-// intent (login|connect) travels in `state`: an HMAC-signed, 10-minute value that is also
+// OAuth `state` param for the `login`/`link` intents — see docs/Architecture.md §8.3: "The
+// intent (`login` | `link` | `connect`) travels in `state`: an HMAC-signed, 10-minute value that is also
 // bound to a short-lived cookie." `connect`'s own state (with its own CSRF-cookie binding,
 // needed for Steam's OpenID round trip, which can't echo an arbitrary `state` query param)
 // lives in ../../connections/oauth-state.js and is verified separately by oauth.guard.ts —

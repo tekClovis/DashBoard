@@ -1,9 +1,9 @@
-// Dashboard + WidgetInstance CRUD — see docs/Architecture.md §4, §8 and
+// Dashboard + WidgetInstance CRUD — see docs/Architecture.md §8.2, §3 and
 // features/dashboards-api/spec.md.
 //
 // Every lookup by {id} is scoped by userId in the query itself (a WidgetInstance has no userId
 // column, so it's scoped through its `dashboard` relation), so an instance or dashboard owned by
-// someone else is a 404, not a 403 — see docs/Architecture.md §8 and §10.
+// someone else is a 404, not a 403 — see docs/Architecture.md §3 and §8.4.
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { DashboardEntry, LayoutUpdateEntry, ParamSpec, WidgetInstanceEntry } from '@dashboard/shared';

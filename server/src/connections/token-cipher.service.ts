@@ -1,4 +1,4 @@
-// AES-256-GCM token encryption — see docs/Architecture.md §5.2.
+// AES-256-GCM token encryption — see docs/Architecture.md §8.3.
 //
 // Key: TOKEN_ENC_KEY (32 bytes, base64, from env; shape validated at boot by
 // env.validation.ts). Random 12-byte IV per value, stored as

@@ -1,4 +1,4 @@
-// Required env vars, validated at boot — see docs/Architecture.md §11.
+// Required env vars, validated at boot — see docs/Architecture.md §8.6.
 // The server refuses to start without JWT_SECRET and a 32-byte TOKEN_ENC_KEY.
 
 import { plainToInstance } from 'class-transformer';

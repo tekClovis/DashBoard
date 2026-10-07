@@ -11,7 +11,7 @@ interface ServiceMeta {
  * The single source of truth for /about.json, /api/catalog, param
  * validation, and the Timer. Each `services/<name>` module registers its
  * ServiceSpec and WidgetDefinitions in onModuleInit. See
- * docs/Architecture.md §3.
+ * docs/Architecture.md §8.1.
  */
 @Injectable()
 export class WidgetRegistryService {

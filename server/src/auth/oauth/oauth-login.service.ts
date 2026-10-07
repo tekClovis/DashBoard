@@ -1,4 +1,4 @@
-// Account-linking rules — docs/Architecture.md §5.1 "Account linking":
+// Account-linking rules — docs/Architecture.md §8.3 "Account linking":
 //   1. AuthIdentity(provider, providerUserId) match → log that user in.
 //   2. Else a User with the same email exists → auto-link only if the provider's email is
 //      verified AND the local user is confirmed; otherwise refuse.

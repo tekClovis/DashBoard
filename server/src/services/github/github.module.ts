@@ -3,7 +3,7 @@ import { CatalogModule } from '../../catalog/catalog.module.js';
 import { WidgetRegistryService } from '../../catalog/widget-registry.service.js';
 import { githubWidgets } from './github-widgets.js';
 
-/** Registers the github service and its widgets with the registry — see docs/Architecture.md §3. */
+/** Registers the github service and its widgets with the registry — see docs/Architecture.md §8.1. */
 @Module({ imports: [CatalogModule] })
 export class GithubModule implements OnModuleInit {
   constructor(private readonly registry: WidgetRegistryService) {}

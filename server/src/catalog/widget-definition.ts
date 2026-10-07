@@ -1,4 +1,4 @@
-// Server-side widget registration — see docs/Architecture.md §3.
+// Server-side widget registration — see docs/Architecture.md §8.1.
 
 import type { ParamSpec, WidgetDataMap } from '@dashboard/shared';
 

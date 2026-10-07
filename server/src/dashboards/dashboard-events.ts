@@ -1,4 +1,4 @@
-// Extension point for timer-realtime — see docs/Architecture.md §12 ("Timer + gateway") and
+// Extension point for timer-realtime — see docs/Architecture.md §5.4 and
 // features/dashboards-api/spec.md's non-goals. This feature never touches the Timer's in-memory
 // active set or Socket.IO directly; it only emits when a WidgetInstance is created, reconfigured,
 // or deleted, so timer-realtime can subscribe (`events.on('instance.created', ...)`) to

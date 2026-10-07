@@ -19,7 +19,7 @@ export function useDisconnect() {
   });
 }
 
-/** Full-page redirect into the real OAuth/OpenID handshake — see docs/Architecture.md §5.2. */
+/** Full-page redirect into the real OAuth/OpenID handshake — see docs/Architecture.md §8.3. */
 export function startConnect(service: string): void {
   window.location.href = `/api/oauth/${service === 'youtube' ? 'google' : service}/start?intent=connect`;
 }

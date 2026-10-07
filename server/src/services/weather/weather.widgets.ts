@@ -1,4 +1,4 @@
-// Weather widget definitions (Open-Meteo, no connection) — see docs/Architecture.md §3.
+// Weather widget definitions (Open-Meteo, no connection) — see docs/Architecture.md §8.1.
 
 import type { ParamSpec } from '@dashboard/shared';
 import type { Params, WidgetDefinition } from '../../catalog/widget-definition.js';

@@ -4,7 +4,7 @@ import type { AboutResponse } from '@dashboard/shared';
 import { clientAddress } from '../core/http/client-address.js';
 import { WidgetRegistryService } from './widget-registry.service.js';
 
-/** GET /about.json — public, not under /api. See docs/Architecture.md §3. */
+/** GET /about.json — public, not under /api. See docs/Architecture.md §8.1. */
 @Controller()
 export class AboutController {
   constructor(private readonly registry: WidgetRegistryService) {}

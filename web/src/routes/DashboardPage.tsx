@@ -129,7 +129,7 @@ interface Preview {
 }
 
 /**
- * Dashboard grid page (docs/Architecture.md §9): drag/resize grid on md+, a single stacked column below.
+ * Dashboard grid page (docs/Architecture.md §5.9): drag/resize grid on md+, a single stacked column below.
  * @param dashboardId - Dashboard to show; defaults to the `:dashboardId` route param. {@link AppShell} passes it for the kept-alive copy.
  * @param hiddenView - True while the page is kept mounted but hidden; an unknown dashboard then renders nothing instead of a not-found view.
  */

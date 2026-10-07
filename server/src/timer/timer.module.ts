@@ -1,4 +1,4 @@
-// Socket.IO gateway + Timer + Redis-backed fetch cache — see docs/Architecture.md §6-§7 and
+// Socket.IO gateway + Timer + Redis-backed fetch cache — see docs/Architecture.md §6, §8.5 and
 // features/timer-realtime/spec.md.
 //
 // The test/dev-only fake widgets (fake-widgets.ts) are registered from main.ts's real

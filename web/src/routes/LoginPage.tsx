@@ -40,7 +40,7 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
 
   // Set by the oauth callback redirect (server/src/auth/oauth) when account-linking rule
-  // 2's refusal branch fires — docs/Architecture.md §5.1 "Account linking".
+  // 2's refusal branch fires — docs/Architecture.md §8.3 "Account linking".
   const linkRequired = searchParams.get('error') === 'EMAIL_LINK_REQUIRED';
   // Rule 3: OAuth never creates an account.
   const noAccount = searchParams.get('error') === 'OAUTH_NO_ACCOUNT';

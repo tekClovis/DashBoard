@@ -1,4 +1,4 @@
-// GitHub widget definitions — see docs/Architecture.md §3's widget catalog and
+// GitHub widget definitions — see docs/Architecture.md §8.1's widget catalog and
 // features/github-widgets/spec.md. Data shapes live in shared/src/widgets.ts.
 
 import type { GithubPullRequest, GithubSecurityAlert, ParamSpec, WidgetDataMap } from '@dashboard/shared';

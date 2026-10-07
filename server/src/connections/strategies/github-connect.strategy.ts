@@ -1,6 +1,6 @@
 // GitHub connect strategy — widget scopes, separate OAuth app/registration
 // from oauth-login's login-only `read:user user:email` scope (Architecture
-// §5.1 "one callback per provider" note: same callback route, different
+// §8.3 "one callback per provider" note: same callback route, different
 // scope/app per intent).
 
 import { Injectable } from '@nestjs/common';

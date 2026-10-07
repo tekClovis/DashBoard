@@ -1,4 +1,4 @@
-// Data model — see docs/Architecture.md §4.
+// Data model — see docs/Architecture.md §8.2.
 
 generator client {
   provider     = "prisma-client"

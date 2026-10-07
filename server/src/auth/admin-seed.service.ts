@@ -8,7 +8,7 @@ const BCRYPT_COST = 12;
 
 /**
  * On boot, if `ADMIN_EMAIL`/`ADMIN_PASSWORD` are set and no admin exists yet,
- * creates one pre-confirmed — see docs/Architecture.md §5.3.
+ * creates one pre-confirmed — see docs/Architecture.md §8.3.
  */
 @Injectable()
 export class AdminSeedService implements OnApplicationBootstrap {

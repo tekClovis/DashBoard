@@ -1,4 +1,4 @@
-// Redis cache key shape — see docs/Architecture.md §7.
+// Redis cache key shape — see docs/Architecture.md §8.5.
 //
 //   widget:{service}.{widget}:{sha256(canonical sorted params)}[:conn:{connectionId}]
 //

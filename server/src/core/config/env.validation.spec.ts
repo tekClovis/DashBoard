@@ -54,7 +54,7 @@ describe('validate (env)', () => {
     expect(() => validate({ ...validEnv(), TOKEN_ENC_KEY: key })).toThrow(/TOKEN_ENC_KEY must be 32 bytes/);
   });
 
-  // `.env.example` ships `JWT_SECRET=`; docs/Architecture.md §11 says the server refuses to start without it.
+  // `.env.example` ships `JWT_SECRET=`; docs/Architecture.md §8.6 says the server refuses to start without it.
   it('rejects an empty JWT_SECRET', () => {
     expect(() => validate({ ...validEnv(), JWT_SECRET: '' })).toThrow(/JWT_SECRET/);
   });

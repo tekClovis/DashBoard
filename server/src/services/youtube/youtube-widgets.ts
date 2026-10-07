@@ -1,4 +1,4 @@
-// YouTube widget definitions — see docs/Architecture.md §3's widget catalog and
+// YouTube widget definitions — see docs/Architecture.md §8.1's widget catalog and
 // features/youtube-widgets/spec.md. Data shapes live in shared/src/widgets.ts.
 
 import type { ParamSpec, YoutubeVideo } from '@dashboard/shared';

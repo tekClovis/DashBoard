@@ -1,4 +1,4 @@
-// PATCH/DELETE /api/widgets/{id} — see features/dashboards-api/spec.md and docs/Architecture.md §8.
+// PATCH/DELETE /api/widgets/{id} — see features/dashboards-api/spec.md and docs/Architecture.md §3.
 
 import { Body, Controller, Delete, Param, Patch, UseGuards } from '@nestjs/common';
 import type { WidgetInstanceEntry } from '@dashboard/shared';

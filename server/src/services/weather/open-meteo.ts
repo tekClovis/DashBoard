@@ -1,4 +1,4 @@
-// Open-Meteo HTTP client — see docs/Architecture.md §3 (widget catalog) and §7 (geo cache).
+// Open-Meteo HTTP client — see docs/Architecture.md §8.1 (widget catalog) and §8.5 (geo cache).
 // No API key needed.
 
 import type { CityCandidate } from '@dashboard/shared';

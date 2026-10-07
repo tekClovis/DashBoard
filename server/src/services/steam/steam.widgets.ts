@@ -1,7 +1,7 @@
-// Steam widget definitions — see docs/Architecture.md §3's widget catalog and
+// Steam widget definitions — see docs/Architecture.md §8.1's widget catalog and
 // features/steam-widgets/spec.md.
 //
-// Steam stores only the SteamID64 on the ServiceConnection (no token — Architecture §5.2);
+// Steam stores only the SteamID64 on the ServiceConnection (no token — Architecture §8.3);
 // the Web API key is server-side STEAM_API_KEY. A missing key still registers the widgets
 // (Architecture §11: "still listed") but every fetch() fails fast.
 

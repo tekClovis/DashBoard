@@ -1,7 +1,7 @@
 // GET /api/oauth/{provider}/start?intent=login|link|connect, GET /api/oauth/{provider}/callback
-// See docs/Architecture.md §5.2: "One callback per provider... serves both login and connect."
+// See docs/Architecture.md §8.3: "One callback per provider... serves both login and connect."
 //
-// `steam` is connect-only (no login/link — see docs/Architecture.md §5.1's login table,
+// `steam` is connect-only (no login/link — see docs/Architecture.md §8.3's login table,
 // which doesn't list it) via its own OpenID strategy and guard.
 
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';

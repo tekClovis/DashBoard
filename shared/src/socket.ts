@@ -1,4 +1,4 @@
-// Socket.IO event contract — see docs/Architecture.md §6, §8.
+// Socket.IO event contract — see docs/Architecture.md §6, §3.
 
 export interface WidgetSubscribePayload {
   instanceId: string;

@@ -1,4 +1,4 @@
-// Weather service (Open-Meteo, connection: 'none') — see docs/Architecture.md §3 and
+// Weather service (Open-Meteo, connection: 'none') — see docs/Architecture.md §8.1 and
 // features/weather-widgets/spec.md.
 
 import { Inject, Module, OnModuleInit } from '@nestjs/common';

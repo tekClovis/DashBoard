@@ -1,5 +1,5 @@
 // Share a dashboard with another user; the recipient accepts (a personal copy) or declines — see
-// docs/Architecture.md §4, §8 and features/big-dashboard-share/spec.md.
+// docs/Architecture.md §8.2, §3 and features/big-dashboard-share/spec.md.
 //
 // A DashboardShare row is an offer; accept/decline keep it with the new status for the sender. Recipient-side lookups
 // are scoped by toUserId in the query itself, so someone else's share is a 404, like the rest of

@@ -1,4 +1,4 @@
-// Redis-backed fetch cache + in-flight dedupe — see docs/Architecture.md §7.
+// Redis-backed fetch cache + in-flight dedupe — see docs/Architecture.md §8.5.
 //
 // FetchContext is the first real consumer of connections-api's token decryption: the
 // access token is decrypted here, handed to def.fetch(), and never passed anywhere else.

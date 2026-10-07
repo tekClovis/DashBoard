@@ -1,6 +1,6 @@
 // Reusable ParamSpec[] validation — owned here since catalog owns the ParamSpec shape.
 // Called by dashboards-api on widget-instance create/update. See features/catalog-api/spec.md
-// and docs/Architecture.md §8 ("Widget params are validated against the registry's ParamSpecs").
+// and docs/Architecture.md §3 ("Widget params are validated against the registry's ParamSpecs").
 
 import type { ParamSpec } from '@dashboard/shared';
 

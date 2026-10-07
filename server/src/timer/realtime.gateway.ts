@@ -1,4 +1,4 @@
-// Socket.IO gateway — see docs/Architecture.md §6, §8.
+// Socket.IO gateway — see docs/Architecture.md §6, §3.
 //
 // Handshake auth mirrors JwtGuard (session cookie, revocation, ban, tokenVersion) but runs
 // as a Socket.IO middleware (`server.use`) rather than a Nest guard, so an unauthenticated

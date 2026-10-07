@@ -1,4 +1,4 @@
-// Admin user management — see features/admin-ui/spec.md and docs/Architecture.md §5.3.
+// Admin user management — see features/admin-ui/spec.md and docs/Architecture.md §8.3.
 
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import type { AdminUserEntry, AdminUsersResponse, OkResponse } from '@dashboard/shared';

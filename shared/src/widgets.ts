@@ -1,4 +1,4 @@
-// Per-widget data shapes — see docs/Architecture.md §3.
+// Per-widget data shapes — see docs/Architecture.md §8.1.
 //
 // Each `services/<name>` module adds its own widget keys ('service.widget' →
 // data shape) here, so a view and its server fetch() cannot drift apart.
