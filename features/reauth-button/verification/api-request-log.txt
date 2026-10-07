@@ -1,0 +1,29 @@
+21:22:57.856Z GET /api/auth/me
+21:22:57.889Z GET /api/dashboards
+21:22:57.890Z GET /api/shares/incoming
+21:22:57.891Z GET /api/connections
+21:23:06.845Z ---- A: Reauthenticate GitHub then Disconnect Steam while pending ----
+21:23:06.855Z DELETE /api/connections/github
+21:23:06.877Z DELETE /api/connections/steam
+21:23:09.855Z   -> 200 DELETE github
+21:23:09.859Z GET /api/connections
+21:23:09.865Z GET /api/oauth/github/start?intent=connect
+21:23:09.878Z   -> 200 DELETE steam
+21:23:26.589Z ---- B: Reauthenticate GitHub then Reauthenticate YouTube while pending (YouTube DELETE fails) ----
+21:23:26.632Z GET /api/auth/me
+21:23:26.642Z GET /api/dashboards
+21:23:26.643Z GET /api/shares/incoming
+21:23:26.643Z GET /api/connections
+21:23:39.968Z ---- B (run): Reauthenticate GitHub then Reauthenticate YouTube while pending (YouTube DELETE fails) ----
+21:23:39.975Z DELETE /api/connections/github
+21:23:39.993Z DELETE /api/connections/youtube
+21:23:42.990Z   -> 200 DELETE github
+21:23:42.993Z GET /api/connections
+21:23:42.993Z   -> 500 DELETE youtube
+21:23:57.349Z ---- C: single Reauthenticate GitHub, DELETE fails ----
+21:23:57.394Z GET /api/auth/me
+21:23:57.405Z GET /api/dashboards
+21:23:57.405Z GET /api/shares/incoming
+21:23:57.406Z GET /api/connections
+21:23:58.915Z DELETE /api/connections/github
+21:24:00.422Z   -> 500 DELETE github

@@ -1,0 +1,10 @@
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-ad7a7b2c0a77e4c15/web
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  23:21:41
+   Duration  951ms (environment 54%, tests 28%, import 10%, transform 7%, worker 1%)
+
+exit 0
