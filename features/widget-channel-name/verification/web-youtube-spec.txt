@@ -1,0 +1,23 @@
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a169b64d49dbad9e0/web
+
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > channel_stats: title (not the id) channel, subscribers stat, views and videos rows 121ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > channel_stats: falls back to the channel id when there is no title 6ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > channel_stats: leads with views when subscribers are hidden, and says so 9ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > latest_videos: channel title, time since the last upload, linked title/age rows 18ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > latest_videos: falls back to the channel id when there is no title 2ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > trending_videos: region channel, ranked rows, and an empty state 10ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > renders javascript:alert(1) as plain text, never as an href 3ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > renders data:text/html,x as plain text, never as an href 2ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > renders not a url as plain text, never as an href 2ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > latest_videos and trending_videos: every row shows its thumbnail 6ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > a thumbnail that fails to load or is missing leaves the row text 8ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > channel_stats: shows a 40x40 round channel avatar that falls back when it fails 4ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > trending_videos: thumbnails of ranked rows (#2 and below) hide in narrow panels, #1 keeps its own 3ms
+ ✓ src/widgets/youtube.spec.tsx > youtube widget views > trending_videos: #1 has a larger thumbnail than the ranked rows 2ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  23:00:25
+   Duration  1.14s (transform 109ms, setup 19ms, import 271ms, tests 200ms, environment 534ms)
+

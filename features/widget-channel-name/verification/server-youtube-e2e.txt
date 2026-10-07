@@ -1,0 +1,54 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a169b64d49dbad9e0/server
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "test", schema "public" at "localhost:32772"
+
+4 migrations found in prisma/migrations
+
+Applying migration `20260914000000_init`
+Applying migration `20261006000000_dashboard_share`
+Applying migration `20261006120000_dashboard_share_status`
+Applying migration `20261007000000_password_reset_token`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260914000000_init/
+    └─ migration.sql
+  └─ 20261006000000_dashboard_share/
+    └─ migration.sql
+  └─ 20261006120000_dashboard_share_status/
+    └─ migration.sql
+  └─ 20261007000000_password_reset_token/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 1. /about.json lists youtube with its three widgets 66ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 2. /api/catalog shows youtube connected:false, then connected:true once connected 62ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 3. channel_stats returns subscriber/view/video counts 877ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 3b. an unknown channel_id yields INVALID_PARAMS 997ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > search. GET /api/youtube/channels/search lists channels (id, title, thumbnail) for a name 35ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > search. refreshes an expired token and answers 409 NOT_CONNECTED without a connection 29ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 4. latest_videos returns up to `number` videos, most recent first 938ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 5. trending_videos returns up to `number` videos for the region 999ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 6. an expired access token is refreshed silently, persisted encrypted, and the request succeeds 1012ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 7. a failed refresh (revoked refresh token) yields REAUTH_REQUIRED and flips the connection to REAUTH 1000ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 7b. a disconnect during a refresh yields NOT_CONNECTED without leaking internals, and nothing is re-created 1006ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 7d. a malformed token response (no-expiry-refresh) yields UPSTREAM_ERROR with a fixed message and leaves the row untouched 986ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 7d. a malformed token response (huge-expiry-refresh) yields UPSTREAM_ERROR with a fixed message and leaves the row untouched 1001ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 7d. a malformed token response (newline-token-refresh) yields UPSTREAM_ERROR with a fixed message and leaves the row untouched 1000ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 7c. a reconnect during a refresh whose old grant is refused keeps the new connection and uses its token 1015ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 7c. a reconnect during a refresh whose old grant is granted keeps the new connection and uses its token 999ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 8. an unconnected user gets widget:error NOT_CONNECTED 986ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 9. a region failing the ISO-3166 pattern is rejected at instance create, never reaching YouTube 38ms
+ ✓ test/youtube-widgets.e2e-spec.ts > YouTube widgets (e2e) > 10. cache keys carry :conn:{connectionId} 965ms
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  23:05:06
+   Duration  19.61s (transform 451ms, setup 0ms, import 1.17s, tests 14.19s, environment 0ms)
+

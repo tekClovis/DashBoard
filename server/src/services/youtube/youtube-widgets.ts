@@ -18,7 +18,7 @@ const channelPickParams: ParamSpec[] = [
 const numberParam: ParamSpec = { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Videos' };
 
 interface RawChannel {
-  snippet: { title: string; thumbnails?: RawVideoSnippet['thumbnails'] };
+  snippet?: { title?: string; thumbnails?: RawVideoSnippet['thumbnails'] };
   statistics: { subscriberCount?: string; hiddenSubscriberCount: boolean; viewCount: string; videoCount: string };
   contentDetails?: { relatedPlaylists?: { uploads?: string } };
 }
@@ -58,7 +58,7 @@ function toVideo(id: string, snippet: RawVideoSnippet): YoutubeVideo {
     channel: snippet.channelTitle,
     publishedAt: snippet.publishedAt,
     url: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
-    imageUrl: (snippet.thumbnails?.medium ?? snippet.thumbnails?.high ?? snippet.thumbnails?.default)?.url ?? null,
+    imageUrl: (snippet.thumbnails?.medium ?? snippet.thumbnails?.high ?? snippet?.thumbnails?.default)?.url ?? null,
   };
 }
 
@@ -79,11 +79,11 @@ export function youtubeWidgets(refresh: TokenRefresher): [
       const { snippet, statistics } = await getChannel(youtubeClient(ctx, refresh), channelId, 'snippet,statistics');
       return {
         channelId,
-        title: snippet.title,
+        title: snippet?.title ?? '',
         subscribers: statistics.subscriberCount === undefined ? null : Number(statistics.subscriberCount),
         views: Number(statistics.viewCount),
         videos: Number(statistics.videoCount),
-        imageUrl: snippet.thumbnails?.default?.url ?? null,
+        imageUrl: snippet?.thumbnails?.default?.url ?? null,
       };
     }),
   };
@@ -98,7 +98,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
     fetch: guarded(async (params, ctx) => {
       const get = youtubeClient(ctx, refresh);
       const channelId = String(params['channel_id']);
-      const { contentDetails } = await getChannel(get, channelId, 'contentDetails');
+      const { snippet, contentDetails } = await getChannel(get, channelId, 'snippet,contentDetails');
       const uploads = contentDetails?.relatedPlaylists?.uploads;
       if (!uploads) throw new FetchError('UPSTREAM_ERROR', 'YouTube returned a channel without an uploads playlist.');
       const { items = [] } = await get<{ items?: RawPlaylistItem[] }>('/playlistItems', {
@@ -109,7 +109,7 @@ export function youtubeWidgets(refresh: TokenRefresher): [
       const videos = items
         .map(({ snippet }) => toVideo(snippet.resourceId.videoId, snippet))
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-      return { channelId, videos };
+      return { channelId, channelTitle: snippet?.title ?? null, videos };
     }),
   };
 

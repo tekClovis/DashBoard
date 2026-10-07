@@ -16,8 +16,7 @@ export function ChannelStatsView({ data, compact }: WidgetViewProps) {
   return (
     <>
       <Channel>
-        <span>{title}</span>
-        <span className="font-mono">{channelId}</span>
+        {title ? <span>{title}</span> : <span className="font-mono">{channelId}</span>}
       </Channel>
       <Thumb src={stats.imageUrl} width={40} height={40} round />
       {!compact && <Stat value={COMPACT.format(stats[lead] ?? 0)} label={lead} />}
@@ -41,13 +40,11 @@ export function ChannelStatsView({ data, compact }: WidgetViewProps) {
 }
 
 export function LatestVideosView({ data, compact }: WidgetViewProps) {
-  const { channelId, videos } = data as WidgetDataMap['youtube.latest_videos'];
+  const { channelId, channelTitle, videos } = data as WidgetDataMap['youtube.latest_videos'];
   const now = Date.now();
   return (
     <>
-      <Channel>
-        <span className="font-mono">{channelId}</span>
-      </Channel>
+      <Channel>{channelTitle ? <span>{channelTitle}</span> : <span className="font-mono">{channelId}</span>}</Channel>
       {!compact && videos.length > 0 && (
         <Stat value={ago(now - Date.parse(videos[0].publishedAt))} label="since the last upload" />
       )}
