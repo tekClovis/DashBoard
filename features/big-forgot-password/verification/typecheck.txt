@@ -1,0 +1,2 @@
+server tsc exit 0
+web tsc exit 0

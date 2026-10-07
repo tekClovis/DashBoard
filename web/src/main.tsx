@@ -7,11 +7,13 @@ import { AdminPage } from '@/routes/AdminPage.js';
 import { AppShell } from '@/routes/AppShell.js';
 import { ConfirmPage } from '@/routes/ConfirmPage.js';
 import { ConnectionsPage } from '@/routes/ConnectionsPage.js';
+import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage.js';
 import { LoginPage } from '@/routes/LoginPage.js';
 import { ProfilePage } from '@/routes/ProfilePage.js';
 import { RedirectIfAuthed } from '@/routes/RedirectIfAuthed.js';
 import { RegisterPage } from '@/routes/RegisterPage.js';
 import { RequireAuth } from '@/routes/RequireAuth.js';
+import { ResetPasswordPage } from '@/routes/ResetPasswordPage.js';
 import { RootRedirect } from '@/routes/RootRedirect.js';
 import './index.css';
 
@@ -26,6 +28,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/register" element={<RegisterPage />} />
           </Route>
           <Route path="/confirm" element={<ConfirmPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
               <Route path="/d/:dashboardId" />

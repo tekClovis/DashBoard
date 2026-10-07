@@ -30,4 +30,19 @@ export class MailService {
       this.logger.error(`Failed to send confirmation email to ${to}`, err instanceof Error ? err.stack : err);
     }
   }
+
+  /** Never throws, same contract as sendConfirmationEmail. */
+  async sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+    try {
+      await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject: 'Reset your password',
+        text: `Reset your password: ${resetUrl}\nThis link works once and for 1 hour.`,
+        html: `<p>Reset your password: <a href="${resetUrl}">${resetUrl}</a></p><p>This link works once and for 1 hour.</p>`,
+      });
+    } catch (err) {
+      this.logger.error(`Failed to send password reset email to ${to}`, err instanceof Error ? err.stack : err);
+    }
+  }
 }

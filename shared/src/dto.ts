@@ -42,6 +42,17 @@ export interface ResendRequest {
   email: string;
 }
 
+/** POST /api/auth/forgot-password */
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+/** POST /api/auth/reset-password */
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
 /** POST /api/auth/login */
 export interface LoginRequest {
   email: string;

@@ -7,15 +7,8 @@ import { Alert, AlertContent, AlertTitle } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
-import { isValidEmail, isValidPassword } from '@/lib/validation.js';
+import { isValidEmail, isValidPassword, PASSWORD_RULES } from '@/lib/validation.js';
 import { AuthFooter, AuthFooterLink, AuthLayout, FieldError, ResentNotice } from './AuthLayout.js';
-
-/** Mirrors the shared PASSWORD_PATTERN, one rule per line. */
-const PASSWORD_RULES: [string, (pw: string) => boolean][] = [
-  ['8 to 72 characters', (pw) => pw.length >= 8 && pw.length <= 72],
-  ['At least one digit', (pw) => /\d/.test(pw)],
-  ['At least one symbol', (pw) => /[^A-Za-z0-9]/.test(pw)],
-];
 
 function SentState({ email }: { email: string }) {
   const resend = useResend();

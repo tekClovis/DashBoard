@@ -143,6 +143,7 @@ The server and client share types only through `WidgetDataMap`, so a view and it
 ```mermaid
 erDiagram
   User ||--o{ EmailToken : has
+  User ||--o{ PasswordResetToken : has
   User ||--o{ AuthIdentity : "logs in via"
   User ||--o{ ServiceConnection : "subscribes"
   User ||--o{ Dashboard : owns
@@ -155,6 +156,7 @@ erDiagram
 |---|---|---|
 | `User` | id, email (unique), passwordHash?, emailVerifiedAt?, role (`USER`\|`ADMIN`), bannedAt?, tokenVersion int, createdAt | `passwordHash` is null for OIDC-only accounts. |
 | `EmailToken` | id, userId, tokenHash, expiresAt, usedAt? | Holds the SHA-256 of a random 32-byte token, never the raw token. Expires after 24 h. Single use. |
+| `PasswordResetToken` | id, userId, tokenHash, expiresAt, usedAt? | Same shape as `EmailToken`: SHA-256 of a random 32-byte token, never the raw token. Expires after 1 h. Single use. Cascade on user delete. |
 | `AuthIdentity` | id, userId, provider (`GITHUB`\|`GOOGLE`), providerUserId | unique(provider, providerUserId). **Login only.** |
 | `ServiceConnection` | id, userId, service, externalAccountId, accessTokenEnc?, refreshTokenEnc?, expiresAt?, scopes, status (`OK`\|`REAUTH`) | unique(userId, service). **Widget credentials only.** |
 | `Dashboard` | id, userId, name, position, createdAt | Several per user. The first one is created on signup. |
@@ -181,6 +183,15 @@ GET  /api/auth/confirm?token → hash, match unexpired unused token → set emai
 POST /api/auth/resend        → rate-limited, always 200 (no account enumeration)
 POST /api/auth/login         → local strategy; 403 EMAIL_NOT_CONFIRMED if unverified
 ```
+
+**Password reset.**
+
+```
+POST /api/auth/forgot-password → always 200 { ok: true }; mails /reset-password?token= only for an account with a password
+POST /api/auth/reset-password  → { token, password }; hash, match unexpired unused token → set passwordHash
+```
+
+`forgot-password` is rate-limited per email (1/min, 5/day, silently: no mail, still 200), so it never reveals whether an account exists, and OAuth-only accounts get no mail. A successful reset bumps `tokenVersion` (every existing session gets 401), burns the user's other unused reset tokens and sets `emailVerifiedAt` if it was null. An unknown, used or expired token gives 400 `INVALID_TOKEN`.
 
 OAuth never creates an account: users register with email + password first, then log in or link a provider.
 
@@ -309,6 +320,7 @@ All routes are under `/api` and require the JWT cookie unless marked public. Bod
 | GET | `/about.json` *(public, root)* | Subject endpoint |
 | POST | `/auth/register`, `/auth/login`, `/auth/resend` *(public)* | Local auth |
 | GET | `/auth/confirm?token=` *(public)* | Email confirmation |
+| POST | `/auth/forgot-password`, `/auth/reset-password` *(public)* | Password reset: request a link, set a new password |
 | POST | `/auth/logout`, `/auth/logout-all` | Clear the cookie; `logout-all` also bumps tokenVersion |
 | GET | `/auth/me` | Current user + linked identities |
 | GET | `/oauth/{provider}/start?intent=login\|connect`, `/oauth/{provider}/callback` | OAuth/OpenID flows |
@@ -357,7 +369,7 @@ Socket events (`shared/src/socket.ts`):
 
 | Concern | Measure |
 |---|---|
-| Passwords | bcrypt cost 12; generic login errors; no account enumeration on register/resend |
+| Passwords | bcrypt cost 12; generic login errors; no account enumeration on register/resend/forgot-password |
 | Session theft | httpOnly cookie, JWT never exposed to JS; tokenVersion revocation |
 | CSRF | SameSite=Lax + JSON-only bodies; OAuth `state` signed and cookie-bound |
 | Third-party tokens | AES-256-GCM at rest, key from env, decrypted only in `FetchContext` and the youtube token refresh, never sent to the client |

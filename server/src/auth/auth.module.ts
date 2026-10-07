@@ -7,6 +7,7 @@ import { JwtService } from './jwt.service.js';
 import { GithubStrategy } from './oauth/github.strategy.js';
 import { GoogleStrategy } from './oauth/google.strategy.js';
 import { OAuthLoginService } from './oauth/oauth-login.service.js';
+import { PasswordResetService } from './password-reset.service.js';
 import { TokenRevocationService } from './token-revocation.service.js';
 import { VerificationService } from './verification.service.js';
 
@@ -27,6 +28,7 @@ import { VerificationService } from './verification.service.js';
   controllers: [AuthController, IdentitiesController],
   providers: [
     VerificationService,
+    PasswordResetService,
     JwtService,
     JwtGuard,
     AdminSeedService,

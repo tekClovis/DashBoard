@@ -1,0 +1,31 @@
+# API checks, reset-password (fresh fpverify stack, 2026-10-07T07:26:27Z)
+
+## Item 8 setup: dave logs in before the reset
+login dave (old pw): HTTP 200
+GET /auth/me with that cookie: HTTP 200
+tokenVersion before: 0
+
+## Item 6: valid reset
+reset dave: {"ok":true}  -> HTTP 200
+tokenVersion after: 1
+
+## Item 8: old session cookie after the reset
+GET /auth/me with the pre-reset cookie: HTTP 401
+
+## Item 6: old password fails, new password works
+login old pw: {"error":"INVALID_CREDENTIALS"} -> HTTP 401
+login new pw: {"ok":true} -> HTTP 200
+
+## Item 7: reused / garbage / expired token
+reuse dave token: {"error":"INVALID_TOKEN"} -> HTTP 400
+garbage token: {"error":"INVALID_TOKEN"} -> HTTP 400
+erin token expiresAt moved to 1 minute ago (issued 61 min ago)
+expired token: {"error":"INVALID_TOKEN"} -> HTTP 400
+
+## Scope: a successful reset sets emailVerifiedAt when null (erin, unverified)
+erin verified before: f
+reset erin: {"ok":true} -> HTTP 200
+erin verified after: t
+
+## Scope: other unused tokens are invalidated by a reset
+unused tokens left for dave/erin: 0

@@ -43,16 +43,30 @@ model User {
   tokenVersion    Int       @default(0)
   createdAt       DateTime  @default(now())
 
-  emailTokens        EmailToken[]
-  authIdentities     AuthIdentity[]
-  serviceConnections ServiceConnection[]
-  dashboards         Dashboard[]
-  sharesSent         DashboardShare[]    @relation("ShareSender")
-  sharesReceived     DashboardShare[]    @relation("ShareRecipient")
+  emailTokens         EmailToken[]
+  passwordResetTokens PasswordResetToken[]
+  authIdentities      AuthIdentity[]
+  serviceConnections  ServiceConnection[]
+  dashboards          Dashboard[]
+  sharesSent          DashboardShare[]     @relation("ShareSender")
+  sharesReceived      DashboardShare[]     @relation("ShareRecipient")
 }
 
 /// Email confirmation token. Stores SHA-256 of a random 32-byte token, never the raw value. 24 h, single use.
 model EmailToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Password reset token. Stores SHA-256 of a random 32-byte token, never the raw value. 1 h, single use.
+model PasswordResetToken {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @db.Uuid
   tokenHash String    @unique
