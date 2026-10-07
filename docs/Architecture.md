@@ -341,6 +341,7 @@ Socket events (`shared/src/socket.ts`):
 - **Routing**: `/login`, `/register`, `/confirm`, `/d/:dashboardId` (main page), `/services`, `/profile`, `/admin`. The auth gate is based on `/api/auth/me`.
 - **Server state**: TanStack Query for REST: catalog, dashboards, instances, connections. There is no `refetchInterval`, because the Timer owns refresh.
 - **Realtime**: a single `SocketProvider`. The `useWidgetData(instanceId)` hook emits `subscribe` on mount and `unsubscribe` on unmount, and writes incoming `widget:data` into the query cache under `['widget', instanceId]`. Widgets render from the cache like any query.
+- **Dashboard keep-alive**: `AppShell` keeps the last-visited dashboard mounted (`hidden` + `inert`) while Services / Profile / Admin show, so its widgets, socket subscriptions, grid layout and scroll position (restored on return) survive with no refetch. Only one dashboard is kept (visiting another replaces it); a dashboard deleted or unshared while hidden is unmounted, and logout unmounts the whole shell. The `/d/:dashboardId` route itself renders nothing.
 - **Widget rendering**: `WidgetFrame` owns the chrome: title, loading skeleton, error and "Reconnect" states, and a menu with Configure / Move / Delete. The body comes from a view registry: `views['github.recent_commits'] = RecentCommitsView`.
 - **Add / configure dialog** (shadcn `Dialog`), in four steps that mirror the subject's wording:
   1. Select a widget type, grouped by service. Widgets from unconnected services are disabled and show a "Connect" link.

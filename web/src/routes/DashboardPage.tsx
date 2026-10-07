@@ -129,11 +129,13 @@ interface Preview {
 }
 
 /** Dashboard grid — docs/Architecture.md §9. Drag/resize on md+, single stacked column below. */
-export function DashboardPage() {
-  const { dashboardId = '' } = useParams();
+export function DashboardPage({ dashboardId: kept, hiddenView = false }: { dashboardId?: string; hiddenView?: boolean }) {
+  const params = useParams();
+  const dashboardId = kept ?? params.dashboardId ?? '';
   const { data: list } = useDashboards();
   const known = list?.dashboards;
   if (Array.isArray(known) && !known.some((d) => d.id === dashboardId)) {
+    if (hiddenView) return null;
     return <DashboardNotFound path={`/d/${dashboardId}`} firstId={known[0]?.id} firstName={known[0]?.name} />;
   }
   return <DashboardView dashboardId={dashboardId} />;
@@ -160,7 +162,12 @@ function DashboardView({ dashboardId }: { dashboardId: string }) {
   const updateLayout = useUpdateLayout(dashboardId);
   const deleteWidget = useDeleteWidget(dashboardId);
   const isDesktop = useIsDesktop();
-  const { width, containerRef } = useContainerWidth();
+  const { width: measured, containerRef } = useContainerWidth();
+  // Kept alive but hidden (display: none) the container measures 0: keep the last real width so the
+  // grid isn't re-laid out (and animated) when the dashboard comes back.
+  const lastWidth = useRef(measured);
+  if (measured > 0) lastWidth.current = measured;
+  const width = lastWidth.current;
 
   // RGL keeps its own dropped position when the normalized `layouts` prop is unchanged, and a
   // remount would resubscribe every widget. So on drag/resize stop we hand it its own dropped
