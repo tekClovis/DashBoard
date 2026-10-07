@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ConnectionEntry } from '@dashboard/shared';
 import { startConnect, useConnections, useDisconnect } from '@/api/connections.js';
+import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { PageHead } from '@/components/page-head.js';
 import { Button } from '@/components/ui/button.js';
 
@@ -15,15 +16,19 @@ const SERVICE_NAMES: Record<string, string> = {
 export function ConnectionsPage() {
   const { data, isPending } = useConnections();
   const disconnect = useDisconnect();
-  const [reauthing, setReauthing] = useState<string | null>(null);
+  const [reauthing, setReauthing] = useState<{ service: string; redirecting: boolean } | null>(null);
   const [reauthError, setReauthError] = useState<string | null>(null);
 
   const reauth = (service: string) => {
-    setReauthing(service);
+    setReauthing({ service, redirecting: false });
     setReauthError(null);
-    // Stay in the pending state after success: startConnect is a full-page redirect.
+    // Stay in the redirecting state after success: startConnect is a full-page redirect, and the
+    // refetched connection list already shows the service as not connected.
     disconnect.mutate(service, {
-      onSuccess: () => startConnect(service),
+      onSuccess: () => {
+        setReauthing({ service, redirecting: true });
+        startConnect(service);
+      },
       onError: () => {
         setReauthing(null);
         setReauthError(service);
@@ -40,12 +45,6 @@ export function ConnectionsPage() {
 
       <div className="bg-card overflow-hidden rounded-lg border">
         {isPending && <p className="text-muted-foreground p-4 text-sm">Loading…</p>}
-        {reauthError && (
-          <p role="alert" className="border-b p-4 text-sm text-red-600">
-            Could not disconnect {SERVICE_NAMES[reauthError] ?? reauthError}. Nothing was changed and no sign-in was
-            started. Try again.
-          </p>
-        )}
         {data?.connections.map((entry, i) => (
           <ServiceRow
             key={entry.service}
@@ -54,7 +53,10 @@ export function ConnectionsPage() {
             onDisconnect={() => disconnect.mutate(entry.service)}
             disconnecting={disconnect.isPending && disconnect.variables === entry.service && reauthing === null}
             onReauth={() => reauth(entry.service)}
-            reauthenticating={reauthing === entry.service}
+            reauthPhase={
+              reauthing?.service === entry.service ? (reauthing.redirecting ? 'redirecting' : 'pending') : 'idle'
+            }
+            reauthError={reauthError === entry.service}
           />
         ))}
       </div>
@@ -68,19 +70,28 @@ function ServiceRow({
   onDisconnect,
   disconnecting,
   onReauth,
-  reauthenticating,
+  reauthPhase,
+  reauthError,
 }: {
   entry: ConnectionEntry;
   isLast: boolean;
   onDisconnect: () => void;
   disconnecting: boolean;
   onReauth: () => void;
-  reauthenticating: boolean;
+  reauthPhase: 'idle' | 'pending' | 'redirecting';
+  reauthError: boolean;
 }) {
   const alwaysOn = entry.service === 'weather';
+  const reauthButton = useRef<HTMLButtonElement>(null);
+  const reauthenticating = reauthPhase !== 'idle';
+  const name = SERVICE_NAMES[entry.service] ?? entry.service;
+
+  useEffect(() => {
+    if (reauthError) reauthButton.current?.focus();
+  }, [reauthError]);
 
   return (
-    <div className={`flex items-center justify-between p-4 ${isLast ? '' : 'border-b'}`}>
+    <div className={`flex flex-wrap items-center justify-between p-4 ${isLast ? '' : 'border-b'}`}>
       <div>
         <div className="text-sm font-semibold">{SERVICE_NAMES[entry.service] ?? entry.service}</div>
         <div className="text-muted-foreground text-xs">{entry.service}</div>
@@ -88,9 +99,19 @@ function ServiceRow({
       <div className="flex items-center gap-2.5">
         <Badge alwaysOn={alwaysOn} connected={entry.connected} status={entry.status} />
         {!alwaysOn &&
-          (entry.connected && entry.status === 'REAUTH' ? (
-            <Button size="sm" onClick={onReauth} disabled={reauthenticating}>
-              {reauthenticating ? 'Reauthenticating…' : 'Reauthenticate'}
+          (reauthenticating || (entry.connected && entry.status === 'REAUTH') ? (
+            <Button
+              ref={reauthButton}
+              size="sm"
+              onClick={onReauth}
+              disabled={reauthenticating}
+              aria-busy={reauthenticating || undefined}
+            >
+              {reauthPhase === 'redirecting'
+                ? 'Redirecting…'
+                : reauthPhase === 'pending'
+                  ? 'Reauthenticating…'
+                  : 'Reauthenticate'}
             </Button>
           ) : entry.connected ? (
             <Button variant="outline" size="sm" onClick={onDisconnect} disabled={disconnecting}>
@@ -102,6 +123,14 @@ function ServiceRow({
             </Button>
           ))}
       </div>
+      {reauthError && (
+        <Alert tone="destructive" className="mt-3 basis-full">
+          <AlertContent>
+            <AlertTitle>Could not disconnect {name}</AlertTitle>
+            <AlertDescription>Nothing was changed and no sign-in was started. Try again.</AlertDescription>
+          </AlertContent>
+        </Alert>
+      )}
     </div>
   );
 }

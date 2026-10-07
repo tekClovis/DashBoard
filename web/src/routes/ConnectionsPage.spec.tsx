@@ -119,9 +119,28 @@ describe('ConnectionsPage', () => {
         name: 'Reauthenticating…',
       }) as HTMLButtonElement;
       expect(pending.disabled).toBe(true);
+      expect(pending.getAttribute('aria-busy')).toBe('true');
 
-      mutate.mock.calls[0]![1].onSuccess();
+      act(() => {
+        mutate.mock.calls[0]![1].onSuccess();
+      });
       expect(startConnect).toHaveBeenCalledWith('github');
+    });
+
+    it('keeps a disabled Redirecting button, not Connect, once the service reads not connected', () => {
+      const { mutate } = setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Reauthenticate' }));
+      vi.spyOn(connectionsApi, 'useConnections').mockReturnValue({
+        data: { connections: [{ service: 'github', connected: false, status: 'OK' }] },
+        isPending: false,
+      } as unknown as ReturnType<typeof connectionsApi.useConnections>);
+      act(() => {
+        mutate.mock.calls[0]![1].onSuccess();
+      });
+
+      const redirecting = screen.getByRole('button', { name: 'Redirecting…' }) as HTMLButtonElement;
+      expect(redirecting.disabled).toBe(true);
+      expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
     });
 
     it('does not start connect and shows an error when disconnect fails', () => {
@@ -134,6 +153,9 @@ describe('ConnectionsPage', () => {
 
       expect(startConnect).not.toHaveBeenCalled();
       expect(screen.getByRole('alert').textContent).toContain('Could not disconnect GitHub');
+      const githubRow = screen.getByText('GitHub').closest('div[class*="flex-wrap"]')!;
+      expect(githubRow.contains(screen.getByRole('alert'))).toBe(true);
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Reauthenticate' }));
       expect(
         (
           screen.getByRole('button', {
