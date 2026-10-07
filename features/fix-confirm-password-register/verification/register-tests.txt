@@ -1,0 +1,19 @@
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/agent-a2db9595082147316/web
+
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > ticks each password rule as the user types 177ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > shows field errors linked to the inputs and sends nothing for invalid input 41ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > focuses the password when only the password is invalid 30ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > shows email-in-use as a destructive alert with a way to log in 76ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > shows the sent state after registering and can resend the link once 50ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > has a new-password confirm field directly under the password field 7ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > blocks submit and focuses the confirm field when it differs 21ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > blocks submit and focuses the confirm field when it is empty 22ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > registers with only email and password when the passwords match 35ms
+ ✓ src/routes/RegisterPage.spec.tsx > RegisterPage > shows only the email error when the email is invalid and the confirm differs 24ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  22:26:37
+   Duration  1.48s (environment 42%, tests 35%, import 13%, transform 9%, worker 1%)
+
