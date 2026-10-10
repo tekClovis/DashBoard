@@ -1,4 +1,0 @@
-confirm @ 600px: "{\"viewport\":600,\"scrollWidth\":600,\"overflow\":false}"
-confirm @ 360px: "{\"viewport\":360,\"scrollWidth\":360,\"overflow\":false}"
-reset @ 600px: "{\"viewport\":600,\"scrollWidth\":600,\"overflow\":false}"
-reset @ 360px: "{\"viewport\":360,\"scrollWidth\":360,\"overflow\":false}"

@@ -1,1 +1,0 @@
-src/api/client.ts:17:52: warning typescript(no-misused-spread): Using the spread operator on an array in an object will result in a list of indices.

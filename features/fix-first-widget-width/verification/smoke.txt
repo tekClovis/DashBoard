@@ -1,6 +1,0 @@
-user: agent+1791288010@dashboard.local / <redacted>
-[agent-browser] launched browser
-✓ 
-  http://localhost:8080/login
-✗ Element not found: input[type=email]. Verify the selector, role, or name is correct and the element exists in the DOM.
-exit 1

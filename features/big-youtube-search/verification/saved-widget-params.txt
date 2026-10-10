@@ -1,7 +1,0 @@
-# WidgetInstance rows in the throwaway DB after the UI flows (latest_videos first saved as UC_tele2 + Telemetry Daily avatar, then reconfigured to UC_tele4 which has no avatar)
-    widget     |                                                       params                                                        | refreshRate 
----------------+---------------------------------------------------------------------------------------------------------------------+-------------
- latest_videos | {"number": 5, "channel_id": "UC_tele4", "channel_title": "Telemetry No Avatar"}                                     |         600
- channel_stats | {"channel_id": "UC_lofi1", "channel_image": "https://placehold.co/88x88/png?text=LG", "channel_title": "Lofi Girl"} |         600
-(2 rows)
-
