@@ -22,6 +22,10 @@ function ConditionIcon({ condition }: { condition: string }) {
   return <Icon aria-hidden="true" className="text-muted-foreground size-3.5 shrink-0" />;
 }
 
+/**
+ * View for `weather.current_weather`: temperature plus a trend over the cached pushes for the same location and unit.
+ * Until a second push arrives, shows a placeholder instead of the trend.
+ */
 export function CurrentWeatherView({ data, fetchedAt, history, compact }: WidgetViewProps) {
   const { location, temperature, unit, condition } = data as CurrentWeather;
   const trail = pushTrail(
@@ -89,10 +93,12 @@ function dayName(date: string, today: string): string {
   return date === today ? 'Today' : WEEKDAY.format(new Date(`${date}T00:00:00Z`));
 }
 
+/** Browser-local `YYYY-MM-DD`, compared with the forecast dates to find "Today". */
 function localIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** View for `weather.forecast`: one row per day with its min-max range drawn against the whole period's range. */
 export function ForecastView({ data }: WidgetViewProps) {
   const { location, days } = data as WidgetDataMap['weather.forecast'];
   const lo = Math.round(Math.min(...days.map((d) => d.min)));

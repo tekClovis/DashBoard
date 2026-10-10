@@ -1,5 +1,5 @@
 // Shared session verification: signature + expiry (JwtService.verify), per-token revocation,
-// and per-user ban/tokenVersion checks — see docs/Architecture.md §5.1. Used by both
+// and per-user ban/tokenVersion checks — see docs/Architecture.md §8.3. Used by both
 // JwtGuard (HTTP, Nest CanActivate) and RealtimeGateway (Socket.IO handshake), which can't
 // share a CanActivate since one runs against an ExecutionContext and the other against a
 // bare token string.

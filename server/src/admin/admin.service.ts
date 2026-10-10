@@ -29,6 +29,7 @@ export const normalizeId = (id: string): string => id.toLowerCase();
 /** Prisma `contains` doesn't escape LIKE wildcards; make search literal. */
 export const escapeLike = (s: string): string => s.replace(/[\\%_]/g, '\\$&');
 
+/** Admin-side user management: listing, ban/role changes and deletion. */
 @Injectable()
 export class AdminService {
   constructor(
@@ -36,6 +37,7 @@ export class AdminService {
     @Inject(USER_SOCKET_DISCONNECTOR) private readonly sockets: UserSocketDisconnector,
   ) {}
 
+  /** List users by email search, oldest first; `q` is matched literally and case-insensitively. */
   async list({ q, page, pageSize }: ListUsersQueryDto): Promise<AdminUsersResponse> {
     const where: Prisma.UserWhereInput = q ? { email: { contains: escapeLike(q), mode: 'insensitive' } } : {};
     const [rows, total] = await this.prisma.$transaction([
@@ -51,6 +53,13 @@ export class AdminService {
     return { users: rows.map(toEntry), total, page, pageSize };
   }
 
+  /**
+   * Ban/unban a user and/or change their role.
+   * Ban or an actual role change bumps `tokenVersion` and disconnects the user's sockets.
+   * @throws {@link BadRequestException} when neither `bannedAt` nor `role` is given.
+   * @throws {@link ForbiddenException} when the actor bans or demotes themselves.
+   * @throws {@link NotFoundException} when the user does not exist.
+   */
   async update(actor: RequestUser, rawId: string, dto: UpdateUserDto): Promise<AdminUserEntry> {
     const id = normalizeId(rawId);
     if (dto.bannedAt === undefined && dto.role === undefined) throw new BadRequestException({ error: 'EMPTY_PATCH' });
@@ -82,6 +91,11 @@ export class AdminService {
     return toEntry(updated);
   }
 
+  /**
+   * Delete a user and disconnect their sockets.
+   * @throws {@link ForbiddenException} when the actor targets themselves.
+   * @throws {@link NotFoundException} when the user does not exist.
+   */
   async remove(actor: RequestUser, rawId: string): Promise<void> {
     const id = normalizeId(rawId);
     if (id === actor.id) throw new ForbiddenException({ error: 'CANNOT_MODIFY_SELF' });

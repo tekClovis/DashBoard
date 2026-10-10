@@ -6,7 +6,7 @@ import { OAuthController } from './oauth.controller.js';
 import { GithubOAuthGuard, GoogleOAuthGuard, SteamOAuthGuard } from './oauth.guard.js';
 
 // Owns `/api/oauth/{provider}/{start,callback}` for all three intents (login, link,
-// connect) — see docs/Architecture.md §5.2. Sits above AuthModule and ConnectionsModule
+// connect) — see docs/Architecture.md §8.3. Sits above AuthModule and ConnectionsModule
 // rather than inside either, since OAuthController needs both (OAuthLoginService/JwtService
 // from AuthModule, ConnectionsService from ConnectionsModule) and neither of those two
 // modules needs the other.

@@ -2,12 +2,17 @@ import type { WidgetErrorCode } from '@dashboard/shared';
 import { ago, hhmm } from '@/lib/time.js';
 import type { WidgetCacheEntry } from '@/realtime/useWidgetData.js';
 
+/** Visual state of a widget panel; see {@link frameState}. */
 export type FrameState = 'warn' | 'error' | 'loading' | 'paused' | 'stale' | 'live';
 
 /** Codes that recover by themselves or need one click (amber); the rest failed (red). */
 const WARN_CODES: ReadonlySet<WidgetErrorCode> = new Set(['NOT_CONNECTED', 'REAUTH_REQUIRED', 'RATE_LIMITED']);
 
-/** design-reference §5 frame state machine: first match wins. */
+/**
+ * Derive a panel's state (design-reference §5); the first matching rule wins.
+ * @param refreshRate - Refresh interval in seconds; data older than twice this is stale.
+ * @param now - Current time in epoch milliseconds.
+ */
 export function frameState(
   entry: WidgetCacheEntry | undefined,
   connected: boolean,

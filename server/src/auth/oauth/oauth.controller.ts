@@ -1,7 +1,7 @@
 // GET /api/oauth/{provider}/start?intent=login|link|connect, GET /api/oauth/{provider}/callback
-// See docs/Architecture.md §5.2: "One callback per provider... serves both login and connect."
+// See docs/Architecture.md §8.3: "One callback per provider... serves both login and connect."
 //
-// `steam` is connect-only (no login/link — see docs/Architecture.md §5.1's login table,
+// `steam` is connect-only (no login/link — see docs/Architecture.md §8.3's login table,
 // which doesn't list it) via its own OpenID strategy and guard.
 
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
@@ -22,6 +22,7 @@ import type { NormalizedOAuthProfile } from './normalized-profile.js';
 const CONNECT_PROVIDER_TO_SERVICE = { github: 'github', google: 'youtube', steam: 'steam' } as const;
 type ConnectServiceProvider = keyof typeof CONNECT_PROVIDER_TO_SERVICE;
 
+/** Start and callback routes for GitHub, Google and Steam; the callback dispatches on the verified state's intent. */
 @Controller('oauth')
 export class OAuthController {
   constructor(

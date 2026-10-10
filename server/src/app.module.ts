@@ -17,6 +17,7 @@ import { GithubModule } from './services/github/github.module.js';
 import { WeatherModule } from './services/weather/weather.module.js';
 import { YoutubeModule } from './services/youtube/youtube.module.js';
 
+/** Root module: loads and validates env config, serves the built SPA, and wires every feature module. */
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -25,7 +26,7 @@ import { YoutubeModule } from './services/youtube/youtube.module.js';
       validate,
     }),
     // Everything but /api/*, /about.json and /socket.io/* falls through to the built SPA.
-    // See docs/Architecture.md §1.
+    // See docs/Architecture.md §7.
     ServeStaticModule.forRoot({
       rootPath: join(import.meta.dirname, '..', 'public'),
       exclude: ['/api/{*splat}', '/about.json', '/socket.io/{*splat}'],

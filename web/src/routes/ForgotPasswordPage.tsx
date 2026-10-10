@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label.js';
 import { isValidEmail } from '@/lib/validation.js';
 import { AuthFooter, AuthFooterLink, AuthLayout, FieldError } from './AuthLayout.js';
 
+/** Requests a reset link; the success view is the same whether or not the account exists. */
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [invalid, setInvalid] = useState(false);

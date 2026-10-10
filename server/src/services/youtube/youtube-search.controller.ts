@@ -22,6 +22,7 @@ const STATUS: Partial<Record<FetchError['code'], number>> = {
   RATE_LIMITED: 429,
 };
 
+/** Channel search for the picker, using the caller's youtube connection; 400 on a bad query, 409 when not connected or reauth is needed, 429 on rate limit, otherwise 502. */
 @Controller('youtube/channels')
 @UseGuards(JwtGuard)
 export class YoutubeSearchController {

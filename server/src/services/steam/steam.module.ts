@@ -6,8 +6,7 @@ import { WidgetRegistryService } from '../../catalog/widget-registry.service.js'
 import { SteamController } from './steam.controller.js';
 import { createSteamWidgets } from './steam.widgets.js';
 
-// Registers the Steam service and its widgets — see docs/Architecture.md §3 and
-// features/steam-widgets/spec.md.
+/** Registers the Steam service and its widgets — see docs/Architecture.md §8.1. */
 @Module({ imports: [AuthModule, CatalogModule], controllers: [SteamController] })
 export class SteamModule implements OnModuleInit {
   constructor(

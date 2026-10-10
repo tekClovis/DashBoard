@@ -14,6 +14,7 @@ const LAMP_SHAPES = {
 
 type LampState = keyof typeof LAMP_SHAPES;
 
+/** Status indicator; without `label` it is hidden from assistive tech. */
 function Lamp({
   state,
   label,

@@ -39,6 +39,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
   );
 }
 
+/** Muted footer line under a form, typically holding an {@link AuthFooterLink}. */
 export function AuthFooter({ children }: { children: ReactNode }) {
   return <p className="text-muted-foreground text-[0.8125rem]">{children}</p>;
 }
@@ -51,6 +52,7 @@ export function AuthFooterLink({ to, children }: { to: string; children: ReactNo
   );
 }
 
+/** Inline field error; `id` must match the input's `aria-describedby`. */
 export function FieldError({ id, children }: { id: string; children: ReactNode }) {
   return (
     <p id={id} className="text-destructive flex items-start gap-1.5 text-xs">
@@ -60,8 +62,10 @@ export function FieldError({ id, children }: { id: string; children: ReactNode }
   );
 }
 
+/** Deliberately neutral wording so the resend response does not reveal whether the account exists. */
 export const RESENT_MESSAGE = 'If that account needs a new link, it’s on its way.';
 
+/** Alert showing {@link RESENT_MESSAGE}. */
 export function ResentNotice() {
   return (
     <Alert>

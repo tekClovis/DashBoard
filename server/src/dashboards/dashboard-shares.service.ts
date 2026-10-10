@@ -1,5 +1,5 @@
 // Share a dashboard with another user; the recipient accepts (a personal copy) or declines — see
-// docs/Architecture.md §4, §8 and features/big-dashboard-share/spec.md.
+// docs/Architecture.md §8.2, §3 and features/big-dashboard-share/spec.md.
 //
 // A DashboardShare row is an offer; accept/decline keep it with the new status for the sender. Recipient-side lookups
 // are scoped by toUserId in the query itself, so someone else's share is a 404, like the rest of
@@ -18,6 +18,12 @@ export class DashboardShareService {
     private readonly dashboards: DashboardsService,
   ) {}
 
+  /**
+   * Offer a dashboard to another user by email.
+   * @throws {@link NotFoundException} when the dashboard isn't owned by `userId`.
+   * @throws {@link BadRequestException} with `UNKNOWN_USER` (no such or banned user) or `CANNOT_SHARE_WITH_SELF`.
+   * @throws {@link ConflictException} with `ALREADY_SHARED` when a PENDING share already exists.
+   */
   async share(userId: string, dashboardId: string, email: string): Promise<void> {
     const dashboard = await this.prisma.dashboard.findFirst({ where: { id: dashboardId, userId } });
     if (!dashboard) throw new NotFoundException();
@@ -53,6 +59,7 @@ export class DashboardShareService {
     return rows.map((row) => ({ id: row.id, toEmail: row.toUser.email, status: row.status }));
   }
 
+  /** Pending shares offered to `userId`, newest first. */
   async listIncoming(userId: string): Promise<IncomingShareEntry[]> {
     const rows = await this.prisma.dashboardShare.findMany({
       where: { toUserId: userId, status: 'PENDING' },
@@ -68,7 +75,11 @@ export class DashboardShareService {
     }));
   }
 
-  /** Clones the dashboard and its widgets (new ids) into the recipient's account and marks the share ADDED. */
+  /**
+   * Clone the dashboard and its widgets (new ids) into the recipient's account and mark the share ADDED, atomically.
+   * @returns the new dashboard copy.
+   * @throws {@link NotFoundException} when the share isn't a PENDING one addressed to `userId`.
+   */
   async accept(userId: string, shareId: string): Promise<DashboardEntry> {
     return this.prisma.$transaction(async (tx) => {
       const share = await tx.dashboardShare.findFirst({
@@ -96,6 +107,10 @@ export class DashboardShareService {
     });
   }
 
+  /**
+   * Mark a pending share DECLINED.
+   * @throws {@link NotFoundException} when the share isn't a PENDING one addressed to `userId`.
+   */
   async decline(userId: string, shareId: string): Promise<void> {
     const { count } = await this.prisma.dashboardShare.updateMany({
       where: { id: shareId, toUserId: userId, status: 'PENDING' },

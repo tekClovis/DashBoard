@@ -39,6 +39,7 @@ function Rug({ dates, now }: { dates: string[]; now: number }) {
   );
 }
 
+/** View for `github.recent_commits`: time since the latest commit with a 7-day rug, then one row per commit. */
 export function RecentCommitsView({ data, compact }: WidgetViewProps) {
   const { repo, commits } = data as WidgetDataMap['github.recent_commits'];
   const now = Date.now();
@@ -74,6 +75,7 @@ export function RecentCommitsView({ data, compact }: WidgetViewProps) {
 
 type PullRequests = WidgetDataMap['github.pull_requests'];
 
+/** View for `github.pull_requests`: the count with a delta against the previous push of the same repo and state. */
 export function PullRequestsView({ data, fetchedAt, history, compact }: WidgetViewProps) {
   const { repo, state, pulls } = data as PullRequests;
   const trail = pushTrail(
@@ -131,6 +133,7 @@ function Swatch({ severity }: { severity: GithubSecurityAlert['severity'] }) {
   return <i aria-hidden="true" className={cn('inline-block size-2 flex-none self-center rounded-[1px]', SEV_FILL[severity])} />;
 }
 
+/** View for `github.security_alerts`: open-alert count, a severity breakdown bar, then one row per alert. */
 export function SecurityAlertsView({ data, compact }: WidgetViewProps) {
   const { repo, alerts } = data as WidgetDataMap['github.security_alerts'];
   const counts = SEVERITIES.map((s) => [s, alerts.filter((a) => a.severity === s).length] as const);

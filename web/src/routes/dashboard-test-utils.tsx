@@ -90,6 +90,7 @@ export function respondWhen(match: Match, respond: () => Response) {
 /** Makes requests matching `match` answer 500 until the returned function is called. */
 export const failWhen = (match: Match) => respondWhen(match, () => new Response('{}', { status: 500 }));
 
+/** Renders {@link DashboardPage} at `/d/dash-1` with a retry-free query client. */
 export function renderPage() {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -102,6 +103,7 @@ export function renderPage() {
   );
 }
 
+/** Opens the weather widget's options menu via keyboard and clicks the item named `name`. */
 export async function openMenuItem(name: string) {
   const trigger = await screen.findByRole('button', { name: 'Weather Forecast options' });
   // Keyboard open: after a menu item unmounts its own widget (Remove), Radix ignores later

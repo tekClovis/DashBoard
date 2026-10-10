@@ -1,4 +1,4 @@
-// docs/Architecture.md §5.1: Google login, `passport-google-oauth20`, scopes `openid email profile`.
+// docs/Architecture.md §8.3: Google login, `passport-google-oauth20`, scopes `openid email profile`.
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

@@ -1,4 +1,4 @@
-// YouTube widget definitions — see docs/Architecture.md §3's widget catalog and
+// YouTube widget definitions — see docs/Architecture.md §8.1's widget catalog and
 // features/youtube-widgets/spec.md. Data shapes live in shared/src/widgets.ts.
 
 import type { ParamSpec, YoutubeVideo } from '@dashboard/shared';
@@ -62,6 +62,7 @@ function toVideo(id: string, snippet: RawVideoSnippet): YoutubeVideo {
   };
 }
 
+/** Builds the youtube widget definitions; `refresh` renews the user's access token on expiry or 401. */
 export function youtubeWidgets(refresh: TokenRefresher): [
   WidgetDefinition<'youtube.channel_stats'>,
   WidgetDefinition<'youtube.latest_videos'>,

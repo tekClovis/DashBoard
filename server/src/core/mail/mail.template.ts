@@ -1,5 +1,6 @@
 const APP_NAME = 'Dashboard';
 
+/** Copy for one transactional email; `note` is optional. */
 export interface MailContent {
   heading: string;
   intro: string;
@@ -17,7 +18,7 @@ function escapeHtml(value: string): string {
     .replaceAll('"', '&quot;');
 }
 
-/** Branded card layout, inline CSS only, fluid width (max 560px) so it never overflows on narrow screens. */
+/** Render a branded card layout with inline CSS only and fluid width (max 560px) so it fits narrow screens. */
 export function renderHtml({ heading, intro, buttonLabel, url, note, footer }: MailContent): string {
   const noteHtml = note
     ? `<p style="margin:24px 0 0;font-size:14px;line-height:20px;color:#6b7280;">${escapeHtml(note)}</p>`
@@ -45,6 +46,7 @@ ${noteHtml}
 </html>`;
 }
 
+/** Render the plain-text alternative of {@link renderHtml}. */
 export function renderText({ heading, intro, url, note, footer }: MailContent): string {
   return [heading, '', intro, url, ...(note ? ['', note] : []), '', footer].join('\n');
 }

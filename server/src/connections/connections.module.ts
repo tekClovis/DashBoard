@@ -7,9 +7,9 @@ import { GoogleConnectStrategy } from './strategies/google-connect.strategy.js';
 import { SteamConnectStrategy } from './strategies/steam-connect.strategy.js';
 import { TokenCipherService } from './token-cipher.service.js';
 
-// Widget-credential "connect" flow — see docs/Architecture.md §5.2 and
+// Widget-credential "connect" flow — see docs/Architecture.md §8.3 and
 // features/connections-api/spec.md. The `connect` OAuth/OpenID start/callback routes
-// themselves live in OAuthModule — see docs/Architecture.md §5.2's "one callback per
+// themselves live in OAuthModule — see docs/Architecture.md §8.3's "one callback per
 // provider, serves both login and connect" — this module only owns ServiceConnection CRUD
 // (behind AuthModule's JwtGuard) and the connect-scoped passport strategies (which
 // self-register into passport on instantiation regardless of who injects them).

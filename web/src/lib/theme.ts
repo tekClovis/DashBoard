@@ -7,6 +7,7 @@ export const THEME_STORAGE_KEY = 'theme';
 
 const listeners = new Set<() => void>();
 
+/** Sets the `dark` class on `<html>`, persists the choice under {@link THEME_STORAGE_KEY} and notifies {@link useTheme} subscribers. */
 export function applyTheme(theme: Theme): void {
   document.documentElement.classList.toggle('dark', theme === 'dark');
   localStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -23,6 +24,7 @@ function getTheme(): Theme {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 }
 
+/** Current theme and a function that toggles it via {@link applyTheme}. */
 export function useTheme(): [Theme, () => void] {
   const theme = useSyncExternalStore(subscribe, getTheme);
   return [theme, () => applyTheme(theme === 'dark' ? 'light' : 'dark')];

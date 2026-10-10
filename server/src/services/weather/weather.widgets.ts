@@ -1,4 +1,4 @@
-// Weather widget definitions (Open-Meteo, no connection) — see docs/Architecture.md §3.
+// Weather widget definitions (Open-Meteo, no connection) — see docs/Architecture.md §8.1.
 
 import type { ParamSpec } from '@dashboard/shared';
 import type { Params, WidgetDefinition } from '../../catalog/widget-definition.js';
@@ -30,6 +30,7 @@ async function locate(geocoder: Geocoder, params: Params): Promise<GeoLocation> 
   return geocoder.resolve(String(city));
 }
 
+/** Builds the weather widget definitions; both resolve their location through `geocoder`. */
 export function weatherWidgets(geocoder: Geocoder): [
   WidgetDefinition<'weather.current_weather'>,
   WidgetDefinition<'weather.forecast'>,

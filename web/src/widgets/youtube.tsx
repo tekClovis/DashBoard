@@ -7,6 +7,7 @@ const COMPACT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFra
 
 const STAT_NAMES = { subscribers: 'Subscribers', views: 'Views', videos: 'Videos' } as const;
 
+/** View for `youtube.channel_stats`: leads with subscribers, or views when the channel hides its subscriber count. */
 export function ChannelStatsView({ data, compact }: WidgetViewProps) {
   const stats = data as WidgetDataMap['youtube.channel_stats'];
   const { channelId, title, subscribers } = stats;
@@ -39,6 +40,7 @@ export function ChannelStatsView({ data, compact }: WidgetViewProps) {
   );
 }
 
+/** View for `youtube.latest_videos`: time since the last upload, then one row per video. */
 export function LatestVideosView({ data, compact }: WidgetViewProps) {
   const { channelId, channelTitle, videos } = data as WidgetDataMap['youtube.latest_videos'];
   const now = Date.now();
@@ -67,6 +69,7 @@ export function LatestVideosView({ data, compact }: WidgetViewProps) {
   );
 }
 
+/** View for `youtube.trending_videos`: ranked rows for a region; the first gets a larger thumbnail. */
 export function TrendingVideosView({ data }: WidgetViewProps) {
   const { region, videos } = data as WidgetDataMap['youtube.trending_videos'];
   return (

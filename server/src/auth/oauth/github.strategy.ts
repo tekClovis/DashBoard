@@ -1,4 +1,4 @@
-// docs/Architecture.md §5.1: GitHub login, `passport-github2`, scopes `read:user user:email`.
+// docs/Architecture.md §8.3: GitHub login, `passport-github2`, scopes `read:user user:email`.
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,7 +17,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
       callbackURL: `${config.getOrThrow<string>('APP_URL')}/api/oauth/github/callback`,
       scope: ['read:user', 'user:email'],
       // Keeps the `verified` flag per email instead of collapsing to just the primary value —
-      // required to implement the auto-link rule (Architecture §5.1).
+      // required to implement the auto-link rule (Architecture §8.3).
       allRawEmails: true,
     });
   }

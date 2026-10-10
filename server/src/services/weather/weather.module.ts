@@ -1,4 +1,4 @@
-// Weather service (Open-Meteo, connection: 'none') — see docs/Architecture.md §3 and
+// Weather service (Open-Meteo, connection: 'none') — see docs/Architecture.md §8.1 and
 // features/weather-widgets/spec.md.
 
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
@@ -11,6 +11,7 @@ import { Geocoder } from './open-meteo.js';
 import { WeatherController } from './weather.controller.js';
 import { weatherWidgets } from './weather.widgets.js';
 
+/** Registers the weather service and its widgets, sharing one {@link Geocoder} backed by Redis. */
 @Module({ imports: [AuthModule, CatalogModule], controllers: [WeatherController] })
 export class WeatherModule implements OnModuleInit {
   constructor(

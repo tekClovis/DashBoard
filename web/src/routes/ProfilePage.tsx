@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 
 /**
- * Matches features/oauth-login/mock.html's "Profile — linked accounts" card plus the
- * Logout/Logout-all controls that were provisionally on DashboardPlaceholderPage — see
- * features/frontend-shell/spec.md.
+ * Profile page: linked login methods, log out / log out of all devices, and account deletion.
+ *
+ * Link starts a full-page OAuth redirect; Unlink is disabled when it would remove the only login method.
+ * Renders nothing until the current user loads.
  */
 export function ProfilePage() {
   const { data: me } = useMe();
@@ -100,6 +101,7 @@ export function ProfilePage() {
   );
 }
 
+/** Account deletion behind a type-your-email confirmation dialog; on success navigates to /login with `accountDeleted` state. */
 function DangerZone({ email }: { email: string }) {
   const del = useDeleteAccount();
   const navigate = useNavigate();

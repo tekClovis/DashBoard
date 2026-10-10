@@ -15,6 +15,7 @@ export class UsersController {
     private readonly config: ConfigService,
   ) {}
 
+  /** Delete the caller's account and clear their session cookie. */
   @Delete('me')
   @HttpCode(204)
   async deleteMe(@CurrentUser() user: RequestUser, @Res({ passthrough: true }) res: Response): Promise<void> {

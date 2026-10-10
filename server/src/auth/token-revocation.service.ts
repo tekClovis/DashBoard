@@ -6,7 +6,7 @@ const REVOKED_JTI_PREFIX = 'auth:revoked-jti:';
 
 /**
  * Per-token (jti) revocation for plain `logout`, distinct from `logout-all`'s
- * per-user `tokenVersion` bump — see docs/Architecture.md §5.1. Backed by
+ * per-user `tokenVersion` bump — see docs/Architecture.md §8.3. Backed by
  * Redis (shared across instances) with a TTL matching the token's remaining
  * lifetime, so revoked entries expire on their own.
  */

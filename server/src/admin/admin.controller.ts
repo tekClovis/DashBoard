@@ -1,4 +1,4 @@
-// Admin user management — see features/admin-ui/spec.md and docs/Architecture.md §5.3.
+// Admin user management — see features/admin-ui/spec.md and docs/Architecture.md §8.3.
 
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import type { AdminUserEntry, AdminUsersResponse, OkResponse } from '@dashboard/shared';
@@ -11,6 +11,7 @@ import { AdminService } from './admin.service.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
+/** ADMIN-only REST endpoints under `/admin/users`. */
 @Controller('admin/users')
 @UseGuards(JwtGuard, RolesGuard)
 @Roles('ADMIN')

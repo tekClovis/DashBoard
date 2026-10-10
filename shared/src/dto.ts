@@ -1,8 +1,8 @@
-// REST request/response shapes — see docs/Architecture.md §3, §8.
+// REST request/response shapes — see docs/Architecture.md §8.1, §3.
 
 import type { ServiceSpec } from './catalog.js';
 
-/** GET /about.json — see docs/Architecture.md §3. */
+/** GET /about.json — see docs/Architecture.md §8.1. */
 export interface AboutResponse {
   client: {
     host: string;
@@ -59,7 +59,7 @@ export interface LoginRequest {
   password: string;
 }
 
-/** Shared success shape for register/confirm/resend/login — see docs/Architecture.md §8. */
+/** Shared success shape for register/confirm/resend/login — see docs/Architecture.md §3. */
 export interface OkResponse {
   ok: true;
 }
@@ -75,7 +75,7 @@ export interface MeResponse {
   identities: { provider: 'GITHUB' | 'GOOGLE' }[];
 }
 
-/** One row of GET /api/admin/users — see docs/Architecture.md §5.3. Never carries credentials. */
+/** One row of GET /api/admin/users — see docs/Architecture.md §8.3. Never carries credentials. */
 export interface AdminUserEntry {
   id: string;
   email: string;
@@ -98,7 +98,7 @@ export interface AdminUserPatch {
   role?: 'USER' | 'ADMIN';
 }
 
-/** Client-facing shape of one ServiceConnection — raw tokens never appear here. See docs/Architecture.md §5.2. */
+/** Client-facing shape of one ServiceConnection — raw tokens never appear here. See docs/Architecture.md §8.3. */
 export interface ConnectionEntry {
   service: string;
   connected: boolean;
@@ -147,6 +147,7 @@ export interface IncomingShareEntry {
   createdAt: string;
 }
 
+/** Answer state of a sent share. */
 export type ShareStatus = 'PENDING' | 'ADDED' | 'DECLINED';
 
 /** One row of GET /api/dashboards/{id}/shares: who a dashboard was sent to and their answer. */

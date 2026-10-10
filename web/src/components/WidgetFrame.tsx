@@ -85,6 +85,7 @@ function ImageRows({ n, width, height }: { n: number; width: number; height: num
     </div>
   );
 }
+/** Loading placeholder shaped like the view of `kind` (`service.widget`); unknown kinds get a generic stat plus rows. */
 export function ViewSkeleton({ kind }: { kind: string }) {
   if (kind === 'steam.recently_played') return <>{STAT_SKELETON}<ImageRows n={4} width={64} height={30} /></>;
   if (kind === 'youtube.latest_videos' || kind === 'youtube.trending_videos')

@@ -4,12 +4,13 @@ import { ConfigService } from '@nestjs/config';
 import type { Role } from '../generated/prisma/enums.js';
 import { SESSION_TTL_SEC } from './session.constants.js';
 
-/** `sub`/`role`/`tv` (tokenVersion)/`jti` (per-token id, for logout revocation) claims — see docs/Architecture.md §5.1. */
+/** `sub`/`role`/`tv` (tokenVersion)/`jti` (per-token id, for logout revocation) claims — see docs/Architecture.md §8.3. */
 export interface JwtPayload {
   sub: string;
   role: Role;
   tv: number;
   jti: string;
+  /** Expiry as Unix seconds. */
   exp: number;
 }
 
@@ -21,6 +22,7 @@ export interface JwtPayload {
 export class JwtService {
   constructor(private readonly config: ConfigService) {}
 
+  /** Signs the claims with a fresh `jti` and an expiry of {@link SESSION_TTL_SEC} from now. */
   sign(claims: Omit<JwtPayload, 'exp' | 'jti'>): string {
     const payload: JwtPayload = {
       ...claims,

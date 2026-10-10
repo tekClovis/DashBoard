@@ -1,4 +1,4 @@
-// Widget catalog types — see docs/Architecture.md §3.
+// Widget catalog types — see docs/Architecture.md §8.1.
 
 /** Describes one parameter of a widget, as rendered by the client's generated ParamForm. */
 export interface ParamSpec {

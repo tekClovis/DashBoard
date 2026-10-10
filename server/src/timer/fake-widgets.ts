@@ -43,6 +43,7 @@ const fakeProfileWidget: WidgetDefinition<'fake-connected.profile'> = {
   fetch: async (params, ctx) => ({ label: params['label'], userId: ctx.userId, hasToken: Boolean(ctx.accessToken) }),
 };
 
+/** Register the `fake` and `fake-connected` services and their widgets with the registry. */
 export function registerFakeWidgets(registry: WidgetRegistryService): void {
   registry.registerService({ name: 'fake', connection: 'none' });
   registry.register(fakeEchoWidget);

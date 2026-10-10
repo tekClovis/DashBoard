@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
+/** Query for the paginated user list; `page` is 1-based, `pageSize` is 1 to 100. */
 export class ListUsersQueryDto {
   @IsOptional()
   @IsString()

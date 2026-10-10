@@ -1,7 +1,7 @@
 # Dev-only overlay: publishes postgres/redis/mailpit to localhost so `npm run dev`
 # can run the server on the host against them. Not used by a plain `docker compose up`
 # (the grader's path), which keeps postgres and redis unpublished per
-# docs/Architecture.md §10.
+# docs/Architecture.md §8.4.
 #
 # Usage: npm run dev:deps (= docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis mailpit)
 services:
