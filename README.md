@@ -183,7 +183,7 @@ If you set `ADMIN_EMAIL` and `ADMIN_PASSWORD`, log in with them to reach the **A
 | Timer / realtime | Server tick loop + Socket.IO | Each widget sends its refresh rate to the server-side Timer, which fetches the data and pushes it to the browser. |
 | Testing | Vitest, Supertest, Testcontainers | Unit tests, plus end-to-end tests against real Postgres/Redis containers. |
 
-The detailed rationale and rejected alternatives are in [docs/Architecture.md § 4](docs/Architecture.md#4-solution-strategy) and [§ 9](docs/Architecture.md#9-architecture-decisions).
+The detailed rationale is in [docs/Stack.md](docs/Stack.md).
 
 ## System structure
 
@@ -236,22 +236,19 @@ The server serves the web interface, the REST API, the WebSocket and `/about.jso
 
 **Adding a service** means creating `server/src/services/<name>/` with its widget definitions (name, parameters, minimum refresh rate, fetch function), registering the module, and adding one view per widget in `web/src/widgets/`. `/about.json` and the add-widget dialog pick the new widgets up automatically.
 
-See [docs/Architecture.md](docs/Architecture.md) (arc42) for the REST API and socket events, building blocks, runtime flows, data model, identity and permissions, and the security checklist.
+See [docs/Architecture.md](docs/Architecture.md) for the data model, authentication flows, Timer design, REST API and security checklist.
 
 ## Development
 
 Requires Node.js 24+ and Docker.
 
 ```sh
-npm install
-cp .env.example .env   # fill JWT_SECRET and TOKEN_ENC_KEY (openssl rand -base64 32)
-npm run dev:deps       # postgres, redis, mailpit in Docker, published on localhost
-# .env uses the compose hostnames; override them for processes on the host
-export DATABASE_URL=postgresql://dashboard:dashboard@localhost:5432/dashboard
-export REDIS_URL=redis://localhost:6379 SMTP_HOST=localhost
-npm run db:deploy -w server
-npm run dev            # server, watch mode
-npm run dev:web        # Vite dev server
+npm ci
+cp .env.example .env              # then set JWT_SECRET and TOKEN_ENC_KEY
+# .env.local (git-ignored) overrides .env: set DATABASE_URL, REDIS_URL and SMTP_HOST to localhost there
+npm run dev:deps                  # postgres, redis, mailpit on localhost
+npm run dev                       # API on :8080 with reload
+npm run dev:web                   # Vite dev server for the React app
 ```
 
 | Command | Runs |
@@ -259,7 +256,6 @@ npm run dev:web        # Vite dev server
 | `npm run build` | Builds shared, web and server |
 | `npm run lint` | ESLint on server and web |
 | `npm test` | Unit tests (server and web) |
-| `npm run test:e2e` | Server end-to-end tests against Testcontainers (needs Docker) |
-| `npm run test:cov -w server` | Server coverage report |
+| `npm run test:e2e` | End-to-end tests against Testcontainers (needs Docker) |
 
 Testing strategy: [docs/Testing.md](docs/Testing.md).
