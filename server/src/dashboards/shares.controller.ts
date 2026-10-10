@@ -1,4 +1,4 @@
-// Incoming-share endpoints — see docs/Architecture.md §8. Sending a share lives on
+// Incoming-share endpoints — see docs/Architecture.md §3. Sending a share lives on
 // DashboardsController (POST /dashboards/{id}/share).
 
 import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';

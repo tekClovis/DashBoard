@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import { cn } from '@/lib/utils.js';
 
+/** Raw string value of each param by name; {@link toParams} converts them for the API. */
 export type ParamValues = Record<string, string>;
 
 /** Returns an error message for one param's raw string value, or null when it is valid. */
@@ -30,6 +31,7 @@ export function validateParam(spec: ParamSpec, raw: string): string | null {
   return null;
 }
 
+/** True when every param passes {@link validateParam}. */
 export function validateParams(specs: ParamSpec[], values: ParamValues): boolean {
   return specs.every((s) => validateParam(s, values[s.name] ?? '') === null);
 }

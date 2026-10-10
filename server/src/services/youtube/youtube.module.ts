@@ -7,7 +7,7 @@ import { GoogleTokenRefresher } from './google-token-refresher.js';
 import { YoutubeSearchController } from './youtube-search.controller.js';
 import { youtubeWidgets } from './youtube-widgets.js';
 
-/** Registers the youtube service and its widgets with the registry — see docs/Architecture.md §3. */
+/** Registers the youtube service and its widgets with the registry — see docs/Architecture.md §8.1. */
 @Module({
   imports: [AuthModule, CatalogModule],
   controllers: [YoutubeSearchController],

@@ -1,6 +1,6 @@
 # Testing
 
-Solo project, so the goal is coverage that catches regressions cheaply, not exhaustive suites. See [Stack.md](./Stack.md) for why each tool was picked.
+Solo project, so the goal is coverage that catches regressions cheaply, not exhaustive suites.
 
 ## Layers
 
@@ -29,16 +29,12 @@ Integration and e2e tests run against a real Postgres/Redis via Testcontainers, 
 ## What to prioritize
 
 - Auth: local strategy, JWT issuance/verification, OAuth callback handlers (GitHub/Google/Steam) — highest blast radius if broken.
-- Widget param validation: `class-validator` DTOs against each service's `ParamSpec`.
+- Widget param validation against each service's `ParamSpec`.
 - Upstream API caching: same `(service, params, connection)` key returns cached data within TTL, doesn't leak across users.
 - `/about.json`: the grader depends on this; keep an e2e test asserting shape.
 
 ## Commands
 
-| Command | Runs |
-|---|---|
-| `npm run test` | Unit tests (`*.spec.ts`) |
-| `npm run test:e2e` | Supertest suites against Testcontainers-backed DB (needs Docker) |
-| `npm run test:cov` | Coverage report |
+Commands are listed in the [README](../README.md#test).
 
 Run unit + e2e before every commit that touches `server/src`.

@@ -13,6 +13,7 @@ const RATE_LIMIT_REASONS = new Set(['quotaExceeded', 'rateLimitExceeded', 'userR
 /** Exchanges the user's stored refresh token for a fresh access token (see GoogleTokenRefresher). */
 export type TokenRefresher = (userId: string) => Promise<string>;
 
+/** Performs an authenticated GET on a YouTube Data API path, throwing {@link FetchError} on failure. */
 export type YoutubeGet = <T>(path: string, query: Record<string, string | number>) => Promise<T>;
 
 /**

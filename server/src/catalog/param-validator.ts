@@ -1,6 +1,6 @@
 // Reusable ParamSpec[] validation — owned here since catalog owns the ParamSpec shape.
 // Called by dashboards-api on widget-instance create/update. See features/catalog-api/spec.md
-// and docs/Architecture.md §8 ("Widget params are validated against the registry's ParamSpecs").
+// and docs/Architecture.md §3 ("Widget params are validated against the registry's ParamSpecs").
 
 import type { ParamSpec } from '@dashboard/shared';
 
@@ -15,16 +15,18 @@ export type ParamValidationResult =
   | { ok: true; params: ValidatedParams }
   | { ok: false; error: ParamValidationError };
 
-/**
- * Validates a raw params object against a widget's ParamSpec[]: type, `required`, `enum`
- * membership, integer `min`/`max`, and string `pattern`. Returns coerced values (e.g. a numeric
- * string becomes a `number` for `type: 'integer'`) or the first validation failure, identified by
- * param name. Keys in `raw` that aren't declared in `specs` are dropped, never passed through.
- */
 function fail(param: string, message: string): ParamValidationResult {
   return { ok: false, error: { param, message } };
 }
 
+/**
+ * Validate a raw params object against a widget's `ParamSpec[]`.
+ *
+ * Checks `required`, integer `min`/`max`, string `enum` and `pattern`. Returns coerced values
+ * (a numeric string becomes a `number` for `type: 'integer'`) or the first failure, identified
+ * by param name. `undefined`, `null` and `''` count as absent and get `default` when set.
+ * Keys in `raw` not declared in `specs` are dropped.
+ */
 export function validateParams(specs: ParamSpec[], raw: Record<string, unknown>): ParamValidationResult {
   const params: ValidatedParams = {};
 

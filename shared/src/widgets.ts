@@ -1,4 +1,4 @@
-// Per-widget data shapes — see docs/Architecture.md §3.
+// Per-widget data shapes — see docs/Architecture.md §8.1.
 //
 // Each `services/<name>` module adds its own widget keys ('service.widget' →
 // data shape) here, so a view and its server fetch() cannot drift apart.
@@ -25,6 +25,7 @@ export interface SteamNewsItem {
   imageUrl: string;
 }
 
+/** Maps each 'service.widget' key to the data shape its server fetch() returns and its view consumes. */
 export interface WidgetDataMap {
   'steam.recently_played': { games: SteamRecentGame[] };
   'steam.game_news': { appId: number; /** Resolved server-side; `App <id>` when unknown. */ gameName: string; items: SteamNewsItem[] };

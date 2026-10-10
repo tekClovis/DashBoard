@@ -1,5 +1,5 @@
 // Wraps passport authenticate for each provider around the signed, cookie-bound `state`
-// param (docs/Architecture.md §5.2): the *same* callback URL per provider serves `login`,
+// param (docs/Architecture.md §8.3): the *same* callback URL per provider serves `login`,
 // `link` (oauth-login) and `connect` (connections-api) — a GitHub OAuth App allows only
 // one registered callback URL, so all three share it, dispatching by strategy based on the
 // server-verified intent, never a client-supplied one.

@@ -1,10 +1,16 @@
 // Best-effort provider-side token revocation on disconnect — see
-// docs/Architecture.md §5.2 ("Disconnecting ... revokes the token at the
+// docs/Architecture.md §8.3 ("Disconnecting ... revokes the token at the
 // provider where an API allows it"). Steam has no token to revoke.
 
 import { ConfigService } from '@nestjs/config';
 import { githubConnectClient } from './strategies/github-connect.strategy.js';
 
+/**
+ * Revoke an access token at its provider (GitHub, Google for `youtube`).
+ *
+ * A no-op for Steam, unknown services or a missing token.
+ * Never throws: network and provider errors are swallowed, and the response status is not checked.
+ */
 export async function revokeAtProvider(
   service: string,
   accessToken: string | null,

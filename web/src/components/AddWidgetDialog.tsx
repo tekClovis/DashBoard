@@ -46,6 +46,10 @@ interface AddWidgetDialogProps {
   onCloseAutoFocus?: (event: Event) => void;
 }
 
+/**
+ * Four-step modal (widget, settings, refresh, confirm) that adds a widget to a dashboard or reconfigures one.
+ * Saves through the create or update widget mutation on the last step and closes on success.
+ */
 export function AddWidgetDialog(props: AddWidgetDialogProps) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>

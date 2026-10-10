@@ -12,7 +12,7 @@ import './types.js';
  * Verifies the session cookie's signature, then rejects a banned user, a
  * token superseded by logout-all (`tv !== user.tokenVersion`), or a token
  * individually revoked by plain logout (`jti` in the revoked set) — see
- * docs/Architecture.md §5.1.
+ * docs/Architecture.md §8.3.
  */
 @Injectable()
 export class JwtGuard implements CanActivate {

@@ -22,7 +22,7 @@ afterEach(() => {
 describe('steam widgets', () => {
   const [recentlyPlayed, gameNews] = createSteamWidgets('test-key');
 
-  it('declares the catalog params and refresh floors from Architecture §3', () => {
+  it('declares the catalog params and refresh floors from Architecture §8.1', () => {
     expect(recentlyPlayed).toMatchObject({ service: 'steam', name: 'recently_played', auth: 'connection', minRefreshSec: 600 });
     expect(recentlyPlayed.params).toEqual([
       { name: 'number', type: 'integer', required: true, default: 5, min: 1, max: 10, label: 'Number' },

@@ -1,4 +1,4 @@
-// Account-linking rules — docs/Architecture.md §5.1 "Account linking":
+// Account-linking rules — docs/Architecture.md §8.3 "Account linking":
 //   1. AuthIdentity(provider, providerUserId) match → log that user in.
 //   2. Else a User with the same email exists → auto-link only if the provider's email is
 //      verified AND the local user is confirmed; otherwise refuse.
@@ -34,6 +34,11 @@ export class OAuthIdentityConflictError extends Error {
 export class OAuthLoginService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Resolves the user for a login-intent profile, auto-linking by email when the rules allow it.
+   * @throws {@link OAuthLinkRefusedError} when the email matches a user but cannot be auto-linked.
+   * @throws {@link OAuthNoAccountError} when nothing matches.
+   */
   async loginOrLink(profile: NormalizedOAuthProfile): Promise<User> {
     const existingIdentity = await this.prisma.authIdentity.findUnique({
       where: { provider_providerUserId: { provider: profile.provider, providerUserId: profile.providerUserId } },
@@ -67,6 +72,7 @@ export class OAuthLoginService {
    * Attaches a verified provider identity (from a completed `link`-intent OAuth callback) to
    * the already-authenticated user id bound in the `state`. Never trusts a client-supplied
    * `providerUserId` — `profile` here always comes from the real provider handshake.
+   * @throws {@link OAuthIdentityConflictError} when the identity belongs to another user.
    */
   async linkIdentity(userId: string, profile: NormalizedOAuthProfile): Promise<void> {
     const existing = await this.prisma.authIdentity.findUnique({

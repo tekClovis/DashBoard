@@ -5,6 +5,7 @@ import type { WidgetViewProps } from './registry.js';
 
 const hours = (minutes: number) => (minutes / 60).toFixed(1);
 
+/** View for `steam.recently_played`: total hours over two weeks, and a per-game meter scaled to the most played game. */
 export function RecentlyPlayedView({ data, compact }: WidgetViewProps) {
   const { games } = data as WidgetDataMap['steam.recently_played'];
   const total = games.reduce((sum, g) => sum + g.playtime2Weeks, 0);
@@ -37,6 +38,7 @@ export function RecentlyPlayedView({ data, compact }: WidgetViewProps) {
   );
 }
 
+/** View for `steam.game_news`: count of posts from the last 7 days, then one row per news item. */
 export function GameNewsView({ data, compact }: WidgetViewProps) {
   const { appId, gameName, items } = data as WidgetDataMap['steam.game_news'];
   const now = Date.now();

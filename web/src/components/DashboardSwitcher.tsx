@@ -19,6 +19,7 @@ const MAX_NAME = 100;
 
 type Dialogs = { kind: 'create' } | { kind: 'rename'; dashboard: DashboardEntry } | { kind: 'delete'; dashboard: DashboardEntry } | { kind: 'only'; dashboard: DashboardEntry };
 
+/** Create or rename form; rejects empty and case-insensitively duplicate names. Create navigates to the new dashboard. */
 function NameDialog({
   dialog,
   dashboards,
@@ -94,6 +95,7 @@ function NameDialog({
   );
 }
 
+/** Confirms deletion; if the deleted dashboard was open, navigates to the one before it in the list (or the first). */
 function DeleteDialog({
   dashboard,
   dashboards,

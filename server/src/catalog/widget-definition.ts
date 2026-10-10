@@ -1,4 +1,4 @@
-// Server-side widget registration — see docs/Architecture.md §3.
+// Server-side widget registration — see docs/Architecture.md §8.1.
 
 import type { ParamSpec, WidgetDataMap } from '@dashboard/shared';
 
@@ -15,6 +15,7 @@ export interface FetchContext {
   externalAccountId?: string;
 }
 
+/** A widget as registered server-side: its public spec plus the `fetch` that produces its data. */
 export interface WidgetDefinition<K extends keyof WidgetDataMap = keyof WidgetDataMap> {
   service: string;
   name: string;

@@ -1,5 +1,5 @@
 // Dashboard CRUD + widget-instance/layout endpoints under a dashboard — see
-// features/dashboards-api/spec.md and docs/Architecture.md §8.
+// features/dashboards-api/spec.md and docs/Architecture.md §3.
 
 import { Body, Controller, Delete, Get, Param, ParseArrayPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import type { DashboardEntry, DashboardsResponse, SentSharesResponse, WidgetInstanceEntry, WidgetsResponse } from '@dashboard/shared';

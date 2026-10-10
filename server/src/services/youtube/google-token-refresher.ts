@@ -1,4 +1,4 @@
-// Google access-token refresh for youtube connections — see docs/Architecture.md §5.2
+// Google access-token refresh for youtube connections — see docs/Architecture.md §8.3
 // (`access_type=offline`, "refreshed on expiry or 401") and features/youtube-widgets/spec.md.
 //
 // The refreshed token is stored through connections-api's TokenCipherService (AES-256-GCM), the
@@ -42,6 +42,7 @@ function parseTokenResponse(body: unknown): TokenResponse | null {
   return { access_token, expiresAt, refresh_token };
 }
 
+/** Refreshes a user's Google access token from the stored refresh token; see the file header for the concurrency rules. */
 @Injectable()
 export class GoogleTokenRefresher {
   private readonly client: { clientID: string; clientSecret: string };

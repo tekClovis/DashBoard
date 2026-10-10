@@ -12,7 +12,11 @@ const SERVICE_NAMES: Record<string, string> = {
   youtube: 'YouTube',
 };
 
-/** Matches features/connections-api/mock.html's Services list. */
+/**
+ * Services page: lists each service's connection state with Connect, Disconnect and Reauthenticate actions.
+ *
+ * Reauthenticate disconnects the service, then starts the connect redirect; if the disconnect fails, no redirect starts.
+ */
 export function ConnectionsPage() {
   const { data, isPending } = useConnections();
   const disconnect = useDisconnect();

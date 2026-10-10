@@ -25,7 +25,7 @@ export const widgetDataQuery = (instanceId: string) =>
  * Subscribes to one widget instance's realtime updates for the lifetime of the calling
  * component: emits `widget:subscribe` on mount / `widget:unsubscribe` on unmount, and writes
  * incoming `widget:data`/`widget:error` into the query cache under `['widget', instanceId]` —
- * per docs/Architecture.md §9 and `timer-realtime`'s gateway (`shared/src/socket.ts`'s event
+ * per docs/Architecture.md §5.9 and `timer-realtime`'s gateway (`shared/src/socket.ts`'s event
  * contract). Returns that cache entry like any other query so a widget view can render from
  * it directly. Recent pushes are kept in that entry too, so trends survive a remount.
  *

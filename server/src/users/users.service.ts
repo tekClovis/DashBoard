@@ -3,6 +3,7 @@ import { USER_SOCKET_DISCONNECTOR, type UserSocketDisconnector } from '../admin/
 import type { RequestUser } from '../auth/types.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 
+/** Self-service account operations. */
 @Injectable()
 export class UsersService {
   constructor(
@@ -10,7 +11,10 @@ export class UsersService {
     @Inject(USER_SOCKET_DISCONNECTOR) private readonly sockets: UserSocketDisconnector,
   ) {}
 
-  /** Existing `onDelete: Cascade` relations remove everything the user owns. */
+  /**
+   * Delete the caller's own account; cascading relations remove everything the user owns.
+   * @throws {@link ConflictException} with `LAST_ADMIN` when no other unbanned admin remains.
+   */
   async deleteSelf(user: RequestUser): Promise<void> {
     // Serializable so two admins deleting themselves concurrently can't both pass the check.
     await this.prisma.$transaction(

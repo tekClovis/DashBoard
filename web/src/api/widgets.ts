@@ -16,6 +16,7 @@ export function useWidgets(dashboardId: string) {
   });
 }
 
+/** POST /api/dashboards/{id}/widgets; refreshes the widget list on success. */
 export function useCreateWidget(dashboardId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -28,6 +29,7 @@ export function useCreateWidget(dashboardId: string) {
   });
 }
 
+/** PATCH /api/widgets/{id}; the variables carry the id plus the fields to change. */
 export function useUpdateWidget(dashboardId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -20,6 +20,7 @@ const alertVariants = cva(
   },
 );
 
+/** Tinted notice box; role is `alert` for the destructive tone, `status` otherwise. */
 function Alert({
   className,
   tone = 'default',

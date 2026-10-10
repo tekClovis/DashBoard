@@ -2,6 +2,7 @@ import type { ConnectionsResponse, OkResponse } from '@dashboard/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client.js';
 
+/** GET /api/connections. */
 export function useConnections() {
   return useQuery({
     queryKey: ['connections'],
@@ -9,6 +10,7 @@ export function useConnections() {
   });
 }
 
+/** DELETE /api/connections/{service}; refreshes the connections list on success. */
 export function useDisconnect() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -17,7 +19,7 @@ export function useDisconnect() {
   });
 }
 
-/** Full-page redirect into the real OAuth/OpenID handshake — see docs/Architecture.md §5.2. */
+/** Full-page redirect into the real OAuth/OpenID handshake — see docs/Architecture.md §8.3. */
 export function startConnect(service: string): void {
   window.location.href = `/api/oauth/${service === 'youtube' ? 'google' : service}/start?intent=connect`;
 }

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { createTransport, type Transporter } from 'nodemailer';
 import { renderHtml, renderText, type MailContent } from './mail.template.js';
 
+/** Sends transactional emails over unauthenticated SMTP, using `SMTP_HOST`, `SMTP_PORT` and `SMTP_FROM`. */
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -17,7 +18,7 @@ export class MailService {
     });
   }
 
-  /** Never throws — callers log-and-continue per docs/Architecture.md §5.1. */
+  /** Send the email-confirmation link; never throws, a send failure is only logged. */
   async sendConfirmationEmail(to: string, confirmUrl: string): Promise<void> {
     const content: MailContent = {
       heading: 'Confirm your email',
@@ -39,7 +40,7 @@ export class MailService {
     }
   }
 
-  /** Never throws, same contract as sendConfirmationEmail. */
+  /** Send the password-reset link (valid once, 1 hour); never throws, a send failure is only logged. */
   async sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
     const content: MailContent = {
       heading: 'Reset your password',

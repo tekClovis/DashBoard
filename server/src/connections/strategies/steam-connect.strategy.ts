@@ -41,7 +41,7 @@ export class SteamConnectStrategy extends PassportStrategy(Strategy, 'steam-conn
   }
 }
 
-/** Fallback if no API key was configured to fetch the full profile: parse the claimed_id URL. */
+/** Parse the SteamID64 from the OpenID claimed_id URL; `undefined` if it doesn't match. */
 function extractSteamId64(identifier: string): string | undefined {
   const match = /\/openid\/id\/(\d+)$/.exec(identifier);
   return match?.[1];

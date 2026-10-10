@@ -1,4 +1,4 @@
-// Socket.IO gateway — see docs/Architecture.md §6, §8.
+// Socket.IO gateway — see docs/Architecture.md §6, §3.
 //
 // Handshake auth mirrors JwtGuard (session cookie, revocation, ban, tokenVersion) but runs
 // as a Socket.IO middleware (`server.use`) rather than a Nest guard, so an unauthenticated
@@ -38,6 +38,7 @@ import { TimerService } from './timer.service.js';
 const INSTANCE_ROOM_PREFIX = 'instance:';
 const REAUTH_INTERVAL_MS = 60_000;
 
+/** Socket.IO gateway: authenticates sockets and maps `widget:subscribe`/`widget:unsubscribe` to Timer activation. */
 @Injectable()
 @WebSocketGateway()
 export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -125,6 +126,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
+  /**
+   * Join the instance room and activate its Timer entry.
+   * @returns `{ ok: false }` when the instance is missing or not owned by the socket's user.
+   */
   @SubscribeMessage('widget:subscribe')
   async handleSubscribe(
     @ConnectedSocket() client: Socket,
@@ -149,6 +154,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     return { ok: true };
   }
 
+  /** Leave the instance room; the Timer entry is deactivated once the room is empty. */
   @SubscribeMessage('widget:unsubscribe')
   async handleUnsubscribe(
     @ConnectedSocket() client: Socket,
