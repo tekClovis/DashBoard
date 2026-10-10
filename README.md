@@ -1,5 +1,9 @@
 # Dashboard
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tekClovis/tekClovis/main/gif/dashBoard.gif" width="640" alt="dashBoard" />
+</p>
+
 A customizable dashboard that gathers information from several online services and keeps it up to date in real time. You create an account, connect the services you use (GitHub, Steam, YouTube…), then add **widgets** to your dashboard. Each widget shows one piece of information, such as the weather in a city, the latest commits of a repository, or a channel's subscriber count. Each widget refreshes on its own schedule.
 
 ## Contents
