@@ -48,3 +48,11 @@ describe('GoogleStrategy.validate', () => {
     expect(done).toHaveBeenCalledWith(null, expect.objectContaining({ providerUserId: 'g-1', email: null }));
   });
 });
+
+describe('GoogleStrategy construction', () => {
+  it('does not throw when the client id and secret are empty strings (as shipped in .env.example)', () => {
+    const config = { get: () => '', getOrThrow: () => 'http://localhost:8080' };
+
+    expect(() => new GoogleStrategy(config as never)).not.toThrow();
+  });
+});

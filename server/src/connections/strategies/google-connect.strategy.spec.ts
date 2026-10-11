@@ -56,3 +56,15 @@ describe('googleConnectClient', () => {
     expect(googleConnectClient(makeConfig({}))).toEqual({ clientID: '', clientSecret: '' });
   });
 });
+
+describe('GoogleConnectStrategy construction', () => {
+  it('does not throw when no client id or secret is configured', () => {
+    expect(() => new GoogleConnectStrategy(makeConfig({ APP_URL: 'http://localhost:8080', GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '' }))).not.toThrow();
+  });
+
+  it('falls back to the login client when the connect client is an empty string', () => {
+    expect(
+      googleConnectClient(makeConfig({ ...LOGIN_ENV, GOOGLE_CONNECT_CLIENT_ID: '', GOOGLE_CONNECT_CLIENT_SECRET: '' })),
+    ).toEqual({ clientID: 'login-id', clientSecret: 'login-secret' });
+  });
+});

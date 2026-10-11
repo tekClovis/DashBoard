@@ -59,3 +59,11 @@ describe('GithubStrategy.validate', () => {
     });
   });
 });
+
+describe('GithubStrategy construction', () => {
+  it('does not throw when the client id and secret are empty strings (as shipped in .env.example)', () => {
+    const config = { get: () => '', getOrThrow: () => 'http://localhost:8080' };
+
+    expect(() => new GithubStrategy(config as never)).not.toThrow();
+  });
+});

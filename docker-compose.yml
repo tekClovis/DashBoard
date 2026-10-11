@@ -3,8 +3,16 @@ services:
     build: .
     ports:
       - "8080:8080"
+    # Optional: a fresh clone boots without a .env (missing secrets are generated, OAuth
+    # providers are disabled). Values here are only the defaults for the compose network;
+    # a .env entry (read by interpolation and env_file) wins.
     env_file:
-      - .env
+      - path: .env
+        required: false
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dashboard:dashboard@postgres:5432/dashboard}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
       postgres:
         condition: service_healthy

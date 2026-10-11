@@ -1,6 +1,9 @@
 // Required env vars, validated at boot — see docs/Architecture.md §8.6.
-// The server refuses to start without JWT_SECRET and a 32-byte TOKEN_ENC_KEY.
+// A missing JWT_SECRET or TOKEN_ENC_KEY is generated for this run (with a warning) so a fresh
+// clone boots without a .env; a TOKEN_ENC_KEY that is set must still be 32 bytes.
 
+import { randomBytes } from 'node:crypto';
+import { Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, ValidateIf, validateSync } from 'class-validator';
 
@@ -81,12 +84,27 @@ export class EnvironmentVariables {
   GOOGLE_CLIENT_SECRET?: string;
 }
 
+/** Secrets generated when unset: sessions and encrypted tokens do not survive a restart. */
+const GENERATED_SECRETS: Record<'JWT_SECRET' | 'TOKEN_ENC_KEY', () => string> = {
+  JWT_SECRET: () => randomBytes(32).toString('hex'),
+  TOKEN_ENC_KEY: () => randomBytes(32).toString('base64'),
+};
+
 /**
  * Validate and coerce the raw environment for `ConfigModule`.
- * @returns The typed config, with defaults applied.
+ * @returns The typed config, with defaults applied and any unset secret generated (with a warning).
  * @throws {@link Error} when a field fails validation or `TOKEN_ENC_KEY` does not decode to 32 bytes.
  */
-export function validate(config: Record<string, unknown>): EnvironmentVariables {
+export function validate(rawConfig: Record<string, unknown>): EnvironmentVariables {
+  const config = { ...rawConfig };
+  for (const [name, generate] of Object.entries(GENERATED_SECRETS)) {
+    if (config[name]) continue;
+    config[name] = generate();
+    new Logger('Env').warn(
+      `${name} is not set: generated one for this run. Sessions and stored tokens will not survive a restart; set ${name} in .env.`,
+    );
+  }
+
   const validated = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });

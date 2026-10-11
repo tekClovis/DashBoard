@@ -10,8 +10,8 @@ import type { NormalizedOAuthProfile } from './normalized-profile.js';
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(config: ConfigService) {
     super({
-      clientID: config.get<string>('GOOGLE_CLIENT_ID') ?? 'unset-google-client-id',
-      clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET') ?? 'unset-google-client-secret',
+      clientID: config.get<string>('GOOGLE_CLIENT_ID') || 'unset-google-client-id',
+      clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET') || 'unset-google-client-secret',
       callbackURL: `${config.getOrThrow<string>('APP_URL')}/api/oauth/google/callback`,
       scope: ['openid', 'email', 'profile'],
     });
