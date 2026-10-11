@@ -17,7 +17,7 @@ function connectState(provider: 'github' | 'google' | 'steam'): OAuthResolvedSta
 
 function makeDeps() {
   const values: Record<string, string> = { JWT_SECRET: 'test-secret', APP_URL };
-  const config = { getOrThrow: (key: string) => values[key] };
+  const config = { get: (key: string) => values[key], getOrThrow: (key: string) => values[key] };
   const jwt = new JwtService(config as never);
   const oauthLogin = { loginOrLink: vi.fn().mockResolvedValue(USER), linkIdentity: vi.fn().mockResolvedValue(undefined) };
   const connections = {
@@ -26,7 +26,7 @@ function makeDeps() {
   };
   const dashboards = { list: vi.fn().mockResolvedValue([{ id: 'd1' }, { id: 'd2' }]) };
   const controller = new OAuthController(oauthLogin as never, connections as never, dashboards as never, config as never, jwt);
-  return { controller, oauthLogin, connections, dashboards, jwt };
+  return { controller, oauthLogin, connections, dashboards, jwt, values };
 }
 
 function makeReq(oauthState: OAuthResolvedState | undefined, user: unknown = PROFILE): OAuthCallbackRequest {
@@ -39,6 +39,15 @@ function makeRes() {
 }
 
 describe('OAuthController', () => {
+  describe('providers', () => {
+    it('reports which login providers have credentials', () => {
+      const { controller, values } = makeDeps();
+      Object.assign(values, { GITHUB_CLIENT_ID: 'id', GITHUB_CLIENT_SECRET: 's', GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '' });
+
+      expect(controller.providers()).toEqual({ github: { configured: true }, google: { configured: false } });
+    });
+  });
+
   it('clears both handshake cookies on any callback', async () => {
     const { controller } = makeDeps();
     const { res, asResponse } = makeRes();

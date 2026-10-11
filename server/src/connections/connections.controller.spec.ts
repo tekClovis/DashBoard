@@ -45,14 +45,34 @@ describe('ConnectionsController', () => {
 
   describe('list', () => {
     it("returns the service's connections for the current user", async () => {
-      const listed: ConnectionsResponse = { connections: [{ service: 'github', connected: true, status: 'OK' }] };
       const service = makeService();
-      service.list.mockResolvedValue(listed);
+      service.list.mockResolvedValue({ connections: [{ service: 'github', connected: true, status: 'OK' }] });
 
-      const result = await makeController(service).list(user);
+      const result: ConnectionsResponse = await makeController(service).list(user);
 
-      expect(result).toBe(listed);
+      expect(result).toEqual({ connections: [{ service: 'github', connected: true, status: 'OK', configured: true }] });
       expect(service.list).toHaveBeenCalledWith('user-1');
+    });
+
+    it('flags a service whose provider credentials are missing as not configured', async () => {
+      const service = makeService();
+      service.list.mockResolvedValue({
+        connections: [
+          { service: 'weather', connected: true, status: 'OK' },
+          { service: 'github', connected: false, status: 'OK' },
+          { service: 'youtube', connected: false, status: 'OK' },
+          { service: 'steam', connected: false, status: 'OK' },
+        ],
+      });
+
+      const { connections } = await makeController(service).list(user);
+
+      expect(connections.map((c) => [c.service, c.configured])).toEqual([
+        ['weather', true],
+        ['github', true],
+        ['youtube', false],
+        ['steam', false],
+      ]);
     });
   });
 
@@ -128,7 +148,7 @@ describe('ConnectionsController', () => {
     it('never returns raw or encrypted tokens from list', async () => {
       const result = await makeRealController().list(user);
 
-      expect(result.connections).toContainEqual({ service: 'github', connected: true, status: 'OK' });
+      expect(result.connections).toContainEqual({ service: 'github', connected: true, status: 'OK', configured: true });
       expect(JSON.stringify(result)).not.toMatch(/secret_access|secret_refresh/);
     });
 
@@ -139,7 +159,7 @@ describe('ConnectionsController', () => {
 
       expect(revokedToken()).toBe('gho_secret_access');
       expect(result).toEqual({ ok: true });
-      expect((await controller.list(user)).connections).toContainEqual({ service: 'github', connected: false, status: 'OK' });
+      expect((await controller.list(user)).connections).toContainEqual({ service: 'github', connected: false, status: 'OK', configured: true });
     });
   });
 });

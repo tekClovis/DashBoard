@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ConnectionEntry } from '@dashboard/shared';
+import type { ConnectionsResponse } from '@dashboard/shared';
 import { startConnect, useConnections, useDisconnect } from '@/api/connections.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { PageHead } from '@/components/page-head.js';
@@ -79,7 +79,7 @@ function ServiceRow({
   reauthPhase,
   reauthError,
 }: {
-  entry: ConnectionEntry;
+  entry: ConnectionsResponse['connections'][number];
   isLast: boolean;
   onDisconnect: () => void;
   disconnecting: boolean;
@@ -91,6 +91,7 @@ function ServiceRow({
   const reauthButton = useRef<HTMLButtonElement>(null);
   const reauthenticating = reauthPhase !== 'idle';
   const name = SERVICE_NAMES[entry.service] ?? entry.service;
+  const unconfigured = entry.configured === false;
 
   useEffect(() => {
     if (reauthError) reauthButton.current?.focus();
@@ -103,7 +104,7 @@ function ServiceRow({
         <div className="text-muted-foreground text-xs">{entry.service}</div>
       </div>
       <div className="flex items-center gap-2.5">
-        <Badge alwaysOn={alwaysOn} connected={entry.connected} status={entry.status} />
+        <Badge alwaysOn={alwaysOn} connected={entry.connected} status={entry.status} unconfigured={unconfigured} />
         {!alwaysOn &&
           (reauthenticating || (entry.connected && entry.status === 'REAUTH') ? (
             <Button
@@ -124,7 +125,7 @@ function ServiceRow({
               {disconnecting ? 'Disconnecting…' : 'Disconnect'}
             </Button>
           ) : (
-            <Button size="sm" onClick={() => startConnect(entry.service)}>
+            <Button size="sm" disabled={unconfigured} onClick={() => startConnect(entry.service)}>
               Connect
             </Button>
           ))}
@@ -145,13 +146,18 @@ function Badge({
   alwaysOn,
   connected,
   status,
+  unconfigured,
 }: {
   alwaysOn: boolean;
   connected: boolean;
   status: 'OK' | 'REAUTH';
+  unconfigured: boolean;
 }) {
   if (alwaysOn) {
     return <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs text-green-800">always on</span>;
+  }
+  if (!connected && unconfigured) {
+    return <span className="bg-secondary rounded-full px-2.5 py-0.5 text-xs">not configured</span>;
   }
   if (!connected) {
     return <span className="bg-secondary rounded-full px-2.5 py-0.5 text-xs">not connected</span>;

@@ -8,6 +8,7 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtGuard } from '../auth/jwt.guard.js';
 import type { RequestUser } from '../auth/types.js';
 import { ConnectionsService } from './connections.service.js';
+import { connectServiceConfigured } from './provider-config.js';
 import { revokeAtProvider } from './provider-revoke.js';
 
 @Controller('connections')
@@ -18,10 +19,16 @@ export class ConnectionsController {
     private readonly config: ConfigService,
   ) {}
 
-  /** List the caller's connection status for every widget service. */
+  /** List the caller's connection status for every widget service, flagging services whose provider has no credentials. */
   @Get()
   async list(@CurrentUser() user: RequestUser): Promise<ConnectionsResponse> {
-    return this.connections.list(user.id);
+    const { connections } = await this.connections.list(user.id);
+    return {
+      connections: connections.map((entry) => ({
+        ...entry,
+        configured: connectServiceConfigured(this.config, entry.service),
+      })),
+    };
   }
 
   /**

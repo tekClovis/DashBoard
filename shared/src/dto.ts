@@ -105,9 +105,16 @@ export interface ConnectionEntry {
   status: 'OK' | 'REAUTH';
 }
 
+/** GET /api/oauth/providers — whether each login provider has credentials on the server. */
+export interface OAuthProvidersResponse {
+  github: { configured: boolean };
+  google: { configured: boolean };
+}
+
 /** GET /api/connections */
 export interface ConnectionsResponse {
-  connections: ConnectionEntry[];
+  /** `configured` is false when the server has no credentials for the service's connect flow, so Connect cannot work. */
+  connections: (ConnectionEntry & { configured: boolean })[];
 }
 
 /** One row of GET /api/dashboards, and the shape returned by dashboard CRUD. */
