@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { AdminUserEntry, AdminUsersResponse } from '@dashboard/shared';
 import type { RequestUser } from '../auth/types.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
@@ -19,6 +19,9 @@ const toEntry = (u: UserRow): AdminUserEntry => ({
 
 const isNotFound = (err: unknown): boolean =>
   typeof err === 'object' && err !== null && (err as { code?: unknown }).code === 'P2025';
+
+const isSerializationFailure = (err: unknown): boolean =>
+  typeof err === 'object' && err !== null && (err as { code?: unknown }).code === 'P2034';
 
 /**
  * UUIDs are case-insensitive in Postgres and ParseUUIDPipe, but the self-guard and the socket room name
@@ -59,6 +62,7 @@ export class AdminService {
    * @throws {@link BadRequestException} when neither `bannedAt` nor `role` is given.
    * @throws {@link ForbiddenException} when the actor bans or demotes themselves.
    * @throws {@link NotFoundException} when the user does not exist.
+   * @throws {@link ConflictException} with `LAST_ADMIN` when it would leave no active admin, or `CONCURRENT_UPDATE` on a serialization failure.
    */
   async update(actor: RequestUser, rawId: string, dto: UpdateUserDto): Promise<AdminUserEntry> {
     const id = normalizeId(rawId);
@@ -69,22 +73,36 @@ export class AdminService {
       throw new ForbiddenException({ error: 'CANNOT_MODIFY_SELF' });
     }
 
-    const current = await this.prisma.user.findUnique({ where: { id }, select: { role: true } });
-    if (!current) throw new NotFoundException({ error: 'USER_NOT_FOUND' });
-
-    const roleChanges = dto.role !== undefined && dto.role !== current.role;
-    const data: Prisma.UserUpdateInput = {};
-    if (dto.bannedAt !== undefined) data.bannedAt = dto.bannedAt === null ? null : new Date(dto.bannedAt);
-    if (roleChanges) data.role = dto.role;
-    // Bumping tokenVersion invalidates every existing session cookie (JwtGuard compares `tv`).
-    const killsSessions = bans || roleChanges;
-    if (killsSessions) data.tokenVersion = { increment: 1 };
-
     let updated: UserRow;
+    let killsSessions: boolean;
     try {
-      updated = await this.prisma.user.update({ where: { id }, data, select: USER_SELECT });
+      // Serializable so two concurrent demotes of the only two admins can't both pass the count.
+      ({ updated, killsSessions } = await this.prisma.$transaction(
+        async (tx) => {
+          const current = await tx.user.findUnique({ where: { id }, select: { role: true, bannedAt: true } });
+          if (!current) throw new NotFoundException({ error: 'USER_NOT_FOUND' });
+
+          const roleChanges = dto.role !== undefined && dto.role !== current.role;
+          const leavesAdmins = current.role === 'ADMIN' && current.bannedAt === null && (bans || dto.role === 'USER');
+          if (leavesAdmins) {
+            const others = await tx.user.count({ where: { role: 'ADMIN', bannedAt: null, id: { not: id } } });
+            if (others === 0) throw new ConflictException({ error: 'LAST_ADMIN' });
+          }
+
+          const data: Prisma.UserUpdateInput = {};
+          if (dto.bannedAt !== undefined) data.bannedAt = dto.bannedAt === null ? null : new Date(dto.bannedAt);
+          if (roleChanges) data.role = dto.role;
+          // Bumping tokenVersion invalidates every existing session cookie (JwtGuard compares `tv`).
+          const kills = bans || roleChanges;
+          if (kills) data.tokenVersion = { increment: 1 };
+
+          return { updated: await tx.user.update({ where: { id }, data, select: USER_SELECT }), killsSessions: kills };
+        },
+        { isolationLevel: 'Serializable' },
+      ));
     } catch (err) {
       if (isNotFound(err)) throw new NotFoundException({ error: 'USER_NOT_FOUND' });
+      if (isSerializationFailure(err)) throw new ConflictException({ error: 'CONCURRENT_UPDATE' });
       throw err;
     }
     if (killsSessions) this.sockets.disconnectUser(id);
