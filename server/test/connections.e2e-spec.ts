@@ -75,15 +75,18 @@ describe('Connections (e2e)', () => {
 
     it('returns all registry services, connected:false for services with no row', async () => {
       const { cookie } = await createUserWithCookie('list1@example.com');
+      const githubConfigured = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
+      const youtubeConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+      const steamConfigured = Boolean(process.env.STEAM_API_KEY);
 
       const res = await request(app.getHttpServer()).get('/api/connections').set('Cookie', cookie).expect(200);
 
       expect(res.body).toEqual({
         connections: [
-          { service: 'weather', connected: true, status: 'OK' },
-          { service: 'github', connected: false, status: 'OK' },
-          { service: 'steam', connected: false, status: 'OK' },
-          { service: 'youtube', connected: false, status: 'OK' },
+          { service: 'weather', connected: true, status: 'OK', configured: true },
+          { service: 'github', connected: false, status: 'OK', configured: githubConfigured },
+          { service: 'steam', connected: false, status: 'OK', configured: steamConfigured },
+          { service: 'youtube', connected: false, status: 'OK', configured: youtubeConfigured },
         ],
       });
     });
@@ -131,7 +134,12 @@ describe('Connections (e2e)', () => {
       expect(row!.externalAccountId).toBe('gh-42');
 
       const listRes = await request(app.getHttpServer()).get('/api/connections').set('Cookie', cookie).expect(200);
-      expect(listRes.body.connections).toContainEqual({ service: 'github', connected: true, status: 'OK' });
+      expect(listRes.body.connections).toContainEqual({
+        service: 'github',
+        connected: true,
+        status: 'OK',
+        configured: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+      });
       expect(JSON.stringify(listRes.body)).not.toContain('accessTokenEnc');
       expect(JSON.stringify(listRes.body)).not.toContain('real-github-access-token');
     });
@@ -302,7 +310,12 @@ describe('Connections (e2e)', () => {
       await request(app.getHttpServer()).delete('/api/connections/github').set('Cookie', cookie).expect(200);
 
       const res = await request(app.getHttpServer()).get('/api/connections').set('Cookie', cookie).expect(200);
-      expect(res.body.connections).toContainEqual({ service: 'github', connected: false, status: 'OK' });
+      expect(res.body.connections).toContainEqual({
+        service: 'github',
+        connected: false,
+        status: 'OK',
+        configured: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+      });
     });
   });
 });
