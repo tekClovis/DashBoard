@@ -11,9 +11,10 @@ import type { Response } from 'express';
 import { ConnectionsService } from '../../connections/connections.service.js';
 import { DashboardsService } from '../../dashboards/dashboards.service.js';
 import { OAUTH_CSRF_COOKIE } from '../../connections/oauth-state.js';
+import { STEAM_NONCE_COOKIE } from '../../connections/steam-openid.js';
 import { loginProviderConfigured } from '../../connections/provider-config.js';
 import type { ConnectProfileResult } from '../../connections/strategies/github-connect.strategy.js';
-import type { SteamConnectResult } from '../../connections/strategies/steam-connect.strategy.js';
+import type { SteamConnectResult } from '../../connections/steam-openid.js';
 import { JwtService } from '../jwt.service.js';
 import { setSessionCookie } from '../session-cookie.js';
 import { OAUTH_STATE_COOKIE } from './oauth-state.js';
@@ -84,6 +85,7 @@ export class OAuthController {
   private async handleCallback(req: OAuthCallbackRequest, res: Response, provider: ConnectServiceProvider): Promise<void> {
     res.clearCookie(OAUTH_STATE_COOKIE, { path: '/api/oauth' });
     res.clearCookie(OAUTH_CSRF_COOKIE, { path: '/api/oauth' });
+    res.clearCookie(STEAM_NONCE_COOKIE, { path: '/api/oauth' });
     const appUrl = this.config.getOrThrow<string>('APP_URL');
     const state = req.oauthState;
 
@@ -100,6 +102,7 @@ export class OAuthController {
             accessToken: result.accessToken,
             refreshToken: result.refreshToken,
             scopes: result.scopes,
+            expiresAt: result.expiresAt,
           });
         }
       } catch {

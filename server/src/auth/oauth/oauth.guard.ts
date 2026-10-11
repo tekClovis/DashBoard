@@ -35,9 +35,13 @@ import {
   type ConnectStatePayload,
 } from '../../connections/oauth-state.js';
 import { YOUTUBE_CONNECT_SCOPES } from '../../connections/strategies/google-connect.strategy.js';
+import { SteamOpenIdError, SteamOpenIdService, STEAM_NONCE_COOKIE } from '../../connections/steam-openid.js';
 import { readCookie } from '../../core/http/cookies.js';
+import { PrismaService } from '../../core/prisma/prisma.service.js';
 import { JwtService } from '../jwt.service.js';
+import { resolveSessionUser } from '../session-user.js';
 import { SESSION_COOKIE } from '../session.constants.js';
+import { TokenRevocationService } from '../token-revocation.service.js';
 import {
   assertBoundState,
   OAUTH_STATE_COOKIE,
@@ -61,13 +65,23 @@ function getIntent(req: Request): OAuthIntent {
   return 'login';
 }
 
-/** Requires an authenticated session at the `link`/`connect` start leg; returns its user id. */
-function requireSessionUserId(req: Request, jwt: JwtService): string {
+/** Requires a valid session (verified, not banned, not revoked) at the `link`/`connect` start leg; returns its user id. */
+async function requireSessionUserId(
+  req: Request,
+  jwt: JwtService,
+  prisma: PrismaService,
+  revocation: TokenRevocationService,
+): Promise<string> {
   const token = readCookie(req.headers.cookie, SESSION_COOKIE);
-  if (!token) throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
-  const payload = jwt.verify(token);
-  if (!payload) throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
-  return payload.sub;
+  const user = token ? await resolveSessionUser(token, jwt, prisma, revocation) : null;
+  if (!user) throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
+  return user.id;
+}
+
+/** The state-bound user may have been deleted or banned since the start leg; refuse to link on their behalf. */
+async function assertUserStillActive(prisma: PrismaService, userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { bannedAt: true } });
+  if (!user || user.bannedAt) throw new UnauthorizedException({ error: 'LOGIN_REQUIRED' });
 }
 
 /** Runs a named passport strategy and resolves like a normal guard once it settles. */
@@ -110,6 +124,8 @@ class BaseProviderOAuthGuard implements CanActivate {
   constructor(
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+    private readonly revocation: TokenRevocationService,
     private readonly cfg: ProviderGuardConfig,
   ) {}
 
@@ -135,6 +151,7 @@ class BaseProviderOAuthGuard implements CanActivate {
       if (loginState?.provider === this.cfg.provider) {
         req.oauthState = loginState;
         if (denied) return redirectDenied(res, appUrl, loginState.intent === 'link' ? 'profile' : 'login');
+        if (loginState.intent === 'link') await assertUserStillActive(this.prisma, loginState.userId);
         return runPassport(req, res, this.cfg.provider, { session: false });
       }
 
@@ -145,6 +162,7 @@ class BaseProviderOAuthGuard implements CanActivate {
         throw new UnauthorizedException({ error: 'INVALID_STATE' });
       }
       if (denied) return redirectDenied(res, appUrl, 'connections');
+      await assertUserStillActive(this.prisma, req.oauthState.userId);
       return runPassport(req, res, this.cfg.connectStrategy, { session: false });
     }
 
@@ -158,7 +176,7 @@ class BaseProviderOAuthGuard implements CanActivate {
     };
 
     if (intent === 'connect') {
-      const userId = requireSessionUserId(req, this.jwt);
+      const userId = await requireSessionUserId(req, this.jwt, this.prisma, this.revocation);
       const csrfToken = generateCsrfToken();
       const state = signConnectState({ provider: this.cfg.provider, userId, csrfToken }, jwtSecret);
       res.cookie(OAUTH_CSRF_COOKIE, csrfToken, cookieOptions);
@@ -168,7 +186,7 @@ class BaseProviderOAuthGuard implements CanActivate {
 
     const state =
       intent === 'link'
-        ? signOAuthState({ intent, provider: this.cfg.provider, userId: requireSessionUserId(req, this.jwt) }, jwtSecret)
+        ? signOAuthState({ intent, provider: this.cfg.provider, userId: await requireSessionUserId(req, this.jwt, this.prisma, this.revocation) }, jwtSecret)
         : signOAuthState({ intent: 'login', provider: this.cfg.provider }, jwtSecret);
     res.cookie(OAUTH_STATE_COOKIE, state, cookieOptions);
     return runPassport(req, res, this.cfg.provider, { state });
@@ -177,15 +195,15 @@ class BaseProviderOAuthGuard implements CanActivate {
 
 @Injectable()
 export class GithubOAuthGuard extends BaseProviderOAuthGuard {
-  constructor(config: ConfigService, jwt: JwtService) {
-    super(config, jwt, { provider: 'github', connectStrategy: 'github-connect' });
+  constructor(config: ConfigService, jwt: JwtService, prisma: PrismaService, revocation: TokenRevocationService) {
+    super(config, jwt, prisma, revocation, { provider: 'github', connectStrategy: 'github-connect' });
   }
 }
 
 @Injectable()
 export class GoogleOAuthGuard extends BaseProviderOAuthGuard {
-  constructor(config: ConfigService, jwt: JwtService) {
-    super(config, jwt, {
+  constructor(config: ConfigService, jwt: JwtService, prisma: PrismaService, revocation: TokenRevocationService) {
+    super(config, jwt, prisma, revocation, {
       provider: 'google',
       connectStrategy: 'google-connect',
       connectAuthenticateOptions: () => ({ accessType: 'offline', prompt: 'consent', scope: YOUTUBE_CONNECT_SCOPES }),
@@ -193,12 +211,19 @@ export class GoogleOAuthGuard extends BaseProviderOAuthGuard {
   }
 }
 
-/** Steam is OpenID and connect-only (no login/link) — its own guard, not `BaseProviderOAuthGuard`. */
+/**
+ * Steam is OpenID and connect-only (no login/link) — its own guard, not `BaseProviderOAuthGuard`, and its
+ * own handshake ({@link SteamOpenIdService}) so a per-request nonce rides in `return_to` and is matched
+ * against a cookie at the callback.
+ */
 @Injectable()
 export class SteamOAuthGuard implements CanActivate {
   constructor(
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+    private readonly revocation: TokenRevocationService,
+    private readonly steam: SteamOpenIdService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -218,11 +243,20 @@ export class SteamOAuthGuard implements CanActivate {
       } catch {
         throw new UnauthorizedException({ error: 'INVALID_STATE' });
       }
-      return runPassport(req, res, 'steam-connect', { session: false });
+      await assertUserStillActive(this.prisma, req.oauthState.userId);
+      const nonce = readCookie(req.headers.cookie, STEAM_NONCE_COOKIE) ?? undefined;
+      try {
+        (req as unknown as { user: unknown }).user = await this.steam.verify(req.query, nonce);
+      } catch (err) {
+        if (err instanceof SteamOpenIdError) throw new UnauthorizedException({ error: 'INVALID_STATE' });
+        throw err;
+      }
+      return true;
     }
 
-    const userId = requireSessionUserId(req, this.jwt);
+    const userId = await requireSessionUserId(req, this.jwt, this.prisma, this.revocation);
     const csrfToken = generateCsrfToken();
+    const nonce = this.steam.generateNonce();
     const state = signConnectState({ provider: 'steam', userId, csrfToken }, jwtSecret);
     const cookieOptions = {
       httpOnly: true,
@@ -233,6 +267,8 @@ export class SteamOAuthGuard implements CanActivate {
     };
     res.cookie(OAUTH_CSRF_COOKIE, csrfToken, cookieOptions);
     res.cookie(OAUTH_STATE_COOKIE, state, cookieOptions);
-    return runPassport(req, res, 'steam-connect', { state, session: false });
+    res.cookie(STEAM_NONCE_COOKIE, nonce, cookieOptions);
+    res.redirect(this.steam.loginUrl(nonce));
+    return false;
   }
 }
