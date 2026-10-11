@@ -1,16 +1,24 @@
 import { Logger } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createTransport } from 'nodemailer';
 import { MailService } from './mail.service.js';
 
 const sendMail = vi.fn();
 
 vi.mock('nodemailer', () => ({ createTransport: vi.fn(() => ({ sendMail })) }));
 
-const config = {
-  getOrThrow: (key: string) =>
-    ({ SMTP_FROM: 'Dashboard <no-reply@dashboard.local>', SMTP_HOST: 'mailpit', SMTP_PORT: 1025 })[key],
-} as unknown as ConfigService;
+function configWith(extra: Record<string, string> = {}): ConfigService {
+  const values: Record<string, unknown> = {
+    SMTP_FROM: 'Dashboard <no-reply@dashboard.local>',
+    SMTP_HOST: 'mailpit',
+    SMTP_PORT: 1025,
+    ...extra,
+  };
+  return { get: (key: string) => values[key], getOrThrow: (key: string) => values[key] } as unknown as ConfigService;
+}
+
+const config = configWith();
 
 const URL = 'http://localhost:8080/confirm?token=abc123';
 
@@ -100,5 +108,62 @@ describe('MailService.sendPasswordResetEmail', () => {
     vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
     await expect(new MailService(config).sendPasswordResetEmail('u@example.com', 'x')).resolves.toBeUndefined();
+  });
+});
+
+describe('MailService transport options', () => {
+  const create = vi.mocked(createTransport);
+
+  beforeEach(() => {
+    create.mockClear();
+  });
+
+  it('passes only host, port and secure:false without credentials', () => {
+    new MailService(config);
+
+    expect(create).toHaveBeenCalledWith({ host: 'mailpit', port: 1025, secure: false });
+    expect(create.mock.calls[0][0]).not.toHaveProperty('auth');
+  });
+
+  it('passes auth when SMTP_USER and SMTP_PASS are set', () => {
+    new MailService(configWith({ SMTP_USER: 'apikey', SMTP_PASS: 's3cret' }));
+
+    expect(create.mock.calls[0][0]).toMatchObject({ auth: { user: 'apikey', pass: 's3cret' } });
+  });
+
+  it('requires a STARTTLS upgrade before sending credentials over a non-implicit-TLS connection', () => {
+    new MailService(configWith({ SMTP_USER: 'apikey', SMTP_PASS: 's3cret' }));
+
+    expect(create.mock.calls[0][0]).toMatchObject({ secure: false, requireTLS: true });
+  });
+
+  it('does not force requireTLS without credentials (Mailpit default)', () => {
+    new MailService(config);
+
+    expect(create.mock.calls[0][0]).not.toHaveProperty('requireTLS');
+  });
+
+  it('omits auth when SMTP_USER is empty', () => {
+    new MailService(configWith({ SMTP_USER: '', SMTP_PASS: '' }));
+
+    expect(create.mock.calls[0][0]).not.toHaveProperty('auth');
+  });
+
+  it.each([
+    ['true', true],
+    ['false', false],
+    ['TRUE', false],
+    ['1', false],
+    ['', false],
+  ])('maps SMTP_SECURE=%j to secure:%s', (value, secure) => {
+    new MailService(configWith({ SMTP_SECURE: value }));
+
+    expect(create.mock.calls[0][0]).toMatchObject({ secure });
+  });
+
+  it('defaults secure to false when SMTP_SECURE is unset', () => {
+    new MailService(config);
+
+    expect(create.mock.calls[0][0]).toMatchObject({ secure: false });
   });
 });

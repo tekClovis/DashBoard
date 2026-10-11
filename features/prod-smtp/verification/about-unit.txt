@@ -1,0 +1,5 @@
+ ✓ src/catalog/about.controller.spec.ts > AboutController > reports the client host with the IPv4-mapped prefix stripped 2ms
+ ✓ src/catalog/about.controller.spec.ts > AboutController > reports current_time as whole Unix seconds 1ms
+ ✓ src/catalog/about.controller.spec.ts > AboutController > returns an empty services list from an empty registry 0ms
+ ✓ src/catalog/about.controller.spec.ts > AboutController > projects services and widgets to the trimmed public shape 1ms
+      Tests  4 passed (4)

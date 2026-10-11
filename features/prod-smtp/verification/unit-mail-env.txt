@@ -1,0 +1,49 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/prod-smtp/server
+
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > accepts a valid env and fills the SMTP defaults 5ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > converts a string SMTP_PORT (as read from process.env) to a number 1ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects a missing APP_URL 1ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects a missing DATABASE_URL 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects a missing REDIS_URL 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects a missing JWT_SECRET 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects a missing TOKEN_ENC_KEY 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects an APP_URL that is not a URL 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects SMTP_PORT=abc 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects SMTP_PORT=0 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects SMTP_PORT=65536 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects SMTP_PORT=25.5 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects a 16-byte TOKEN_ENC_KEY 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects a 33-byte TOKEN_ENC_KEY 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects an empty JWT_SECRET 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > accepts the optional SMTP credentials and leaves them unset by default 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > rejects SMTP_USER without SMTP_PASS 0ms
+ ✓ src/core/config/env.validation.spec.ts > validate (env) > treats empty SMTP_USER / SMTP_PASS / SMTP_SECURE (as shipped in .env.example) as unset 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendConfirmationEmail > sends a confirmation message carrying the link in text and html 2ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendConfirmationEmail > swallows a transport failure and logs it with the recipient and stack 5ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendConfirmationEmail > logs a non-Error rejection value as-is 1ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendPasswordResetEmail > sends a reset message carrying the link in text and html 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendPasswordResetEmail > escapes the url in the html href 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService.sendPasswordResetEmail > never throws when the transport fails 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > passes only host, port and secure:false without credentials 1ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > passes auth when SMTP_USER and SMTP_PASS are set 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > requires a STARTTLS upgrade before sending credentials over a non-implicit-TLS connection 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > does not force requireTLS without credentials (Mailpit default) 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > omits auth when SMTP_USER is empty 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > maps SMTP_SECURE="true" to secure:true 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > maps SMTP_SECURE="false" to secure:false 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > maps SMTP_SECURE="TRUE" to secure:false 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > maps SMTP_SECURE="1" to secure:false 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > maps SMTP_SECURE="" to secure:false 0ms
+ ✓ src/core/mail/mail.service.spec.ts > MailService transport options > defaults secure to false when SMTP_SECURE is unset 0ms
+ ✓ src/core/mail/mail.delivery.spec.ts > .env.example SMTP defaults > lists SMTP_USER, SMTP_PASS and SMTP_SECURE with empty values 2ms
+ ✓ src/core/mail/mail.delivery.spec.ts > .env.example SMTP defaults > keeps Mailpit as the default SMTP target in .env.example and docker-compose.yml 0ms
+ ✓ src/core/mail/mail.delivery.spec.ts > .env.example SMTP defaults > passes env validation as shipped 4ms
+ ✓ src/core/mail/mail.delivery.spec.ts > MailService delivery with the default .env > delivers the confirmation email, unauthenticated and in plaintext, to the SMTP_HOST:SMTP_PORT target 62ms
+
+ Test Files  3 passed (3)
+      Tests  39 passed (39)
+   Start at  18:54:17
+   Duration  460ms (transform 167ms, setup 0ms, import 618ms, tests 97ms, environment 0ms)
+

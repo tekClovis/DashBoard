@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { createTransport, type Transporter } from 'nodemailer';
 import { renderHtml, renderText, type MailContent } from './mail.template.js';
 
-/** Sends transactional emails over unauthenticated SMTP, using `SMTP_HOST`, `SMTP_PORT` and `SMTP_FROM`. */
+/**
+ * Sends transactional emails over SMTP, using `SMTP_HOST`, `SMTP_PORT` and `SMTP_FROM`.
+ * Optional `SMTP_USER`/`SMTP_PASS` enable authentication; `SMTP_SECURE='true'` selects implicit TLS
+ * (otherwise STARTTLS is used when the server offers it, and is mandatory when credentials are set).
+ */
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -12,9 +16,14 @@ export class MailService {
 
   constructor(config: ConfigService) {
     this.from = config.getOrThrow<string>('SMTP_FROM');
+    const user = config.get<string>('SMTP_USER');
+    const secure = config.get<string>('SMTP_SECURE') === 'true';
     this.transporter = createTransport({
       host: config.getOrThrow<string>('SMTP_HOST'),
       port: config.getOrThrow<number>('SMTP_PORT'),
+      secure,
+      // Never send credentials in cleartext: without implicit TLS, fail unless STARTTLS succeeds first.
+      ...(user ? { auth: { user, pass: config.getOrThrow<string>('SMTP_PASS') }, requireTLS: !secure } : {}),
     });
   }
 
