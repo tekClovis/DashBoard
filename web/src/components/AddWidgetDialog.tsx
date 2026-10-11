@@ -2,6 +2,8 @@ import type { CatalogResponse, WidgetInstanceEntry, WidgetSpec } from '@dashboar
 import { Ellipsis, RefreshCw, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import { ApiError } from '@/api/client.js';
+import { connectUrl } from '@/api/connections.js';
 import { useCatalog } from '@/api/catalog.js';
 import { useCreateWidget, useUpdateWidget } from '@/api/widgets.js';
 import {
@@ -356,11 +358,19 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
           </>
         )}
 
-        {mutation.isError && (
-          <p role="alert" className="text-destructive">
-            Could not save the widget.
-          </p>
-        )}
+        {mutation.isError &&
+          (spec && mutation.error instanceof ApiError && mutation.error.code === 'NOT_CONNECTED' ? (
+            <div role="alert" className="grid justify-items-start gap-1">
+              <p className="text-destructive">{`${meta?.serviceLabel ?? spec.service} isn’t connected.`}</p>
+              <Button asChild variant="link" className="h-auto p-0">
+                <a href={connectUrl(spec.service)}>{`Connect ${meta?.serviceLabel ?? spec.service}`}</a>
+              </Button>
+            </div>
+          ) : (
+            <p role="alert" className="text-destructive">
+              Could not save the widget.
+            </p>
+          ))}
       </form>
 
       <div className="flex items-center gap-2 border-t px-4 py-3">

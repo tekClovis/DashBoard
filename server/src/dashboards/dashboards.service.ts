@@ -5,9 +5,10 @@
 // column, so it's scoped through its `dashboard` relation), so an instance or dashboard owned by
 // someone else is a 404, not a 403 — see docs/Architecture.md §3 and §8.4.
 
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { DashboardEntry, LayoutUpdateEntry, ParamSpec, WidgetInstanceEntry } from '@dashboard/shared';
 import { validateParams, type ValidatedParams } from '../catalog/param-validator.js';
+import type { WidgetDefinition } from '../catalog/widget-definition.js';
 import { WidgetRegistryService } from '../catalog/widget-registry.service.js';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import type { Prisma, WidgetInstance } from '../generated/prisma/client.js';
@@ -97,6 +98,7 @@ export class DashboardsService {
    * Validate and create a widget instance on a dashboard, then emit `instance.created`.
    * @throws {@link NotFoundException} when the dashboard isn't owned by `userId`.
    * @throws {@link BadRequestException} with `UNKNOWN_WIDGET`, `INVALID_PARAMS` or `INVALID_REFRESH_RATE`.
+   * @throws {@link ConflictException} with `NOT_CONNECTED` when the widget needs a connection the user lacks.
    */
   async addWidgetInstance(
     userId: string,
@@ -120,6 +122,7 @@ export class DashboardsService {
 
     const params = this.validateParamsOrThrow(def.params, body.params);
     this.validateRefreshRateOrThrow(def.minRefreshSec, body.refreshRate);
+    await this.assertConnectedOrThrow(userId, def);
 
     const instance = await this.prisma.widgetInstance.create({
       data: {
@@ -144,6 +147,7 @@ export class DashboardsService {
    * Change an instance's params and/or refreshRate (each only if given), then emit `instance.updated`.
    * @throws {@link NotFoundException} when the instance isn't on one of the user's dashboards.
    * @throws {@link BadRequestException} with `UNKNOWN_WIDGET`, `INVALID_PARAMS` or `INVALID_REFRESH_RATE`.
+   * @throws {@link ConflictException} with `NOT_CONNECTED` when the widget needs a connection the user lacks.
    */
   async updateWidgetInstance(
     userId: string,
@@ -157,6 +161,8 @@ export class DashboardsService {
 
     const def = this.registry.get(existing.service, existing.widget);
     if (!def) throw new BadRequestException({ error: 'UNKNOWN_WIDGET' });
+
+    await this.assertConnectedOrThrow(userId, def);
 
     const params = body.params !== undefined ? this.validateParamsOrThrow(def.params, body.params) : undefined;
     if (body.refreshRate !== undefined) {
@@ -212,6 +218,15 @@ export class DashboardsService {
       );
       return updated.map(toWidgetInstanceEntry);
     });
+  }
+
+  private async assertConnectedOrThrow(userId: string, def: WidgetDefinition): Promise<void> {
+    if (def.auth !== 'connection') return;
+    const connection = await this.prisma.serviceConnection.findUnique({
+      where: { userId_service: { userId, service: def.service } },
+      select: { id: true },
+    });
+    if (!connection) throw new ConflictException({ error: 'NOT_CONNECTED', service: def.service });
   }
 
   private validateParamsOrThrow(specs: ParamSpec[], raw: Record<string, unknown>): ValidatedParams {
