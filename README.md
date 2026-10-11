@@ -57,7 +57,7 @@ Each refresh minimum keeps the app within the providers' free API quotas.
 
 ## Install, build and run
 
-Requires [Docker](https://docs.docker.com/get-docker/) with Compose **2.24 or later**. With the Compose plugin, `docker compose` works the same as `docker-compose`.
+Requires [Docker](https://docs.docker.com/get-docker/) with Compose (the standalone `docker-compose` or the `docker compose` plugin; both work the same).
 
 ```sh
 git clone <repository-url> dashboard && cd dashboard
@@ -93,7 +93,7 @@ The production setup is the same Docker Compose stack. It runs the `server` imag
 
 ### 1. Prepare the host
 
-- Linux host with Docker Engine and Compose 2.24 or later.
+- Linux host with Docker Engine and Docker Compose.
 - A domain name, for example `dashboard.example.com`, pointing at the host.
 - A reverse proxy that terminates TLS (Caddy, nginx or Traefik). It forwards traffic to `127.0.0.1:8080` and must pass WebSocket upgrades for `/socket.io/`.
 - An SMTP account, for example from your mail provider, SendGrid, Mailgun or SES.

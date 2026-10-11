@@ -24,6 +24,7 @@ type WidgetWhere = { id?: string | { in: string[] }; dashboardId?: string; dashb
 function makeFakePrisma() {
   const dashboards: DashboardRow[] = [];
   const widgets: WidgetRow[] = [];
+  const connections: { userId: string; service: string }[] = [];
   let nextId = 1;
 
   const matchesDashboard = (row: DashboardRow, where: DashboardWhere) =>
@@ -106,16 +107,23 @@ function makeFakePrisma() {
         count: removeWhere(widgets, (row) => matchesWidget(row, args.where)),
       }),
     },
+    serviceConnection: {
+      findUnique: async (args: { where: { userId_service: { userId: string; service: string } } }) =>
+        connections.find(
+          (row) =>
+            row.userId === args.where.userId_service.userId && row.service === args.where.userId_service.service,
+        ) ?? null,
+    },
     $transaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn(prisma),
   };
 
-  return { prisma, dashboards, widgets };
+  return { prisma, dashboards, widgets, connections };
 }
 
 const EVENT_TYPES = ['instance.created', 'instance.updated', 'instance.deleted'] as const;
 
 function makeService() {
-  const { prisma, dashboards, widgets } = makeFakePrisma();
+  const { prisma, dashboards, widgets, connections } = makeFakePrisma();
 
   const registry = new WidgetRegistryService();
   registry.registerService({ name: 'fake', connection: 'none' });
@@ -137,7 +145,7 @@ function makeService() {
   }
 
   const service = new DashboardsService(prisma as never, registry, events);
-  return { service, dashboards, widgets, emitted };
+  return { service, dashboards, widgets, connections, emitted };
 }
 
 function seedDashboard(dashboards: DashboardRow[], overrides: Partial<DashboardRow> = {}): DashboardRow {
@@ -403,11 +411,22 @@ describe('DashboardsService', () => {
       expect(entry.refreshRate).toBe(refreshRate);
     });
 
-    // A missing ServiceConnection is not a create-time error: it surfaces per fetch as
-    // NOT_CONNECTED (see timer/fetch.service.ts), so the instance can exist before the user connects.
-    it('creates an instance of a connection-scoped widget even though the user has no connection', async () => {
-      const { service, dashboards, emitted } = makeService();
+    it('rejects a connection-scoped widget with 409 NOT_CONNECTED when the user has no connection', async () => {
+      const { service, dashboards, widgets, connections, emitted } = makeService();
       const dashboard = seedDashboard(dashboards);
+      connections.push({ userId: 'u2', service: 'fake-connected' });
+
+      await expect(
+        service.addWidgetInstance('u1', dashboard.id, { ...validBody, service: 'fake-connected', widget: 'profile' }),
+      ).rejects.toMatchObject({ status: 409, response: { error: 'NOT_CONNECTED' } });
+      expect(widgets).toEqual([]);
+      expect(emitted).toEqual([]);
+    });
+
+    it('creates an instance of a connection-scoped widget when the user has a connection', async () => {
+      const { service, dashboards, connections, emitted } = makeService();
+      const dashboard = seedDashboard(dashboards);
+      connections.push({ userId: 'u1', service: 'fake-connected' });
 
       const entry = await service.addWidgetInstance('u1', dashboard.id, {
         ...validBody,
@@ -510,12 +529,28 @@ describe('DashboardsService', () => {
       expect(emitted).toEqual([]);
     });
 
-    it('updates a connection-scoped instance even though the user has no connection', async () => {
+    it('rejects updating a connection-scoped instance with 409 NOT_CONNECTED when the user has no connection', async () => {
       const { service, dashboards, widgets, emitted } = makeService();
       const instance = seedWidget(widgets, seedDashboard(dashboards).id, {
         service: 'fake-connected',
         widget: 'profile',
       });
+
+      await expect(service.updateWidgetInstance('u1', instance.id, { refreshRate: 300 })).rejects.toMatchObject({
+        status: 409,
+        response: { error: 'NOT_CONNECTED' },
+      });
+      expect(instance.refreshRate).toBe(120);
+      expect(emitted).toEqual([]);
+    });
+
+    it('updates a connection-scoped instance when the user has a connection', async () => {
+      const { service, dashboards, widgets, connections, emitted } = makeService();
+      const instance = seedWidget(widgets, seedDashboard(dashboards).id, {
+        service: 'fake-connected',
+        widget: 'profile',
+      });
+      connections.push({ userId: 'u1', service: 'fake-connected' });
 
       const entry = await service.updateWidgetInstance('u1', instance.id, { refreshRate: 300 });
 

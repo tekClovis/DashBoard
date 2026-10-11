@@ -3,16 +3,32 @@ services:
     build: .
     ports:
       - "8080:8080"
-    # Optional: a fresh clone boots without a .env (missing secrets are generated, OAuth
-    # providers are disabled). Values here are only the defaults for the compose network;
-    # a .env entry (read by interpolation and env_file) wins.
-    env_file:
-      - path: .env
-        required: false
+    # .env is optional: Compose reads it for interpolation when present, so a fresh clone boots
+    # without one (missing secrets are generated, OAuth providers are disabled). No env_file, so
+    # legacy docker-compose v1 parses this file too. Defaults below target the compose network.
     environment:
       APP_URL: ${APP_URL:-http://localhost:8080}
       DATABASE_URL: ${DATABASE_URL:-postgresql://dashboard:dashboard@postgres:5432/dashboard}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:-}
+      TOKEN_ENC_KEY: ${TOKEN_ENC_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-Dashboard <no-reply@dashboard.local>}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_CONNECT_CLIENT_ID: ${GITHUB_CONNECT_CLIENT_ID:-}
+      GITHUB_CONNECT_CLIENT_SECRET: ${GITHUB_CONNECT_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CONNECT_CLIENT_ID: ${GOOGLE_CONNECT_CLIENT_ID:-}
+      GOOGLE_CONNECT_CLIENT_SECRET: ${GOOGLE_CONNECT_CLIENT_SECRET:-}
+      STEAM_API_KEY: ${STEAM_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

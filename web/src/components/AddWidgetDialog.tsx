@@ -3,6 +3,7 @@ import { Ellipsis, RefreshCw, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useCatalog } from '@/api/catalog.js';
+import { ApiError } from '@/api/client.js';
 import { useCreateWidget, useUpdateWidget } from '@/api/widgets.js';
 import {
   FieldError,
@@ -356,11 +357,17 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
           </>
         )}
 
-        {mutation.isError && (
-          <p role="alert" className="text-destructive">
-            Could not save the widget.
-          </p>
-        )}
+        {mutation.isError &&
+          (mutation.error instanceof ApiError && mutation.error.code === 'NOT_CONNECTED' && meta ? (
+            <p role="alert" className="text-destructive">
+              {`${meta.serviceLabel} is not connected. `}
+              <Link to="/services" className="underline">{`Connect ${meta.serviceLabel}`}</Link>
+            </p>
+          ) : (
+            <p role="alert" className="text-destructive">
+              Could not save the widget.
+            </p>
+          ))}
       </form>
 
       <div className="flex items-center gap-2 border-t px-4 py-3">
