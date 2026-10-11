@@ -28,7 +28,7 @@ describe('revokeAtProvider', () => {
   });
 
   it('deletes the GitHub grant with the login app credentials as basic auth when no connect app is configured and the token in the body', async () => {
-    await revokeAtProvider('github', 'gho_token', makeConfig(GITHUB_ENV));
+    await revokeAtProvider('github', { accessToken: 'gho_token', refreshToken: null }, makeConfig(GITHUB_ENV));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -42,7 +42,7 @@ describe('revokeAtProvider', () => {
     ['client id', { GITHUB_CLIENT_SECRET: 'login-secret' }],
     ['client secret', { GITHUB_CLIENT_ID: 'login-id' }],
   ])('skips the GitHub call when the %s is not configured', async (_missing, env) => {
-    await revokeAtProvider('github', 'gho_token', makeConfig(env));
+    await revokeAtProvider('github', { accessToken: 'gho_token', refreshToken: null }, makeConfig(env));
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -52,7 +52,7 @@ describe('revokeAtProvider', () => {
   it('revokes the GitHub grant with the connect app credentials when they are configured', async () => {
     await revokeAtProvider(
       'github',
-      'gho_token',
+      { accessToken: 'gho_token', refreshToken: null },
       makeConfig({ ...GITHUB_ENV, GITHUB_CONNECT_CLIENT_ID: 'connect-id', GITHUB_CONNECT_CLIENT_SECRET: 'connect-secret' }),
     );
 
@@ -61,24 +61,31 @@ describe('revokeAtProvider', () => {
     expect(basicCredentials(init)).toBe('connect-id:connect-secret');
   });
 
-  it('posts the URL-encoded token to the Google revoke endpoint for youtube, without client credentials', async () => {
-    await revokeAtProvider('youtube', 'ya29/a+b&c=d', makeConfig());
+  it('posts the URL-encoded refresh token, not the access token, to the Google revoke endpoint for youtube', async () => {
+    await revokeAtProvider('youtube', { accessToken: 'ya29.access', refreshToken: '1//a+b&c=d' }, makeConfig());
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://oauth2.googleapis.com/revoke?token=ya29%2Fa%2Bb%26c%3Dd');
+    expect(url).toBe('https://oauth2.googleapis.com/revoke?token=1%2F%2Fa%2Bb%26c%3Dd');
     expect(init.method).toBe('POST');
     expect(init.headers).not.toHaveProperty('Authorization');
   });
 
+  it('falls back to the access token for youtube when no refresh token was stored', async () => {
+    await revokeAtProvider('youtube', { accessToken: 'ya29.access', refreshToken: null }, makeConfig());
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://oauth2.googleapis.com/revoke?token=ya29.access');
+  });
+
   it.each(['steam', 'weather', 'unknown'])('makes no request for %s, which has no revoke endpoint', async (service) => {
-    await revokeAtProvider(service, 'some-token', makeConfig(GITHUB_ENV));
+    await revokeAtProvider(service, { accessToken: 'some-token', refreshToken: 'r' }, makeConfig(GITHUB_ENV));
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it.each(['github', 'youtube'])('makes no request for %s when there is no access token', async (service) => {
-    await revokeAtProvider(service, null, makeConfig(GITHUB_ENV));
+    await revokeAtProvider(service, { accessToken: null, refreshToken: null }, makeConfig(GITHUB_ENV));
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -86,7 +93,7 @@ describe('revokeAtProvider', () => {
   it.each(['github', 'youtube'])('resolves when the %s request itself fails', async (service) => {
     fetchMock.mockRejectedValue(new Error('network down'));
 
-    await expect(revokeAtProvider(service, 'token', makeConfig(GITHUB_ENV))).resolves.toBeUndefined();
+    await expect(revokeAtProvider(service, { accessToken: 'token', refreshToken: 'r' }, makeConfig(GITHUB_ENV))).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -42,7 +42,7 @@ export class ConnectionsController {
     const existing = await this.connections.findForRevoke(user.id, service);
     await this.connections.disconnect(user.id, service);
     if (existing) {
-      await revokeAtProvider(service, existing.accessToken, this.config);
+      await revokeAtProvider(service, existing, this.config);
     }
 
     return { ok: true };

@@ -16,6 +16,7 @@ export interface ConnectProfileResult {
   accessToken: string;
   refreshToken?: string;
   scopes: string[];
+  expiresAt?: Date;
 }
 
 /** The OAuth app the connect flow grants tokens to. Revoking those tokens must use the same app. */

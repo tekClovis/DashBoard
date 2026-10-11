@@ -33,17 +33,31 @@ export class GoogleConnectStrategy extends PassportStrategy(Strategy, 'google-co
       callbackURL: `${config.getOrThrow<string>('APP_URL')}/api/oauth/google/callback`,
       scope: YOUTUBE_CONNECT_SCOPES,
     });
+    // passport-oauth2 hands the token response (`expires_in`) to a verify callback of arity 5 only,
+    // and Nest's wrapper is variadic (arity 0), so re-expose it through a 5-argument callback.
+    const self = this as unknown as { _verify: (...args: unknown[]) => unknown };
+    const verify = self._verify;
+    self._verify = (accessToken: string, refreshToken: string, tokenParams: unknown, profile: Profile, done: unknown) =>
+      verify(accessToken, refreshToken, tokenParams, profile, done);
     // `accessType`/`prompt` are read from the per-request `authenticate()`
     // options by passport-google-oauth20's `authorizationParams`, not from
     // this constructor — passed at the `start` leg in oauth.controller.ts.
   }
 
-  validate(accessToken: string, refreshToken: string, profile: Profile): ConnectProfileResult {
+  validate(
+    accessToken: string,
+    refreshToken: string,
+    params: { expires_in?: number },
+    profile: Profile,
+  ): ConnectProfileResult {
+    const expiresAt =
+      typeof params.expires_in === 'number' ? new Date(Date.now() + params.expires_in * 1000) : undefined;
     return {
       externalAccountId: String(profile.id),
       accessToken,
       refreshToken: refreshToken || undefined,
       scopes: YOUTUBE_CONNECT_SCOPES,
+      expiresAt,
     };
   }
 }
