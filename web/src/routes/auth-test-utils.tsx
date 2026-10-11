@@ -6,16 +6,22 @@ import { vi } from 'vitest';
 
 export const calls: { url: string; method: string; body?: unknown }[] = [];
 
-/** Stubs fetch: `responses` maps a path prefix (e.g. '/api/auth/login') to [status, body]; anything else is 200 {ok:true}. */
+/** Stubs fetch: `responses` maps a path prefix (e.g. '/api/auth/login') to [status, body]; /api/oauth/providers defaults to both configured; anything else is 200 {ok:true}. */
 export function stubAuthApi(responses: Record<string, [number, unknown]> = {}) {
   calls.length = 0;
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET';
-      calls.push({ url, method, body: init?.body ? JSON.parse(init.body as string) : undefined });
+      // Fetched by every page with OAuth buttons; not what those pages' tests assert on.
+      const isProviders = url === '/api/oauth/providers';
+      if (!isProviders) calls.push({ url, method, body: init?.body ? JSON.parse(init.body as string) : undefined });
       const match = Object.keys(responses).find((prefix) => url.startsWith(prefix));
-      const [status, body] = match ? responses[match]! : [200, { ok: true }];
+      const [status, body] = match
+        ? responses[match]!
+        : isProviders
+          ? [200, { github: { configured: true }, google: { configured: true } }]
+          : [200, { ok: true }];
       return Promise.resolve(new Response(JSON.stringify(body), { status }));
     }),
   );

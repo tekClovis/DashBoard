@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module.js';
 import { WidgetRegistryService } from './catalog/widget-registry.service.js';
-import { registerFakeWidgets } from './timer/fake-widgets.js';
+import { fakeWidgetsEnabled, registerFakeWidgets } from './timer/fake-widgets.js';
 import { SocketIoAdapter } from './timer/socket-io.adapter.js';
 
 async function bootstrap(): Promise<void> {
@@ -18,11 +18,9 @@ async function bootstrap(): Promise<void> {
   // its own comment for why RealtimeGateway's decorator can't do this itself.
   app.useWebSocketAdapter(new SocketIoAdapter(app, app.get(ConfigService).getOrThrow<string>('APP_URL')));
 
-  // No real service module exists yet (server/src/services/* — see
-  // features/timer-realtime/spec.md's Constraints), so register fake WidgetDefinitions to
-  // exercise the realtime pipeline end to end outside production. Real definitions register
-  // the same way, with no changes needed here.
-  if (process.env['NODE_ENV'] !== 'production') {
+  // Fake WidgetDefinitions exercise the realtime pipeline end to end; they stay out of
+  // about.json and the catalog unless ENABLE_FAKE_WIDGETS=true.
+  if (fakeWidgetsEnabled(process.env)) {
     registerFakeWidgets(app.get(WidgetRegistryService));
   }
 

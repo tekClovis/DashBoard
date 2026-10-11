@@ -1,7 +1,7 @@
 import { Check, CircleCheck, Mail, OctagonX, TriangleAlert } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { oauthStartUrl, useLogin, useResend } from '@/api/auth.js';
+import { oauthStartUrl, useLogin, useOAuthProviders, useResend, type OAuthProvider } from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
@@ -36,6 +36,7 @@ export function LoginPage() {
   const passwordRef = useRef<HTMLInputElement>(null);
   const login = useLogin();
   const resend = useResend();
+  const providers = useOAuthProviders().data;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -175,16 +176,37 @@ export function LoginPage() {
         or
       </div>
       <div className="grid gap-2">
-        <Button variant="outline" asChild>
-          <a href={oauthStartUrl('github')}>Continue with GitHub</a>
-        </Button>
-        <Button variant="outline" asChild>
-          <a href={oauthStartUrl('google')}>Continue with Google</a>
-        </Button>
+        <OAuthButton provider="github" label="Continue with GitHub" configured={providers?.github.configured} />
+        <OAuthButton provider="google" label="Continue with Google" configured={providers?.google.configured} />
       </div>
       <AuthFooter>
         No account? <AuthFooterLink to="/register">Register</AuthFooterLink>
       </AuthFooter>
     </AuthLayout>
+  );
+}
+
+/** Login link for one provider; disabled with a hint once the server reports it has no credentials (enabled while that is still unknown). */
+function OAuthButton({
+  provider,
+  label,
+  configured,
+}: {
+  provider: OAuthProvider;
+  label: string;
+  configured: boolean | undefined;
+}) {
+  if (configured !== false) {
+    return (
+      <Button variant="outline" asChild>
+        <a href={oauthStartUrl(provider)}>{label}</a>
+      </Button>
+    );
+  }
+  return (
+    <Button variant="outline" disabled>
+      {label}
+      <span className="text-muted-foreground text-xs">not configured</span>
+    </Button>
   );
 }

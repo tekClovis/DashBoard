@@ -2,7 +2,7 @@
 // docs/Architecture.md §8.3 and features/connections-api/spec.md.
 
 import { Injectable } from '@nestjs/common';
-import type { ConnectionEntry, ConnectionsResponse } from '@dashboard/shared';
+import type { ConnectionEntry } from '@dashboard/shared';
 import { PrismaService } from '../core/prisma/prisma.service.js';
 import { TokenCipherService } from './token-cipher.service.js';
 
@@ -27,7 +27,7 @@ export class ConnectionsService {
   ) {}
 
   /** Return one entry per service; `weather` is always connected, others reflect the stored row (status defaults to `OK` when absent). */
-  async list(userId: string): Promise<ConnectionsResponse> {
+  async list(userId: string): Promise<{ connections: ConnectionEntry[] }> {
     const rows = await this.prisma.serviceConnection.findMany({
       where: { userId },
       select: { service: true, status: true },

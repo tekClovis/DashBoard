@@ -16,16 +16,20 @@ export const YOUTUBE_CONNECT_SCOPES = ['openid', 'https://www.googleapis.com/aut
 /** The OAuth client the connect flow grants tokens to. Refreshing those tokens must use the same client. */
 export function googleConnectClient(config: ConfigService): { clientID: string; clientSecret: string } {
   return {
-    clientID: config.get<string>('GOOGLE_CONNECT_CLIENT_ID') ?? config.get<string>('GOOGLE_CLIENT_ID') ?? '',
-    clientSecret: config.get<string>('GOOGLE_CONNECT_CLIENT_SECRET') ?? config.get<string>('GOOGLE_CLIENT_SECRET') ?? '',
+    clientID: config.get<string>('GOOGLE_CONNECT_CLIENT_ID') || config.get<string>('GOOGLE_CLIENT_ID') || '',
+    clientSecret: config.get<string>('GOOGLE_CONNECT_CLIENT_SECRET') || config.get<string>('GOOGLE_CLIENT_SECRET') || '',
   };
 }
 
 @Injectable()
 export class GoogleConnectStrategy extends PassportStrategy(Strategy, 'google-connect') {
   constructor(config: ConfigService) {
+    const { clientID, clientSecret } = googleConnectClient(config);
     super({
-      ...googleConnectClient(config),
+      // passport-oauth2 throws on an empty client id; the placeholder keeps boot alive when
+      // Google is not configured (the web disables the button — see provider-config.ts).
+      clientID: clientID || 'unset-google-connect-client-id',
+      clientSecret: clientSecret || 'unset-google-connect-client-secret',
       callbackURL: `${config.getOrThrow<string>('APP_URL')}/api/oauth/google/callback`,
       scope: YOUTUBE_CONNECT_SCOPES,
     });

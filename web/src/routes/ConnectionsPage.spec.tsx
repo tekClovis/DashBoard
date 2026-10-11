@@ -39,6 +39,31 @@ describe('ConnectionsPage', () => {
     expect(screen.getByRole('button', { name: 'Disconnect' })).toBeTruthy();
   });
 
+  it('disables Connect with a not-configured hint when the server has no credentials for the service', () => {
+    vi.spyOn(connectionsApi, 'useConnections').mockReturnValue({
+      data: {
+        connections: [
+          { service: 'github', connected: false, status: 'OK', configured: false },
+          { service: 'steam', connected: false, status: 'OK', configured: true },
+        ],
+      },
+      isPending: false,
+    } as unknown as ReturnType<typeof connectionsApi.useConnections>);
+    vi.spyOn(connectionsApi, 'useDisconnect').mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      variables: undefined,
+    } as unknown as ReturnType<typeof connectionsApi.useDisconnect>);
+
+    renderPage();
+
+    const buttons = screen.getAllByRole('button', { name: 'Connect' });
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]!.hasAttribute('disabled')).toBe(true);
+    expect(buttons[1]!.hasAttribute('disabled')).toBe(false);
+    expect(screen.getAllByText('not configured')).toHaveLength(1);
+  });
+
   it('calls the disconnect mutation with the service name when Disconnect is clicked', () => {
     const mutate = vi.fn();
     vi.spyOn(connectionsApi, 'useConnections').mockReturnValue({

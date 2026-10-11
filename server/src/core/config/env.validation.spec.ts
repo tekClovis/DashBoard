@@ -1,6 +1,7 @@
 // Nest normally loads this; class-transformer's implicit conversion needs it here.
 import 'reflect-metadata';
-import { describe, expect, it } from 'vitest';
+import { Logger } from '@nestjs/common';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { validate } from './env.validation.js';
 
 const TOKEN_ENC_KEY = Buffer.alloc(32, 7).toString('base64');
@@ -14,6 +15,10 @@ function validEnv(): Record<string, unknown> {
     TOKEN_ENC_KEY,
   };
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('validate (env)', () => {
   it('accepts a valid env and fills the SMTP defaults', () => {
@@ -33,7 +38,7 @@ describe('validate (env)', () => {
     expect(validate({ ...validEnv(), SMTP_PORT: '2525' }).SMTP_PORT).toBe(2525);
   });
 
-  it.each(['APP_URL', 'DATABASE_URL', 'REDIS_URL', 'JWT_SECRET', 'TOKEN_ENC_KEY'])('rejects a missing %s', (name) => {
+  it.each(['APP_URL', 'DATABASE_URL', 'REDIS_URL'])('rejects a missing %s', (name) => {
     const env = validEnv();
     delete env[name];
 
@@ -54,9 +59,50 @@ describe('validate (env)', () => {
     expect(() => validate({ ...validEnv(), TOKEN_ENC_KEY: key })).toThrow(/TOKEN_ENC_KEY must be 32 bytes/);
   });
 
-  // `.env.example` ships `JWT_SECRET=`; docs/Architecture.md §8.6 says the server refuses to start without it.
-  it('rejects an empty JWT_SECRET', () => {
-    expect(() => validate({ ...validEnv(), JWT_SECRET: '' })).toThrow(/JWT_SECRET/);
+  // `.env.example` ships `JWT_SECRET=` and `TOKEN_ENC_KEY=`: an unconfigured fresh clone must boot.
+  it.each(['JWT_SECRET', 'TOKEN_ENC_KEY'])('generates %s and warns when it is unset or empty', (name) => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const unset = validEnv();
+    delete unset[name];
+
+    for (const raw of [unset, { ...validEnv(), [name]: '' }]) {
+      warn.mockClear();
+      const env = validate(raw) as unknown as Record<string, string>;
+
+      expect(env[name]).toBeTruthy();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(name));
+    }
+  });
+
+  it('generates a TOKEN_ENC_KEY that is 32 bytes of base64 and a fresh JWT_SECRET on every boot', () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const raw = { ...validEnv(), JWT_SECRET: '', TOKEN_ENC_KEY: '' };
+
+    const first = validate(raw);
+    const second = validate(raw);
+
+    expect(Buffer.from(first.TOKEN_ENC_KEY, 'base64')).toHaveLength(32);
+    expect(first.JWT_SECRET).not.toBe(second.JWT_SECRET);
+    expect(first.TOKEN_ENC_KEY).not.toBe(second.TOKEN_ENC_KEY);
+  });
+
+  it('does not warn or replace the secrets when both are set', () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+    expect(validate(validEnv())).toMatchObject({ JWT_SECRET: 'a-long-enough-jwt-secret', TOKEN_ENC_KEY });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it.each(['', undefined])('accepts empty OAuth client ids and secrets (%s)', (value) => {
+    const raw = {
+      ...validEnv(),
+      GITHUB_CLIENT_ID: value,
+      GITHUB_CLIENT_SECRET: value,
+      GOOGLE_CLIENT_ID: value,
+      GOOGLE_CLIENT_SECRET: value,
+    };
+
+    expect(() => validate(raw)).not.toThrow();
   });
 
   it('accepts the optional SMTP credentials and leaves them unset by default', () => {

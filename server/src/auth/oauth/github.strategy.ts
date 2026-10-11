@@ -12,8 +12,8 @@ type GitHubEmail = { value: string; primary?: boolean; verified?: boolean };
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   constructor(config: ConfigService) {
     super({
-      clientID: config.get<string>('GITHUB_CLIENT_ID') ?? 'unset-github-client-id',
-      clientSecret: config.get<string>('GITHUB_CLIENT_SECRET') ?? 'unset-github-client-secret',
+      clientID: config.get<string>('GITHUB_CLIENT_ID') || 'unset-github-client-id',
+      clientSecret: config.get<string>('GITHUB_CLIENT_SECRET') || 'unset-github-client-secret',
       callbackURL: `${config.getOrThrow<string>('APP_URL')}/api/oauth/github/callback`,
       scope: ['read:user', 'user:email'],
       // Keeps the `verified` flag per email instead of collapsing to just the primary value —
