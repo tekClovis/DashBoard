@@ -1,0 +1,15 @@
+
+> @dashboard/shared@0.0.1 build
+> tsc
+
+
+> server@0.0.1 build
+> prisma generate && nest build
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (7.10.0) to ./src/generated/prisma in 75ms
+
+exit 0

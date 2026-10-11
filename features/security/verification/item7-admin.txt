@@ -1,0 +1,21 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/security/server
+
+ ✓ src/admin/admin.service.spec.ts > normalizeId > lowercases so an uppercase UUID equals the canonical one 1ms
+ ✓ src/admin/admin.service.spec.ts > escapeLike > escapes %, _ and backslash 0ms
+ ✓ src/admin/admin.service.spec.ts > AdminService self-guard > rejects an uppercase own id on ban, demote and delete without touching the DB 3ms
+ ✓ src/admin/admin.service.spec.ts > AdminService self-guard > queries and disconnects with the normalised id 1ms
+ ✓ src/admin/admin.service.spec.ts > AdminService last-admin guard > refuses demoting the last active admin with 409 and writes nothing 1ms
+ ✓ src/admin/admin.service.spec.ts > AdminService last-admin guard > refuses banning the last active admin with 409 and writes nothing 0ms
+ ✓ src/admin/admin.service.spec.ts > AdminService last-admin guard > runs the check and the write in one serializable transaction 1ms
+ ✓ src/admin/admin.service.spec.ts > AdminService last-admin guard > allows demoting an admin while another active admin remains 0ms
+ ✓ src/admin/admin.service.spec.ts > AdminService last-admin guard > does not count admins when the target is not an active admin 0ms
+ ✓ src/admin/admin.service.spec.ts > AdminService last-admin guard > maps a serialization failure of a concurrent demote to 409 0ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  19:34:26
+   Duration  334ms (transform 70ms, setup 0ms, import 220ms, tests 10ms, environment 0ms)
+
+exit 0

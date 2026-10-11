@@ -1,0 +1,5 @@
+# Pre-hijack scenario, continuing live-register.txt: grace@example.com was registered with first-pass-111! (first registrant), re-registered with second-pass-222! (the "owner"), then confirmed via the emailed link.
+$ POST /api/auth/login with the owner password (second-pass-222!)
+{"error":"INVALID_CREDENTIALS"} HTTP 401
+$ POST /api/auth/login with the first registrant password (first-pass-111!)
+{"ok":true} HTTP 200

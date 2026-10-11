@@ -1,0 +1,74 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/security/server
+
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > generates a different nonce per request 3ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > puts the nonce into the return_to of the sign-in URL 1ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > accepts a confirmed assertion whose nonce matches the cookie and returns the SteamID64 16ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects a callback with no nonce cookie without calling Steam 1ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects a callback with no nonce in the query without calling Steam 0ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects a callback with a nonce that differs from the cookie without calling Steam 0ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects a callback with a return_to carrying another nonce without calling Steam 0ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects a cancelled sign-in 0ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects a foreign op_endpoint 0ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects a claimed_id outside Steam 1ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects an assertion that does not sign response_nonce 0ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > rejects an assertion Steam does not confirm 1ms
+ ✓ src/connections/steam-openid.spec.ts > SteamOpenIdService > stores the response_nonce with a TTL and rejects a replay of it 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > signs a login state, binds it to a short-lived cookie and hands it to the login strategy 5ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > marks the state cookie secure when the app is served over https 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > treats an unrecognised intent as login 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > binds a link state to the session user id 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a link start without a session before contacting the provider 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a connect start without a session before contacting the provider 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a link start whose session token does not verify 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a link start for a banned user, resolving the session user through the database 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a link start for an unverified user, resolving the session user through the database 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a link start for a deleted user, resolving the session user through the database 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a link start for a superseded session (tokenVersion mismatch), resolving the session user through the database 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > rejects a connect start whose session token was revoked 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > start leg > signs a CSRF-bound connect state for the session user and uses the connect strategy 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > accepts a cookie-bound login state and attaches the verified state and provider user 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > attaches the bound user id of a link state 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > does not link when the state-bound user was banned since the start leg 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > does not link when the state-bound user was deleted since the start leg 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > does not connect when the state-bound user was banned since the start leg 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > does not connect when the state-bound user was deleted since the start leg 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > does not look the user up for a login callback 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > rejects a callback without a state param 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > rejects a validly signed state that is not the one bound to the cookie 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > rejects a state with no cookie at all 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > rejects an expired state 2ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > does not let the request through when the provider handshake fails on a login state 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > surfaces a provider handshake error on a login state instead of masking it as INVALID_STATE 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > surfaces the no-user outcome on a login state instead of masking it as INVALID_STATE 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > accepts a CSRF-bound connect state and dispatches to the connect strategy 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > provider denial (error, no code) > sends a denied connect back to /connections with an error 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > provider denial (error, no code) > sends a denied link back to /profile with an error 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > provider denial (error, no code) > sends a denied login back to /login with an error 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > rejects a denial callback whose state does not verify 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > rejects a connect state whose CSRF cookie does not match 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > rejects a connect state signed for another provider 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > provider outcome on a connect state > propagates the provider error 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > provider outcome on a connect state > wraps a non-Error provider failure in an Error 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GithubOAuthGuard > callback leg > provider outcome on a connect state > rejects with 401 and the provider info when no user comes back 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GoogleOAuthGuard > signs login states for google and uses the google strategy 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GoogleOAuthGuard > requests offline YouTube access on a connect start 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > GoogleOAuthGuard > rejects a login state that was signed for another provider 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects a start without a session 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > sets the state, CSRF and nonce cookies on start and redirects to Steam with the nonce in return_to 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects a start for a banned session user 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > accepts an OpenID callback that Steam, the state and the nonce cookie all confirm 1ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects a callback whose nonce is missing, mismatched or replayed 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > passes an absent nonce cookie to verification as undefined 3ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > does not connect when the state-bound user was banned since the start leg 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects an OpenID callback with no state cookie before contacting Steam 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects an OpenID callback with no CSRF cookie before contacting Steam 0ms
+ ✓ src/auth/oauth/oauth.guard.spec.ts > SteamOAuthGuard > rejects an OpenID callback with a mismatched CSRF cookie before contacting Steam 0ms
+
+ Test Files  2 passed (2)
+      Tests  63 passed (63)
+   Start at  19:34:27
+   Duration  461ms (transform 162ms, setup 0ms, import 532ms, tests 61ms, environment 0ms)
+
+exit 0

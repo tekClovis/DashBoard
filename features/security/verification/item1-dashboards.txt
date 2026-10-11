@@ -1,0 +1,60 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/security/server
+
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > list > returns only the caller's dashboards, ordered by position, without the userId 3ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > create > puts a user's first dashboard at position 0 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > create > appends after the caller's highest position 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > createDefault > creates the default-named dashboard at the default position for the user 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > update > applies only the supplied fields 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > update > rejects an unknown dashboard with 404 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > update > rejects another user's dashboard with 404 and leaves it untouched 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > remove > deletes the caller's dashboard 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > remove > rejects an unknown dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > remove > rejects another user's dashboard with 404 and keeps it 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > listWidgets > returns only the instances of the requested dashboard 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > listWidgets > rejects an unknown dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > listWidgets > rejects another user's dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > stores the instance with validated params and emits instance.created 1ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > fills in param defaults for omitted optional params 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an unknown dashboard with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects another user's dashboard with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an unknown service with 400 UNKNOWN_WIDGET and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an unknown widget of a known service with 400 UNKNOWN_WIDGET and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects a missing required param with 400 INVALID_PARAMS naming the param, and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects an out-of-range integer with 400 INVALID_PARAMS naming the param, and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects a refreshRate below the widget minimum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects a refreshRate above the global maximum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > accepts a refreshRate equal to the widget minimum 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > accepts a refreshRate equal to the global maximum 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > rejects a connection-scoped widget with 409 NOT_CONNECTED when the user has no connection 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > ignores another user's connection when creating a connection-scoped widget 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > addWidgetInstance > creates a connection-scoped instance when the user has a connection 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > updates params and refreshRate and emits instance.updated 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > leaves params alone when only refreshRate is supplied 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > leaves refreshRate alone when only params are supplied 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects an unknown instance with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects another user's instance with 404, leaves it untouched and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects an instance whose widget type is no longer registered with 400 UNKNOWN_WIDGET 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects invalid params with 400 INVALID_PARAMS, leaves the row untouched and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects a refreshRate below the widget minimum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects a refreshRate above the global maximum with 400 INVALID_REFRESH_RATE and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > rejects updating a connection-scoped instance with 409 NOT_CONNECTED when the user has no connection 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateWidgetInstance > updates a connection-scoped instance when the user has a connection 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > removeWidgetInstance > deletes the instance and emits instance.deleted with its id 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > removeWidgetInstance > rejects an unknown instance with 404 and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > removeWidgetInstance > rejects another user's instance with 404, keeps it and emits nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > moves only the listed instances and leaves everything but x/y/w/h as it was 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > returns an empty list for an empty batch on an owned dashboard 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects an unknown dashboard with 404 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects another user's dashboard with 404 and moves nothing 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id does not exist 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id belongs to another of the caller's dashboards 0ms
+ ✓ src/dashboards/dashboards.service.spec.ts > DashboardsService > updateLayout > rejects the batch with 404 before moving anything when one id belongs to another user's dashboard 0ms
+
+ Test Files  1 passed (1)
+      Tests  49 passed (49)
+   Start at  19:34:18
+   Duration  379ms (transform 98ms, setup 0ms, import 259ms, tests 18ms, environment 0ms)
+
+exit 0

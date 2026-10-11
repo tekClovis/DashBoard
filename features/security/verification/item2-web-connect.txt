@@ -1,0 +1,12 @@
+
+ RUN  v5.0.1 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/security/web
+
+ ✓ src/routes/AddWidgetDialog.connect.spec.tsx > Add widget dialog, NOT_CONNECTED > shows a Connect link to the widget’s service when the server answers 409 NOT_CONNECTED 328ms
+ ✓ src/routes/AddWidgetDialog.connect.spec.tsx > Add widget dialog, NOT_CONNECTED > keeps the generic message for any other failure 129ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:34:29
+   Duration  1.52s (environment 33%, tests 32%, import 19%, transform 16%)
+
+exit 0
