@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { oauthStartUrl, useDeleteAccount, useLogout, useLogoutAll, useMe, useUnlinkIdentity, type OAuthProvider } from '@/api/auth.js';
+import {
+  oauthStartUrl,
+  useDeleteAccount,
+  useLogout,
+  useLogoutAll,
+  useMe,
+  useOAuthProviders,
+  useUnlinkIdentity,
+  type OAuthProvider,
+} from '@/api/auth.js';
 import { ApiError } from '@/api/client.js';
 import { PageHead } from '@/components/page-head.js';
 import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
@@ -18,6 +27,7 @@ import { Label } from '@/components/ui/label.js';
 export function ProfilePage() {
   const { data: me } = useMe();
   const unlink = useUnlinkIdentity();
+  const providers = useOAuthProviders().data;
   const logout = useLogout();
   const logoutAll = useLogoutAll();
   const navigate = useNavigate();
@@ -73,6 +83,7 @@ export function ProfilePage() {
         <IdentityRow
           label="GitHub"
           linked={linked.has('GITHUB')}
+          configured={providers?.github.configured}
           disableUnlink={soleLoginMethod}
           onLink={() => handleLink('github')}
           onUnlink={() => handleUnlink('github')}
@@ -80,6 +91,7 @@ export function ProfilePage() {
         <IdentityRow
           label="Google"
           linked={linked.has('GOOGLE')}
+          configured={providers?.google.configured}
           disableUnlink={soleLoginMethod}
           onLink={() => handleLink('google')}
           onUnlink={() => handleUnlink('google')}
@@ -205,12 +217,15 @@ function Row({ label, status }: { label: string; status: string }) {
 function IdentityRow({
   label,
   linked,
+  configured,
   disableUnlink,
   onLink,
   onUnlink,
 }: {
   label: string;
   linked: boolean;
+  /** `false` when the server has no credentials for this provider: Link is disabled (enabled while unknown). */
+  configured: boolean | undefined;
   disableUnlink: boolean;
   onLink: () => void;
   onUnlink: () => void;
@@ -222,6 +237,13 @@ function IdentityRow({
       {linked && disableUnlink ? (
         <span className="text-muted-foreground text-xs" title="Your only remaining login method">
           Unlink
+        </span>
+      ) : !linked && configured === false ? (
+        <span className="flex items-center gap-2">
+          <span className="text-muted-foreground text-xs">not configured</span>
+          <button type="button" disabled className="border-border rounded-md border px-2 py-1 text-xs opacity-50">
+            Link
+          </button>
         </span>
       ) : (
         <button
