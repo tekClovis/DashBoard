@@ -131,6 +131,18 @@ describe('MailService transport options', () => {
     expect(create.mock.calls[0][0]).toMatchObject({ auth: { user: 'apikey', pass: 's3cret' } });
   });
 
+  it('requires a STARTTLS upgrade before sending credentials over a non-implicit-TLS connection', () => {
+    new MailService(configWith({ SMTP_USER: 'apikey', SMTP_PASS: 's3cret' }));
+
+    expect(create.mock.calls[0][0]).toMatchObject({ secure: false, requireTLS: true });
+  });
+
+  it('does not force requireTLS without credentials (Mailpit default)', () => {
+    new MailService(config);
+
+    expect(create.mock.calls[0][0]).not.toHaveProperty('requireTLS');
+  });
+
   it('omits auth when SMTP_USER is empty', () => {
     new MailService(configWith({ SMTP_USER: '', SMTP_PASS: '' }));
 
