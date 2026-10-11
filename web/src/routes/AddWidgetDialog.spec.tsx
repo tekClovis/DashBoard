@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { calls, instance, openMenuItem, renderPage, respondWhen, setupPage } from './dashboard-test-utils.js';
+import { calls, catalog, instance, openMenuItem, renderPage, respondWhen, setupPage } from './dashboard-test-utils.js';
 
 beforeEach(setupPage);
 
@@ -142,6 +142,31 @@ describe('Add widget dialog', () => {
     // jsdom lays out nothing: the panel's top is 0, so the mock's `top + scrollY - 80` is -80.
     expect(document.querySelector('[data-widget-id="i2"]')).toBeTruthy();
     expect(scrollTo).toHaveBeenCalledWith({ top: -80, behavior: 'smooth' });
+  });
+
+  it('links to the service when saving fails with NOT_CONNECTED (stale catalog)', async () => {
+    const stale = {
+      services: catalog.services.map((s) => (s.name === 'github' ? { ...s, connected: true } : s)),
+    };
+    respondWhen(
+      (url) => url === '/api/catalog',
+      () => new Response(JSON.stringify(stale)),
+    );
+    respondWhen(
+      (url, m) => url === '/api/dashboards/dash-1/widgets' && m === 'POST',
+      () => new Response(JSON.stringify({ error: 'NOT_CONNECTED' }), { status: 409 }),
+    );
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Add widget' }));
+    fireEvent.click(await screen.findByRole('radio', { name: /commits/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add widget' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('GitHub is not connected.');
+    expect(within(alert).getByRole('link', { name: 'Connect GitHub' }).getAttribute('href')).toBe('/services');
   });
 });
 
