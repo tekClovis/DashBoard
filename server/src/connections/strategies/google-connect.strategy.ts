@@ -37,7 +37,7 @@ export class GoogleConnectStrategy extends PassportStrategy(Strategy, 'google-co
     // and Nest's wrapper is variadic (arity 0), so re-expose it through a 5-argument callback.
     const self = this as unknown as { _verify: (...args: unknown[]) => unknown };
     const verify = self._verify;
-    self._verify = (accessToken: string, refreshToken: string, tokenParams: unknown, profile: Profile, done: unknown) =>
+    self._verify = (accessToken: unknown, refreshToken: unknown, tokenParams: unknown, profile: unknown, done: unknown) =>
       verify(accessToken, refreshToken, tokenParams, profile, done);
     // `accessType`/`prompt` are read from the per-request `authenticate()`
     // options by passport-google-oauth20's `authorizationParams`, not from

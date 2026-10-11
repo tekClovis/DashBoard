@@ -41,7 +41,8 @@ describe('Add widget dialog, NOT_CONNECTED', () => {
     await submitCommitsWidget();
 
     const alert = await screen.findByRole('alert');
-    expect(within(alert).getByText(/isn’t connected/)).toBeTruthy();
+    expect(within(alert).getByText('GitHub isn’t connected')).toBeTruthy();
+    expect(within(alert).getByText('Connect your GitHub account before adding this widget.')).toBeTruthy();
     const link = within(alert).getByRole('link', { name: /^Connect / });
     expect(link.getAttribute('href')).toBe('/api/oauth/github/start?intent=connect');
     expect(screen.queryByText('Could not save the widget.')).toBeNull();
