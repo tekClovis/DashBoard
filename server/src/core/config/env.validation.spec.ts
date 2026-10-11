@@ -58,4 +58,22 @@ describe('validate (env)', () => {
   it('rejects an empty JWT_SECRET', () => {
     expect(() => validate({ ...validEnv(), JWT_SECRET: '' })).toThrow(/JWT_SECRET/);
   });
+
+  it('accepts the optional SMTP credentials and leaves them unset by default', () => {
+    expect(validate(validEnv())).toMatchObject({ SMTP_USER: undefined, SMTP_PASS: undefined, SMTP_SECURE: undefined });
+    expect(validate({ ...validEnv(), SMTP_USER: 'u', SMTP_PASS: 'p', SMTP_SECURE: 'true' })).toMatchObject({
+      SMTP_USER: 'u',
+      SMTP_PASS: 'p',
+      SMTP_SECURE: 'true',
+    });
+  });
+
+  it('rejects SMTP_USER without SMTP_PASS', () => {
+    expect(() => validate({ ...validEnv(), SMTP_USER: 'u' })).toThrow(/SMTP_PASS/);
+    expect(() => validate({ ...validEnv(), SMTP_USER: 'u', SMTP_PASS: '' })).toThrow(/SMTP_PASS/);
+  });
+
+  it('treats empty SMTP_USER / SMTP_PASS / SMTP_SECURE (as shipped in .env.example) as unset', () => {
+    expect(() => validate({ ...validEnv(), SMTP_USER: '', SMTP_PASS: '', SMTP_SECURE: '' })).not.toThrow();
+  });
 });

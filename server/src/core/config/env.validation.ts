@@ -2,7 +2,7 @@
 // The server refuses to start without JWT_SECRET and a 32-byte TOKEN_ENC_KEY.
 
 import { plainToInstance } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, ValidateIf, validateSync } from 'class-validator';
 
 /** Shape of the environment the server accepts; optional fields have defaults or disable a feature. */
 export class EnvironmentVariables {
@@ -35,6 +35,22 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SMTP_FROM: string = 'Dashboard <no-reply@dashboard.local>';
+
+  /** SMTP login; leave empty for an unauthenticated relay such as Mailpit. */
+  @IsString()
+  @IsOptional()
+  SMTP_USER?: string;
+
+  /** Required when `SMTP_USER` is set. */
+  @ValidateIf((env: EnvironmentVariables) => Boolean(env.SMTP_USER))
+  @IsString()
+  @IsNotEmpty()
+  SMTP_PASS?: string;
+
+  /** `'true'` for implicit TLS (port 465); anything else upgrades with STARTTLS when offered. */
+  @IsString()
+  @IsOptional()
+  SMTP_SECURE?: string;
 
   @IsString()
   @IsOptional()
