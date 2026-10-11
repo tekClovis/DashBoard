@@ -3,6 +3,12 @@ import type { Request, Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import { AuthController } from './auth.controller.js';
 
+vi.mock('bcrypt', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('bcrypt')>();
+  const compare = vi.fn(actual.compare);
+  return { ...actual, compare };
+});
+
 function makePrismaTxProxy() {
   return {
     user: { create: vi.fn().mockResolvedValue({ id: 'u1' }) },
@@ -85,41 +91,52 @@ describe('AuthController', () => {
       );
     });
 
-    it('rejects a verified existing user without creating anything', async () => {
+    it('answers a verified existing user with the same generic body, creating and mailing nothing', async () => {
       const { controller, prisma, verification, mail } = makeDeps();
       prisma.user.findUnique.mockResolvedValue({ id: 'u1', emailVerifiedAt: new Date(), passwordHash: 'x' });
-
-      await expect(
-        controller.register({ email: 'a@b.com', password: 'abc12345!' }, makeReq()),
-      ).rejects.toMatchObject({ response: { error: 'EMAIL_IN_USE' } });
-      expect(prisma.user.create).not.toHaveBeenCalled();
-      expect(verification.issueToken).not.toHaveBeenCalled();
-      expect(mail.sendConfirmationEmail).not.toHaveBeenCalled();
-    });
-
-    it('rejects an OIDC-only existing user (null passwordHash)', async () => {
-      const { controller, prisma } = makeDeps();
-      prisma.user.findUnique.mockResolvedValue({ id: 'u1', emailVerifiedAt: null, passwordHash: null });
-
-      await expect(
-        controller.register({ email: 'a@b.com', password: 'abc12345!' }, makeReq()),
-      ).rejects.toMatchObject({ response: { error: 'EMAIL_IN_USE' } });
-    });
-
-    it('treats an unverified local account as an implicit resend and replaces its password hash', async () => {
-      const { controller, prisma, verification, mail } = makeDeps();
-      prisma.user.findUnique.mockResolvedValue({ id: 'u1', emailVerifiedAt: null, passwordHash: 'x' });
 
       const res = await controller.register({ email: 'a@b.com', password: 'abc12345!' }, makeReq());
 
       expect(res).toEqual({ ok: true });
       expect(prisma.user.create).not.toHaveBeenCalled();
-      const data = prisma.user.update.mock.calls[0][0].data;
-      expect(prisma.user.update.mock.calls[0][0].where).toEqual({ id: 'u1' });
-      expect(data.tokenVersion).toEqual({ increment: 1 });
-      expect(await bcrypt.compare('abc12345!', data.passwordHash)).toBe(true);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(verification.issueToken).not.toHaveBeenCalled();
+      expect(mail.sendConfirmationEmail).not.toHaveBeenCalled();
+    });
+
+    it('answers an OIDC-only existing user (null passwordHash) with the same generic body', async () => {
+      const { controller, prisma, mail } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', emailVerifiedAt: null, passwordHash: null });
+
+      const res = await controller.register({ email: 'a@b.com', password: 'abc12345!' }, makeReq());
+
+      expect(res).toEqual({ ok: true });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(mail.sendConfirmationEmail).not.toHaveBeenCalled();
+    });
+
+    it('only resends the confirmation for an unverified local account and keeps its password hash', async () => {
+      const { controller, prisma, verification, mail } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', emailVerifiedAt: null, passwordHash: 'old-hash' });
+
+      const res = await controller.register({ email: 'a@b.com', password: 'abc12345!' }, makeReq());
+
+      expect(res).toEqual({ ok: true });
+      expect(prisma.user.create).not.toHaveBeenCalled();
+      expect(prisma.user.update).not.toHaveBeenCalled();
       expect(verification.issueToken).toHaveBeenCalledWith('u1');
       expect(mail.sendConfirmationEmail).toHaveBeenCalled();
+    });
+
+    it('returns the identical body for new, unverified and verified emails', async () => {
+      const { controller, prisma } = makeDeps();
+      const bodies: unknown[] = [];
+      for (const row of [null, { id: 'u1', emailVerifiedAt: null, passwordHash: 'x' }, { id: 'u2', emailVerifiedAt: new Date(), passwordHash: 'x' }]) {
+        prisma.user.findUnique.mockResolvedValueOnce(row);
+        bodies.push(await controller.register({ email: 'a@b.com', password: 'abc12345!' }, makeReq()));
+      }
+
+      expect(bodies).toEqual([{ ok: true }, { ok: true }, { ok: true }]);
     });
 
     it('429s once the per-IP rate limit is exceeded', async () => {
@@ -324,6 +341,22 @@ describe('AuthController', () => {
       await expect(
         controller.login({ email: 'nobody@b.com', password: 'whatever' }, makeReq(), makeRes()),
       ).rejects.toMatchObject({ status: 401, response: { error: 'INVALID_CREDENTIALS' } });
+    });
+
+    it.each([
+      ['an unknown email', null],
+      ['an account without a password', { id: 'u1', role: 'USER', tokenVersion: 0, passwordHash: null, emailVerifiedAt: new Date() }],
+    ])('still runs bcrypt.compare against a dummy hash for %s', async (_label, row) => {
+      const { controller, prisma } = makeDeps();
+      prisma.user.findUnique.mockResolvedValue(row);
+      vi.mocked(bcrypt.compare).mockClear();
+
+      await expect(
+        controller.login({ email: 'nobody@b.com', password: 'whatever' }, makeReq(), makeRes()),
+      ).rejects.toMatchObject({ status: 401, response: { error: 'INVALID_CREDENTIALS' } });
+
+      expect(bcrypt.compare).toHaveBeenCalledTimes(1);
+      expect(bcrypt.compare).toHaveBeenCalledWith('whatever', expect.stringMatching(/^\$2[aby]\$12\$/));
     });
 
     it('returns 403 EMAIL_NOT_CONFIRMED for correct credentials on an unverified user', async () => {

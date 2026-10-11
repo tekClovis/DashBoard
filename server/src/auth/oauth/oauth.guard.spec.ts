@@ -4,6 +4,7 @@ import passport from 'passport';
 import { OAUTH_CSRF_COOKIE, signConnectState, verifyConnectState } from '../../connections/oauth-state.js';
 import { YOUTUBE_CONNECT_SCOPES } from '../../connections/strategies/google-connect.strategy.js';
 import { JwtService } from '../jwt.service.js';
+import { STEAM_NONCE_COOKIE, SteamOpenIdError } from '../../connections/steam-openid.js';
 import { OAUTH_STATE_COOKIE, signOAuthState, verifyOAuthState } from './oauth-state.js';
 import { GithubOAuthGuard, GoogleOAuthGuard, SteamOAuthGuard, type OAuthCallbackRequest } from './oauth.guard.js';
 
@@ -25,11 +26,20 @@ function stubPassport(outcome: PassportOutcome = { user: PROVIDER_USER }) {
   return vi.spyOn(passport, 'authenticate').mockImplementation(implementation as never);
 }
 
+const ACTIVE_USER = { id: 'u1', email: 'a@b.com', role: 'USER', tokenVersion: 0, bannedAt: null, emailVerifiedAt: new Date() };
+
 function makeDeps(appUrl = 'http://localhost:8080') {
   const values: Record<string, string> = { JWT_SECRET: SECRET, APP_URL: appUrl };
   const config = { getOrThrow: (key: string) => values[key] };
   const jwt = new JwtService(config as never);
-  return { config, jwt, sessionToken: jwt.sign({ sub: 'u1', role: 'USER', tv: 0 }) };
+  const prisma = { user: { findUnique: vi.fn().mockResolvedValue(ACTIVE_USER) } };
+  const revocation = { isRevoked: vi.fn().mockResolvedValue(false) };
+  const steam = {
+    generateNonce: vi.fn().mockReturnValue('steam-nonce'),
+    loginUrl: vi.fn((nonce: string) => `https://steam.example/login?nonce=${nonce}`),
+    verify: vi.fn().mockResolvedValue({ steamId64: '7656' }),
+  };
+  return { config, jwt, prisma, revocation, steam, sessionToken: jwt.sign({ sub: 'u1', role: 'USER', tv: 0 }) };
 }
 
 function makeExchange(query: Record<string, string>, cookies: Record<string, string> = {}) {
@@ -54,7 +64,7 @@ afterEach(() => {
 describe('GithubOAuthGuard', () => {
   function makeGuard(appUrl?: string) {
     const deps = makeDeps(appUrl);
-    return { ...deps, guard: new GithubOAuthGuard(deps.config as never, deps.jwt) };
+    return { ...deps, guard: new GithubOAuthGuard(deps.config as never, deps.jwt, deps.prisma as never, deps.revocation as never) };
   }
 
   describe('start leg', () => {
@@ -130,6 +140,32 @@ describe('GithubOAuthGuard', () => {
       expect(authenticate).not.toHaveBeenCalled();
     });
 
+    it.each([
+      ['a banned user', { ...ACTIVE_USER, bannedAt: new Date() }],
+      ['an unverified user', { ...ACTIVE_USER, emailVerifiedAt: null }],
+      ['a deleted user', null],
+      ['a superseded session (tokenVersion mismatch)', { ...ACTIVE_USER, tokenVersion: 5 }],
+    ])('rejects a link start for %s, resolving the session user through the database', async (_label, row) => {
+      const authenticate = stubPassport();
+      const { guard, sessionToken, prisma } = makeGuard();
+      prisma.user.findUnique.mockResolvedValue(row);
+      const { context } = makeExchange({ intent: 'link' }, { session: sessionToken });
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject(LOGIN_REQUIRED);
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 'u1' } });
+      expect(authenticate).not.toHaveBeenCalled();
+    });
+
+    it('rejects a connect start whose session token was revoked', async () => {
+      const authenticate = stubPassport();
+      const { guard, sessionToken, revocation } = makeGuard();
+      revocation.isRevoked.mockResolvedValue(true);
+      const { context } = makeExchange({ intent: 'connect' }, { session: sessionToken });
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject(LOGIN_REQUIRED);
+      expect(authenticate).not.toHaveBeenCalled();
+    });
+
     it('signs a CSRF-bound connect state for the session user and uses the connect strategy', async () => {
       const authenticate = stubPassport();
       const { guard, sessionToken } = makeGuard();
@@ -175,6 +211,47 @@ describe('GithubOAuthGuard', () => {
       await guard.canActivate(context);
 
       expect(req.oauthState).toEqual({ intent: 'link', provider: 'github', userId: 'u1' });
+    });
+
+    it.each([
+      ['banned', { ...ACTIVE_USER, bannedAt: new Date() }],
+      ['deleted', null],
+    ])('does not link when the state-bound user was %s since the start leg', async (_label, row) => {
+      const authenticate = stubPassport();
+      const { guard, prisma } = makeGuard();
+      prisma.user.findUnique.mockResolvedValue(row);
+      const state = signOAuthState({ intent: 'link', provider: 'github', userId: 'u1' }, SECRET);
+      const { req, context } = makeExchange({ code: 'c', state }, { [OAUTH_STATE_COOKIE]: state });
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject(LOGIN_REQUIRED);
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 'u1' }, select: { bannedAt: true } });
+      expect(authenticate).not.toHaveBeenCalled();
+      expect(req.user).toBeUndefined();
+    });
+
+    it.each([
+      ['banned', { ...ACTIVE_USER, bannedAt: new Date() }],
+      ['deleted', null],
+    ])('does not connect when the state-bound user was %s since the start leg', async (_label, row) => {
+      const authenticate = stubPassport();
+      const { guard, prisma } = makeGuard();
+      prisma.user.findUnique.mockResolvedValue(row);
+      const state = signConnectState({ provider: 'github', userId: 'u1', csrfToken: 'csrf-token' }, SECRET);
+      const { context } = makeExchange({ code: 'c', state }, { [OAUTH_CSRF_COOKIE]: 'csrf-token' });
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject(LOGIN_REQUIRED);
+      expect(authenticate).not.toHaveBeenCalled();
+    });
+
+    it('does not look the user up for a login callback', async () => {
+      stubPassport();
+      const { guard, prisma } = makeGuard();
+      const state = signOAuthState({ intent: 'login', provider: 'github' }, SECRET);
+      const { context } = makeExchange({ code: 'c', state }, { [OAUTH_STATE_COOKIE]: state });
+
+      await guard.canActivate(context);
+
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
     });
 
     it('rejects a callback without a state param', async () => {
@@ -363,7 +440,7 @@ describe('GithubOAuthGuard', () => {
 describe('GoogleOAuthGuard', () => {
   function makeGuard() {
     const deps = makeDeps();
-    return { ...deps, guard: new GoogleOAuthGuard(deps.config as never, deps.jwt) };
+    return { ...deps, guard: new GoogleOAuthGuard(deps.config as never, deps.jwt, deps.prisma as never, deps.revocation as never) };
   }
 
   it('signs login states for google and uses the google strategy', async () => {
@@ -410,22 +487,36 @@ describe('GoogleOAuthGuard', () => {
 describe('SteamOAuthGuard', () => {
   function makeGuard() {
     const deps = makeDeps();
-    return { ...deps, guard: new SteamOAuthGuard(deps.config as never, deps.jwt) };
+    return {
+      ...deps,
+      guard: new SteamOAuthGuard(
+        deps.config as never,
+        deps.jwt,
+        deps.prisma as never,
+        deps.revocation as never,
+        deps.steam as never,
+      ),
+    };
   }
 
+  const steamState = signConnectState({ provider: 'steam', userId: 'u1', csrfToken: 'csrf-token' }, SECRET);
+  const callbackCookies = {
+    [OAUTH_STATE_COOKIE]: steamState,
+    [OAUTH_CSRF_COOKIE]: 'csrf-token',
+    [STEAM_NONCE_COOKIE]: 'steam-nonce',
+  };
+
   it('rejects a start without a session', async () => {
-    const authenticate = stubPassport();
-    const { guard } = makeGuard();
+    const { guard, steam } = makeGuard();
     const { res, context } = makeExchange({});
 
     await expect(guard.canActivate(context)).rejects.toMatchObject(LOGIN_REQUIRED);
     expect(res.cookie).not.toHaveBeenCalled();
-    expect(authenticate).not.toHaveBeenCalled();
+    expect(steam.loginUrl).not.toHaveBeenCalled();
   });
 
-  it('stores the CSRF-bound state in a cookie on start, since OpenID cannot echo it', async () => {
-    const authenticate = stubPassport();
-    const { guard, sessionToken } = makeGuard();
+  it('sets the state, CSRF and nonce cookies on start and redirects to Steam with the nonce in return_to', async () => {
+    const { guard, sessionToken, steam } = makeGuard();
     const { res, context, setCookie } = makeExchange({}, { session: sessionToken });
 
     await guard.canActivate(context);
@@ -435,37 +526,68 @@ describe('SteamOAuthGuard', () => {
     expect(verifyConnectState(state ?? '', 'steam', csrf, SECRET)).toMatchObject({ provider: 'steam', userId: 'u1' });
     expect(res.cookie).toHaveBeenCalledWith(OAUTH_STATE_COOKIE, state, STATE_COOKIE_OPTIONS);
     expect(res.cookie).toHaveBeenCalledWith(OAUTH_CSRF_COOKIE, csrf, STATE_COOKIE_OPTIONS);
-    expect(authenticate).toHaveBeenCalledWith('steam-connect', { state, session: false }, expect.any(Function));
+    expect(res.cookie).toHaveBeenCalledWith(STEAM_NONCE_COOKIE, 'steam-nonce', STATE_COOKIE_OPTIONS);
+    expect(steam.loginUrl).toHaveBeenCalledWith('steam-nonce');
+    expect(res.redirect).toHaveBeenCalledWith('https://steam.example/login?nonce=steam-nonce');
   });
 
-  it('accepts an OpenID callback whose cookie state matches the CSRF cookie', async () => {
-    const authenticate = stubPassport({ user: { steamId64: '7656' } });
-    const { guard } = makeGuard();
-    const state = signConnectState({ provider: 'steam', userId: 'u1', csrfToken: 'csrf-token' }, SECRET);
-    const { req, context } = makeExchange(
-      { 'openid.mode': 'id_res' },
-      { [OAUTH_STATE_COOKIE]: state, [OAUTH_CSRF_COOKIE]: 'csrf-token' },
-    );
+  it('rejects a start for a banned session user', async () => {
+    const { guard, sessionToken, prisma } = makeGuard();
+    prisma.user.findUnique.mockResolvedValue({ ...ACTIVE_USER, bannedAt: new Date() });
+    const { res, context } = makeExchange({}, { session: sessionToken });
+
+    await expect(guard.canActivate(context)).rejects.toMatchObject(LOGIN_REQUIRED);
+    expect(res.redirect).not.toHaveBeenCalled();
+  });
+
+  it('accepts an OpenID callback that Steam, the state and the nonce cookie all confirm', async () => {
+    const { guard, steam } = makeGuard();
+    const query = { 'openid.mode': 'id_res', nonce: 'steam-nonce' };
+    const { req, context } = makeExchange(query, callbackCookies);
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
 
+    expect(steam.verify).toHaveBeenCalledWith(query, 'steam-nonce');
     expect(req.oauthState).toMatchObject({ intent: 'connect', provider: 'steam', userId: 'u1' });
     expect(req.user).toEqual({ steamId64: '7656' });
-    expect(authenticate).toHaveBeenCalledWith('steam-connect', { session: false }, expect.any(Function));
   });
 
-  const steamState = signConnectState({ provider: 'steam', userId: 'u1', csrfToken: 'csrf-token' }, SECRET);
+  it('rejects a callback whose nonce is missing, mismatched or replayed', async () => {
+    const { guard, steam } = makeGuard();
+    steam.verify.mockRejectedValue(new SteamOpenIdError('nonce'));
+    const { context } = makeExchange({ 'openid.mode': 'id_res' }, callbackCookies);
+
+    await expect(guard.canActivate(context)).rejects.toMatchObject(INVALID_STATE);
+  });
+
+  it('passes an absent nonce cookie to verification as undefined', async () => {
+    const { guard, steam } = makeGuard();
+    const { [STEAM_NONCE_COOKIE]: _nonce, ...withoutNonce } = callbackCookies;
+    const { context } = makeExchange({ 'openid.mode': 'id_res' }, withoutNonce);
+
+    await guard.canActivate(context);
+
+    expect(steam.verify).toHaveBeenCalledWith({ 'openid.mode': 'id_res' }, undefined);
+  });
+
+  it('does not connect when the state-bound user was banned since the start leg', async () => {
+    const { guard, prisma } = makeGuard();
+    prisma.user.findUnique.mockResolvedValue({ ...ACTIVE_USER, bannedAt: new Date() });
+    const { req, context } = makeExchange({ 'openid.mode': 'id_res' }, callbackCookies);
+
+    await expect(guard.canActivate(context)).rejects.toMatchObject(LOGIN_REQUIRED);
+    expect(req.user).toBeUndefined();
+  });
 
   it.each<[string, Record<string, string>]>([
     ['no state cookie', { [OAUTH_CSRF_COOKIE]: 'csrf-token' }],
     ['no CSRF cookie', { [OAUTH_STATE_COOKIE]: steamState }],
     ['a mismatched CSRF cookie', { [OAUTH_STATE_COOKIE]: steamState, [OAUTH_CSRF_COOKIE]: 'other-token' }],
-  ])('rejects an OpenID callback with %s', async (_label, cookies) => {
-    const authenticate = stubPassport();
-    const { guard } = makeGuard();
+  ])('rejects an OpenID callback with %s before contacting Steam', async (_label, cookies) => {
+    const { guard, steam } = makeGuard();
     const { context } = makeExchange({ 'openid.mode': 'id_res' }, cookies);
 
     await expect(guard.canActivate(context)).rejects.toMatchObject(INVALID_STATE);
-    expect(authenticate).not.toHaveBeenCalled();
+    expect(steam.verify).not.toHaveBeenCalled();
   });
 });

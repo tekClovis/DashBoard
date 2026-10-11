@@ -1,7 +1,9 @@
 import type { CatalogResponse, WidgetInstanceEntry, WidgetSpec } from '@dashboard/shared';
-import { Ellipsis, RefreshCw, X } from 'lucide-react';
+import { Ellipsis, OctagonX, RefreshCw, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import { ApiError } from '@/api/client.js';
+import { connectUrl } from '@/api/connections.js';
 import { useCatalog } from '@/api/catalog.js';
 import { useCreateWidget, useUpdateWidget } from '@/api/widgets.js';
 import {
@@ -13,6 +15,7 @@ import {
   type ParamValues,
 } from '@/components/ParamForm.js';
 import { ViewSkeleton } from '@/components/WidgetFrame.js';
+import { Alert, AlertContent, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog.js';
@@ -356,11 +359,25 @@ function DialogBody({ dashboardId, onOpenChange, slot, instance, onCreated }: Ad
           </>
         )}
 
-        {mutation.isError && (
-          <p role="alert" className="text-destructive">
-            Could not save the widget.
-          </p>
-        )}
+        {mutation.isError &&
+          (spec && mutation.error instanceof ApiError && mutation.error.code === 'NOT_CONNECTED' ? (
+            <Alert tone="destructive">
+              <OctagonX strokeWidth={1.75} aria-hidden />
+              <AlertContent>
+                <AlertTitle>{`${meta?.serviceLabel ?? spec.service} isn’t connected`}</AlertTitle>
+                <AlertDescription>
+                  {`Connect your ${meta?.serviceLabel ?? spec.service} account before ${instance ? 'saving changes' : 'adding this widget'}.`}
+                </AlertDescription>
+                <Button asChild variant="link" className="mt-1 h-auto justify-self-start p-0">
+                  <a href={connectUrl(spec.service)}>{`Connect ${meta?.serviceLabel ?? spec.service}`}</a>
+                </Button>
+              </AlertContent>
+            </Alert>
+          ) : (
+            <p role="alert" className="text-destructive">
+              Could not save the widget.
+            </p>
+          ))}
       </form>
 
       <div className="flex items-center gap-2 border-t px-4 py-3">

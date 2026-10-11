@@ -10,16 +10,16 @@
 // Everything else (state signing/verification, cookie handling, session
 // auth, Prisma persistence, encryption) runs for real.
 
+import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { JwtService } from '../src/auth/jwt.service.js';
 import { PrismaService } from '../src/core/prisma/prisma.service.js';
 import { TokenCipherService } from '../src/connections/token-cipher.service.js';
 import { GithubConnectStrategy } from '../src/connections/strategies/github-connect.strategy.js';
-import { SteamConnectStrategy } from '../src/connections/strategies/steam-connect.strategy.js';
 
 describe('Connections (e2e)', () => {
   let app: INestApplication;
@@ -252,12 +252,11 @@ describe('Connections (e2e)', () => {
   describe('Steam OpenID connect handshake', () => {
     it('creates a ServiceConnection with externalAccountId=SteamID64 and no token fields', async () => {
       const { userId, cookie } = await createUserWithCookie('steam1@example.com');
-      const strategy = app.get(SteamConnectStrategy);
       const steamId64 = '76561198000000001';
-      (strategy as unknown as { _relyingParty: { verifyAssertion: unknown } })._relyingParty.verifyAssertion = (
-        _url: string,
-        cb: (err: unknown, result?: { authenticated: boolean; claimedIdentifier: string }) => void,
-      ) => cb(null, { authenticated: true, claimedIdentifier: `https://steamcommunity.com/openid/id/${steamId64}` });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async () => new Response('ns:http://specs.openid.net/auth/2.0\nis_valid:true\n')),
+      );
 
       const startRes = await request(app.getHttpServer())
         .get('/api/oauth/steam/start?intent=connect')
@@ -265,22 +264,30 @@ describe('Connections (e2e)', () => {
         .expect(302);
       const csrfCookie = extractCookieValue(startRes.headers['set-cookie'], 'oauth_csrf');
       const stateCookie = extractCookieValue(startRes.headers['set-cookie'], 'oauth_state');
+      const nonceCookie = extractCookieValue(startRes.headers['set-cookie'], 'oauth_steam_nonce');
+      const returnTo = new URL(startRes.headers['location']).searchParams.get('openid.return_to') ?? '';
+      expect(new URL(returnTo).searchParams.get('nonce')).toBe(nonceCookie);
 
-      const callbackRes = await request(app.getHttpServer())
-        .get(
-          '/api/oauth/steam/callback' +
-            '?openid.mode=id_res' +
-            '&openid.ns=' +
-            encodeURIComponent('http://specs.openid.net/auth/2.0') +
-            '&openid.op_endpoint=' +
-            encodeURIComponent('https://steamcommunity.com/openid/login') +
-            '&openid.claimed_id=' +
-            encodeURIComponent(`https://steamcommunity.com/openid/id/${steamId64}`) +
-            '&openid.identity=' +
-            encodeURIComponent(`https://steamcommunity.com/openid/id/${steamId64}`),
-        )
-        .set('Cookie', [cookie, `oauth_csrf=${csrfCookie}`, `oauth_state=${stateCookie}`])
-        .expect(302);
+      const assertion = new URLSearchParams({
+        'openid.ns': 'http://specs.openid.net/auth/2.0',
+        'openid.mode': 'id_res',
+        'openid.op_endpoint': 'https://steamcommunity.com/openid/login',
+        'openid.claimed_id': `https://steamcommunity.com/openid/id/${steamId64}`,
+        'openid.identity': `https://steamcommunity.com/openid/id/${steamId64}`,
+        'openid.return_to': returnTo,
+        'openid.response_nonce': `${new Date().toISOString()}${randomUUID()}`,
+        'openid.signed': 'signed,op_endpoint,claimed_id,identity,return_to,response_nonce',
+        'openid.sig': 'sig=',
+        nonce: nonceCookie,
+      });
+      const callbackPath = `/api/oauth/steam/callback?${assertion.toString()}`;
+      const cookies = [cookie, `oauth_csrf=${csrfCookie}`, `oauth_state=${stateCookie}`, `oauth_steam_nonce=${nonceCookie}`];
+
+      const callbackRes = await request(app.getHttpServer()).get(callbackPath).set('Cookie', cookies).expect(302);
+
+      // A captured callback replayed with the same response_nonce is refused.
+      await request(app.getHttpServer()).get(callbackPath).set('Cookie', cookies).expect(401);
+      vi.unstubAllGlobals();
 
       expect(callbackRes.headers['location']).toMatch(/\/d\/[^/?]+$/);
 

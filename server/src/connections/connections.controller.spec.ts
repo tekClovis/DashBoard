@@ -12,7 +12,7 @@ const user = { id: 'user-1' } as RequestUser;
 const env: Record<string, string> = { GITHUB_CLIENT_ID: 'login-id', GITHUB_CLIENT_SECRET: 'login-secret' };
 const config = { get: (key: string) => env[key] } as unknown as ConfigService;
 
-function makeService(existing: { accessToken: string | null } | null = null) {
+function makeService(existing: { accessToken: string | null; refreshToken: string | null } | null = null) {
   return {
     list: vi.fn(),
     findForRevoke: vi.fn().mockResolvedValue(existing),
@@ -78,7 +78,7 @@ describe('ConnectionsController', () => {
 
   describe('disconnect', () => {
     it("deletes the current user's connection and revokes its token at the provider", async () => {
-      const service = makeService({ accessToken: 'gho_token' });
+      const service = makeService({ accessToken: 'gho_token', refreshToken: null });
 
       const result = await makeController(service).disconnect('github', user);
 
@@ -100,7 +100,7 @@ describe('ConnectionsController', () => {
 
     it('still succeeds when the provider revoke request fails', async () => {
       fetchMock.mockRejectedValue(new Error('network down'));
-      const service = makeService({ accessToken: 'ya29-token' });
+      const service = makeService({ accessToken: 'ya29-token', refreshToken: '1//refresh' });
 
       const result = await makeController(service).disconnect('youtube', user);
 
@@ -110,7 +110,7 @@ describe('ConnectionsController', () => {
     });
 
     it('does not revoke at the provider when the local delete fails', async () => {
-      const service = makeService({ accessToken: 'gho_token' });
+      const service = makeService({ accessToken: 'gho_token', refreshToken: null });
       service.disconnect.mockRejectedValue(new Error('db down'));
 
       await expect(makeController(service).disconnect('github', user)).rejects.toThrow('db down');
@@ -150,6 +150,14 @@ describe('ConnectionsController', () => {
 
       expect(result.connections).toContainEqual({ service: 'github', connected: true, status: 'OK', configured: true });
       expect(JSON.stringify(result)).not.toMatch(/secret_access|secret_refresh/);
+    });
+
+    it('revokes a youtube connection with the decrypted refresh token of the deleted row', async () => {
+      const result = await makeRealController().disconnect('youtube', user);
+
+      const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('https://oauth2.googleapis.com/revoke?token=ghr_secret_refresh');
+      expect(result).toEqual({ ok: true });
     });
 
     it('revokes the decrypted token of the deleted row without returning it', async () => {

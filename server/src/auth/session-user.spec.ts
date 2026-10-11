@@ -62,6 +62,12 @@ describe('resolveSessionUser', () => {
     await expect(resolve()).resolves.toBeNull();
   });
 
+  it('returns null for an unverified user', async () => {
+    const { resolve } = setup({ ...USER_ROW, emailVerifiedAt: null });
+
+    await expect(resolve()).resolves.toBeNull();
+  });
+
   it('returns null for a token superseded by logout-all (tokenVersion mismatch)', async () => {
     const { resolve } = setup({ ...USER_ROW, tokenVersion: 3 });
 

@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import type { ConnectionEntry } from '@dashboard/shared';
 import { PrismaService } from '../core/prisma/prisma.service.js';
+import type { RevocableTokens } from './provider-revoke.js';
 import { TokenCipherService } from './token-cipher.service.js';
 
 /** Services that require a ServiceConnection. Weather is always on for any authenticated user. */
@@ -50,13 +51,16 @@ export class ConnectionsService {
     await this.prisma.serviceConnection.deleteMany({ where: { userId, service } });
   }
 
-  /** Fetch the decrypted access token for revocation; `null` when no row exists, `accessToken` is `null` for token-less connections (Steam). */
-  async findForRevoke(userId: string, service: string): Promise<{ accessToken: string | null } | null> {
+  /** Fetch the decrypted tokens for revocation; `null` when no row exists, both tokens `null` for token-less connections (Steam). */
+  async findForRevoke(userId: string, service: string): Promise<RevocableTokens | null> {
     const row = await this.prisma.serviceConnection.findUnique({
       where: { userId_service: { userId, service } },
     });
     if (!row) return null;
-    return { accessToken: row.accessTokenEnc ? this.cipher.decrypt(row.accessTokenEnc) : null };
+    return {
+      accessToken: row.accessTokenEnc ? this.cipher.decrypt(row.accessTokenEnc) : null,
+      refreshToken: row.refreshTokenEnc ? this.cipher.decrypt(row.refreshTokenEnc) : null,
+    };
   }
 
   /** Upserts a GitHub/Google OAuth connection for (userId, service). Tokens are encrypted before persisting. */

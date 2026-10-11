@@ -80,7 +80,7 @@ function setup() {
   const nsp = server.of('/');
 
   function addUser(id: string, overrides: Partial<UserRow> = {}): string {
-    users.set(id, { id, email: `${id}@b.com`, role: 'USER', tokenVersion: 0, bannedAt: null, emailVerifiedAt: null, ...overrides });
+    users.set(id, { id, email: `${id}@b.com`, role: 'USER', tokenVersion: 0, bannedAt: null, emailVerifiedAt: NOW, ...overrides });
     return jwt.sign({ sub: id, role: 'USER', tv: 0 });
   }
 

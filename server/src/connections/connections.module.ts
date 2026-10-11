@@ -4,7 +4,7 @@ import { ConnectionsController } from './connections.controller.js';
 import { ConnectionsService } from './connections.service.js';
 import { GithubConnectStrategy } from './strategies/github-connect.strategy.js';
 import { GoogleConnectStrategy } from './strategies/google-connect.strategy.js';
-import { SteamConnectStrategy } from './strategies/steam-connect.strategy.js';
+import { SteamOpenIdService } from './steam-openid.js';
 import { TokenCipherService } from './token-cipher.service.js';
 
 // Widget-credential "connect" flow — see docs/Architecture.md §8.3 and
@@ -21,8 +21,8 @@ import { TokenCipherService } from './token-cipher.service.js';
     TokenCipherService,
     GithubConnectStrategy,
     GoogleConnectStrategy,
-    SteamConnectStrategy,
+    SteamOpenIdService,
   ],
-  exports: [ConnectionsService],
+  exports: [ConnectionsService, SteamOpenIdService],
 })
 export class ConnectionsModule {}

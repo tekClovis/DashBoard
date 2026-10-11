@@ -1,0 +1,21 @@
+# Live register check against the docker compose build of feature/security (http://localhost:8080)
+$ POST /api/auth/register {"email":"grace@example.com","password":"first-pass-111!"}   (new email)
+{"ok":true} HTTP 201
+hash md5 after first register: f1e9c4d97b6ead1c059a7f211c9fb287
+mailpit messages to grace: 1
+$ POST /api/auth/register {"email":"grace@example.com","password":"second-pass-222!"}   (same email, still unverified)
+{"ok":true} HTTP 201
+hash md5 after re-register: f1e9c4d97b6ead1c059a7f211c9fb287
+mailpit messages to grace: 2
+$ POST /api/auth/register {"email":"admin@example.com",...}   (verified seeded admin)
+admin emailVerifiedAt set: f
+{"error":"RATE_LIMITED"} HTTP 429
+
+# The seeded admin was not present (ADMIN_EMAIL not passed into the container), so the 429 above is the per-IP register limit (rate-limit keys are cleared below before continuing).
+$ GET /api/auth/confirm?token=<grace link from mailpit>
+{"ok":true} HTTP 200
+grace emailVerifiedAt set: t
+$ POST /api/auth/register {"email":"grace@example.com","password":"third-pass-333!"}   (verified email)
+{"ok":true} HTTP 201
+hash md5 after register on verified: f1e9c4d97b6ead1c059a7f211c9fb287
+mailpit messages to grace: 2

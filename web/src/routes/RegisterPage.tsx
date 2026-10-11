@@ -16,8 +16,8 @@ function SentState({ email }: { email: string }) {
   return (
     <AuthLayout title="Check your email">
       <p className="text-muted-foreground">
-        We sent a confirmation link to <b className="text-foreground font-[550]">{email}</b>. Open it to activate
-        your account.
+        If this email can be registered, we sent a confirmation link to{' '}
+        <b className="text-foreground font-[550]">{email}</b>. Open it to activate your account.
       </p>
       {resend.isSuccess ? (
         <ResentNotice />

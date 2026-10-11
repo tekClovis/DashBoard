@@ -56,6 +56,7 @@ describe('OAuthController', () => {
 
     expect(res.clearCookie).toHaveBeenCalledWith('oauth_state', { path: '/api/oauth' });
     expect(res.clearCookie).toHaveBeenCalledWith('oauth_csrf', { path: '/api/oauth' });
+    expect(res.clearCookie).toHaveBeenCalledWith('oauth_steam_nonce', { path: '/api/oauth' });
   });
 
   describe('login', () => {
@@ -176,6 +177,20 @@ describe('OAuthController', () => {
 
       expect(connections.upsertOAuthConnection).toHaveBeenCalledWith('u1', 'youtube', connectResult);
       expect(res.redirect).toHaveBeenCalledExactlyOnceWith(`${APP_URL}/d/d1`);
+    });
+
+    it('stores the token expiry of a Google connect', async () => {
+      const { controller, connections } = makeDeps();
+      const { asResponse } = makeRes();
+      const expiresAt = new Date('2026-01-01T01:00:00Z');
+
+      await controller.googleCallback(makeReq(connectState('google'), { ...connectResult, expiresAt }), asResponse);
+
+      expect(connections.upsertOAuthConnection).toHaveBeenCalledWith(
+        'u1',
+        'youtube',
+        expect.objectContaining({ expiresAt }),
+      );
     });
 
     it('stores a Steam connection from the OpenID result', async () => {

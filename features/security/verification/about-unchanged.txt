@@ -1,0 +1,19 @@
+$ git diff --stat main...HEAD -- about.json server/src/catalog server/src/about*
+exit=0
+features/prod-smtp/verification/about-unit.txt
+server/src/catalog/about.controller.spec.ts
+server/src/catalog/about.controller.ts
+server/test/about.e2e-spec.ts
+server/src/app.module.ts
+server/src/catalog/about.controller.ts
+server/src/catalog/widget-registry.service.ts
+server/src/main.ts
+
+$ git diff --stat main...HEAD -- server/src/services
+(empty)
+
+$ curl -s localhost:8080/about.json (live, branch build via docker compose) | jq .server.services
+{"name":"steam","widgets":["recently_played","game_news"]}
+{"name":"github","widgets":["recent_commits","pull_requests","security_alerts"]}
+{"name":"weather","widgets":["current_weather","forecast"]}
+{"name":"youtube","widgets":["channel_stats","latest_videos","trending_videos"]}

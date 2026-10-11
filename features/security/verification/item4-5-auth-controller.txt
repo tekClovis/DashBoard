@@ -1,0 +1,43 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.11 /home/syvolc/Desktop/Year_three/dashBoardMirror/.claude/worktrees/security/server
+
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > creates a fresh user and its default dashboard atomically, issues a token, and sends mail 195ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > answers a verified existing user with the same generic body, creating and mailing nothing 1ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > answers an OIDC-only existing user (null passwordHash) with the same generic body 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > only resends the confirmation for an unverified local account and keeps its password hash 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > returns the identical body for new, unverified and verified emails 189ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > register > 429s once the per-IP rate limit is exceeded 954ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > confirm > delegates to VerificationService 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > confirm > confirms with an empty string when no token query param is given 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > never leaks whether the account exists 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > resends for an unverified user within limits 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > does not resend for an already-verified user 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resend > silently no-ops over the 1/60s limit 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > answers ok and sends no mail for an unknown email 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > answers ok and sends no mail for an OAuth-only account 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > mails a reset link for a password account, normalizing the email 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > sends nothing but still answers ok within 60 s of the previous request 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > forgotPassword > caps at 5 mails a day per email 1ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resetPassword > hashes the new password and delegates to the service 378ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > resetPassword > propagates the service rejection 193ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > sets the session cookie and returns ok on correct credentials for a verified user 3ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > rejects a wrong password with a generic 401 2ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > rejects an unknown email with the same generic 401 (no enumeration) 190ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > still runs bcrypt.compare against a dummy hash for an unknown email 191ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > still runs bcrypt.compare against a dummy hash for an account without a password 191ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > returns 403 EMAIL_NOT_CONFIRMED for correct credentials on an unverified user 2ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > returns 403 ACCOUNT_BANNED for correct credentials on a banned user, and sets no cookie 2ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > rejects an OIDC-only user (null passwordHash) with the generic 401 193ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > login > 429s once the per-IP rate limit is exceeded 1889ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > me > returns the current user plus linked identities 1ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > logout > clears the session cookie 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > logout > revokes the token jti so the old cookie cannot be reused 0ms
+ ✓ src/auth/auth.controller.spec.ts > AuthController > logoutAll > bumps tokenVersion and clears the session cookie 0ms
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  19:34:20
+   Duration  5.14s (transform 153ms, setup 0ms, import 453ms, tests 4.58s, environment 0ms)
+
+exit 0
