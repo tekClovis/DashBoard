@@ -26,9 +26,34 @@ describe('FetchService', () => {
     const params: Params = { label: 'x' };
     const result = await service.get(def, params, 'user-1');
 
-    expect(result).toEqual({ ok: true });
+    expect(result.data).toEqual({ ok: true });
     expect(def.fetch).toHaveBeenCalledTimes(1);
-    expect(redis.set).toHaveBeenCalledWith(expect.stringContaining('widget:fake.echo:'), JSON.stringify({ ok: true }), 'EX', 60);
+    expect(redis.set).toHaveBeenCalledWith(
+      expect.stringContaining('widget:fake.echo:'),
+      JSON.stringify({ data: { ok: true }, fetchedAt: result.fetchedAt }),
+      'EX',
+      60,
+    );
+  });
+
+  it('reports the original fetch time, not now, on a cache hit', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+      const service = new FetchService(makeFakeRedis(), makePrisma(), makeCipher());
+      const def = makeDef();
+
+      const first = await service.get(def, { label: 'x' }, 'user-1');
+      vi.setSystemTime(new Date('2026-01-01T00:00:30.000Z'));
+      const second = await service.get(def, { label: 'x' }, 'user-1');
+
+      expect(first.fetchedAt).toBe('2026-01-01T00:00:00.000Z');
+      expect(second.fetchedAt).toBe('2026-01-01T00:00:00.000Z');
+      expect(second.data).toEqual({ ok: true });
+      expect(def.fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('serves from Redis on a cache hit, without calling def.fetch() again', async () => {
@@ -59,6 +84,7 @@ describe('FetchService', () => {
 
     const [a, b] = await Promise.all([first, second]);
     expect(a).toEqual(b);
+    expect(a.data).toEqual({ ok: true });
     expect(def.fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -99,7 +125,7 @@ describe('FetchService', () => {
     const resultA = await serviceA.get(defA, { label: 'x' }, 'user-a');
     const resultB = await serviceB.get(defB, { label: 'x' }, 'user-b');
 
-    expect(resultA).toEqual({ who: 'a' });
-    expect(resultB).toEqual({ who: 'b' });
+    expect(resultA.data).toEqual({ who: 'a' });
+    expect(resultB.data).toEqual({ who: 'b' });
   });
 });

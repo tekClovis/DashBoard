@@ -54,3 +54,12 @@ describe('githubConnectClient', () => {
     expect(githubConnectClient(makeConfig({}))).toEqual({ clientID: '', clientSecret: '' });
   });
 });
+
+describe('GithubConnectStrategy construction', () => {
+  it('does not throw when no client id or secret is configured', () => {
+    const values: Record<string, string> = { APP_URL: 'http://localhost:8080', GITHUB_CLIENT_ID: '', GITHUB_CLIENT_SECRET: '' };
+    const config = { get: (key: string) => values[key], getOrThrow: (key: string) => values[key] };
+
+    expect(() => new GithubConnectStrategy(config as unknown as ConfigService)).not.toThrow();
+  });
+});

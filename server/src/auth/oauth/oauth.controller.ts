@@ -6,10 +6,12 @@
 
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { OAuthProvidersResponse } from '@dashboard/shared';
 import type { Response } from 'express';
 import { ConnectionsService } from '../../connections/connections.service.js';
 import { DashboardsService } from '../../dashboards/dashboards.service.js';
 import { OAUTH_CSRF_COOKIE } from '../../connections/oauth-state.js';
+import { loginProviderConfigured } from '../../connections/provider-config.js';
 import type { ConnectProfileResult } from '../../connections/strategies/github-connect.strategy.js';
 import type { SteamConnectResult } from '../../connections/strategies/steam-connect.strategy.js';
 import { JwtService } from '../jwt.service.js';
@@ -32,6 +34,15 @@ export class OAuthController {
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
   ) {}
+
+  /** Public: which login providers have credentials, so the web can disable the buttons of the others. */
+  @Get('providers')
+  providers(): OAuthProvidersResponse {
+    return {
+      github: { configured: loginProviderConfigured(this.config, 'github') },
+      google: { configured: loginProviderConfigured(this.config, 'google') },
+    };
+  }
 
   /** Guard redirects to GitHub's authorize URL; this handler body never runs on the start leg. */
   @Get('github/start')

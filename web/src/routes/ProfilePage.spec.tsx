@@ -42,6 +42,20 @@ describe('ProfilePage', () => {
     expect(screen.getByText('user@example.com (USER)')).toBeTruthy();
   });
 
+  it('disables Link with a not-configured hint for a provider the server has no credentials for', () => {
+    mockMe({ id: '1', email: 'user@example.com', role: 'USER', emailVerifiedAt: null, hasPassword: true, identities: [] });
+    vi.spyOn(authApi, 'useOAuthProviders').mockReturnValue({
+      data: { github: { configured: true }, google: { configured: false } },
+    } as unknown as ReturnType<typeof authApi.useOAuthProviders>);
+    renderPage();
+
+    const links = screen.getAllByRole('button', { name: 'Link' });
+    expect(links).toHaveLength(2);
+    expect(links[0]!.hasAttribute('disabled')).toBe(false);
+    expect(links[1]!.hasAttribute('disabled')).toBe(true);
+    expect(screen.getAllByText('not configured')).toHaveLength(1);
+  });
+
   it('disables Unlink for the sole remaining login method', () => {
     mockMe({
       id: '1',

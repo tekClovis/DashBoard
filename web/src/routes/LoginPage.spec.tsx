@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { calls, renderAt, stubAuthApi } from './auth-test-utils.js';
@@ -27,6 +27,27 @@ describe('LoginPage', () => {
       '/api/oauth/github/start?intent=login',
     );
     expect(screen.getByRole('link', { name: 'Register' }).getAttribute('href')).toBe('/register');
+  });
+
+  it('enables the OAuth links for configured providers', async () => {
+    stubAuthApi();
+    renderAt('/login', '/login', <LoginPage />);
+
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Continue with Google' })).toBeTruthy());
+    expect(screen.queryByText('not configured')).toBeNull();
+  });
+
+  it('shows an unconfigured provider as a disabled button with a not-configured hint', async () => {
+    stubAuthApi({ '/api/oauth/providers': [200, { github: { configured: false }, google: { configured: true } }] });
+    renderAt('/login', '/login', <LoginPage />);
+
+    const github = await screen.findByRole('button', { name: /Continue with GitHub/ });
+    expect(github.hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText('not configured')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Continue with GitHub' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Continue with Google' }).getAttribute('href')).toBe(
+      '/api/oauth/google/start?intent=login',
+    );
   });
 
   it('navigates home after a successful login', async () => {

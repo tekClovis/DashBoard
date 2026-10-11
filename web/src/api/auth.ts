@@ -2,6 +2,7 @@ import type {
   ForgotPasswordRequest,
   LoginRequest,
   MeResponse,
+  OAuthProvidersResponse,
   OkResponse,
   RegisterRequest,
   ResendRequest,
@@ -84,6 +85,15 @@ export function useMe() {
     queryFn: () => apiFetch<MeResponse>("/auth/me"),
     retry: false,
     staleTime: 60_000,
+  });
+}
+
+/** GET /api/oauth/providers: whether the server has credentials for each login provider. */
+export function useOAuthProviders() {
+  return useQuery({
+    queryKey: ["oauth", "providers"],
+    queryFn: () => apiFetch<OAuthProvidersResponse>("/oauth/providers"),
+    staleTime: Infinity,
   });
 }
 

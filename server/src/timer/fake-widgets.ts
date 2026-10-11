@@ -43,6 +43,11 @@ const fakeProfileWidget: WidgetDefinition<'fake-connected.profile'> = {
   fetch: async (params, ctx) => ({ label: params['label'], userId: ctx.userId, hasToken: Boolean(ctx.accessToken) }),
 };
 
+/** Fake widgets are opt-in: only `ENABLE_FAKE_WIDGETS=true` registers them, whatever `NODE_ENV` is. */
+export function fakeWidgetsEnabled(env: Record<string, string | undefined>): boolean {
+  return env['ENABLE_FAKE_WIDGETS'] === 'true';
+}
+
 /** Register the `fake` and `fake-connected` services and their widgets with the registry. */
 export function registerFakeWidgets(registry: WidgetRegistryService): void {
   registry.registerService({ name: 'fake', connection: 'none' });

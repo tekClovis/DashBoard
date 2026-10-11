@@ -6,6 +6,7 @@ import type { TokenRevocationService } from '../auth/token-revocation.service.js
 import type { Params } from '../catalog/widget-definition.js';
 import { WidgetRegistryService } from '../catalog/widget-registry.service.js';
 import type { PrismaService } from '../core/prisma/prisma.service.js';
+import { DashboardEventsService } from '../dashboards/dashboard-events.js';
 import { FetchError } from './fetch-error.js';
 import type { FetchService } from './fetch.service.js';
 import { InstanceLookupService } from './instance-lookup.service.js';
@@ -62,8 +63,11 @@ function setup() {
   registry.registerService({ name: 'fake', connection: 'none' });
   const def = makeWidgetDefinition({ minRefreshSec: 1 });
   registry.register(def);
-  const fetch = vi.fn(async (_def: unknown, params: Params, _userId: string): Promise<unknown> => ({ echoed: params.label }));
-  const timer = new TimerService(registry, { get: fetch } as unknown as FetchService, prisma);
+  const fetch = vi.fn(async (_def: unknown, params: Params, _userId: string) => ({
+    data: { echoed: params.label },
+    fetchedAt: new Date().toISOString(),
+  }));
+  const timer = new TimerService(registry, { get: fetch } as unknown as FetchService, prisma, new DashboardEventsService());
 
   const gateway = new RealtimeGateway(jwt, prisma, revocation, timer, new InstanceLookupService(prisma));
   const server = new Server();

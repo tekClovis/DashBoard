@@ -10,13 +10,14 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { TokenCipherService } from '../connections/token-cipher.service.js';
+import { DashboardsModule } from '../dashboards/dashboards.module.js';
 import { FetchService } from './fetch.service.js';
 import { InstanceLookupService } from './instance-lookup.service.js';
 import { RealtimeGateway } from './realtime.gateway.js';
 import { TimerService } from './timer.service.js';
 
 @Module({
-  imports: [AuthModule, CatalogModule],
+  imports: [AuthModule, CatalogModule, DashboardsModule],
   providers: [RealtimeGateway, TimerService, FetchService, InstanceLookupService, TokenCipherService],
   exports: [RealtimeGateway],
 })
