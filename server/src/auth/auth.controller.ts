@@ -1,6 +1,5 @@
 import {
   Body,
-  ConflictException,
   Controller,
   ForbiddenException,
   Get,
@@ -43,6 +42,9 @@ import { VerificationService } from './verification.service.js';
 
 const BCRYPT_COST = 12;
 
+/** Compared against when the account is unknown or has no password, so login takes the same time either way. */
+const DUMMY_PASSWORD_HASH = bcrypt.hash('dummy-password-for-timing-only', BCRYPT_COST);
+
 /** Email/password auth routes under `/api/auth`: register, confirm, resend, forgot/reset-password, login, me, logout, logout-all. */
 @Controller('auth')
 export class AuthController {
@@ -59,7 +61,8 @@ export class AuthController {
 
   /**
    * Creates an unverified user with its default Dashboard and mails a confirmation link.
-   * @throws {@link ConflictException} with `EMAIL_IN_USE` when the email belongs to a verified or OAuth-only account.
+   * Always answers the same 201 body, so it never reveals whether the email is new, unverified or verified.
+   * An existing unverified account only gets its confirmation resent; its password is never overwritten.
    */
   @Post('register')
   @HttpCode(201)
@@ -70,15 +73,9 @@ export class AuthController {
     const existing = await this.prisma.user.findUnique({ where: { email } });
 
     if (existing) {
-      if (existing.emailVerifiedAt || existing.passwordHash === null) {
-        throw new ConflictException({ error: 'EMAIL_IN_USE' });
+      if (!existing.emailVerifiedAt && existing.passwordHash !== null) {
+        await this.issueAndSend(existing.id, email);
       }
-      // The unverified row may have been created by someone else: the latest registrant's password wins.
-      await this.prisma.user.update({
-        where: { id: existing.id },
-        data: { passwordHash: await bcrypt.hash(dto.password, BCRYPT_COST), tokenVersion: { increment: 1 } },
-      });
-      await this.issueAndSend(existing.id, email);
       return { ok: true };
     }
 
@@ -172,7 +169,8 @@ export class AuthController {
     const email = normalizeEmail(dto.email);
     const user = await this.prisma.user.findUnique({ where: { email } });
 
-    if (!user || !user.passwordHash || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    const passwordMatches = await bcrypt.compare(dto.password, user?.passwordHash ?? (await DUMMY_PASSWORD_HASH));
+    if (!user || !user.passwordHash || !passwordMatches) {
       throw new UnauthorizedException({ error: 'INVALID_CREDENTIALS' });
     }
     if (!user.emailVerifiedAt) {

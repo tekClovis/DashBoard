@@ -9,7 +9,7 @@ import { JwtService } from './jwt.service.js';
 import type { RequestUser } from './types.js';
 import { TokenRevocationService } from './token-revocation.service.js';
 
-/** Returns the verified user for a session token, or null if invalid, revoked, banned, or stale. */
+/** Returns the verified user for a session token, or null if invalid, revoked, banned, unverified, or stale. */
 export async function resolveSessionUser(
   token: string,
   jwt: JwtService,
@@ -23,7 +23,7 @@ export async function resolveSessionUser(
     revocation.isRevoked(payload.jti),
     prisma.user.findUnique({ where: { id: payload.sub } }),
   ]);
-  if (revoked || !user || user.bannedAt || user.tokenVersion !== payload.tv) return null;
+  if (revoked || !user || user.bannedAt || !user.emailVerifiedAt || user.tokenVersion !== payload.tv) return null;
 
   return { id: user.id, email: user.email, role: user.role, emailVerifiedAt: user.emailVerifiedAt };
 }
