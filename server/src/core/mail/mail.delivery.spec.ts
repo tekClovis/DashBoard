@@ -29,7 +29,8 @@ describe('.env.example SMTP defaults', () => {
     expect(env).toMatchObject({ SMTP_HOST: 'mailpit', SMTP_PORT: '1025' });
     const compose = root('docker-compose.yml');
     expect(compose).toMatch(/image:\s*axllent\/mailpit/);
-    expect(compose).not.toMatch(/SMTP_(USER|PASS|SECURE)/);
+    // Credentials are only passed through from .env, never given a value in compose.
+    expect(compose).not.toMatch(/^\s*SMTP_(USER|PASS|SECURE):(?! \$\{SMTP_\1:-\}$)/m);
   });
 
   it('passes env validation as shipped', () => {
